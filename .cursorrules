@@ -1,0 +1,246 @@
+# 🎮 DUMBASSGAMES PROJECT - CURSOR IDE RULES
+
+## PROJECT OVERVIEW
+This is DumbassGames, a retro indie game discovery platform being built for growth.
+Domain: dumbassgames.xyz
+Current Phase: Phase 1 - Foundation (see DUMBASSGAMES_GROWTH_PLAN.md)
+
+## CODE STANDARDS & CONVENTIONS
+
+### HTML Standards
+- Use semantic HTML5 elements
+- Include proper meta tags for SEO
+- Maintain accessibility with ARIA labels and roles
+- Structure should be logical and hierarchical
+- Always include alt text for images
+- Use proper heading hierarchy (h1 -> h2 -> h3)
+
+### CSS Standards  
+- Follow BEM (Block Element Modifier) methodology
+- Mobile-first responsive design approach
+- Use CSS custom properties (variables) for consistency
+- Maintain the retro/cyberpunk aesthetic with green/cyan colors
+- Keep Press Start 2P font for headers, readable fonts for body text
+- Optimize for Core Web Vitals (LCP, FID, CLS)
+- Use CSS Grid and Flexbox for layouts
+- Minimize CSS specificity conflicts
+
+### JavaScript Standards
+- Use ES6+ features (const/let, arrow functions, async/await)
+- Write modular, reusable code with classes
+- Implement proper error handling with try/catch
+- Use meaningful variable and function names
+- Add JSDoc comments for complex functions
+- Avoid global variables, use modules/namespaces
+- Optimize for performance (avoid unnecessary DOM queries)
+
+### Design Principles
+- Maintain retro/cyberpunk gaming aesthetic
+- Primary colors: #00ff00 (green), #00ffff (cyan), #0a0a0a (dark)
+- Use glitch effects, scanlines, and neon glows sparingly
+- Ensure high contrast for accessibility
+- Keep loading states and smooth transitions
+- Mobile-first, responsive design
+
+### File Organization
+- Keep HTML, CSS, and JS files organized and well-commented
+- Use descriptive file names (no generic names like "script.js")
+- Maintain consistent indentation (2 spaces)
+- Group related functionality together
+- Separate concerns (presentation, behavior, data)
+
+## PROJECT-SPECIFIC GUIDELINES
+
+### Game Management
+- All game data should be prepared for database migration
+- Maintain backwards compatibility during transitions
+- Keep game cards consistent with established design
+- Ensure proper validation for game submissions
+- Handle loading states for all async operations
+
+### User Experience
+- Prioritize fast loading times (<3 seconds)
+- Implement proper loading indicators
+- Provide clear feedback for user actions
+- Ensure all interactive elements have hover states
+- Maintain consistent spacing and typography
+
+### Performance Optimization
+- Optimize images for web (WebP when possible)
+- Minimize and compress CSS/JS files for production
+- Use lazy loading for images below the fold
+- Implement proper caching strategies
+- Monitor and optimize Core Web Vitals
+
+### Accessibility Requirements
+- Maintain WCAG 2.1 AA compliance
+- Ensure keyboard navigation works throughout
+- Provide sufficient color contrast ratios
+- Include proper ARIA labels and roles
+- Test with screen readers
+- Ensure focus indicators are visible
+
+### SEO Optimization
+- Include proper meta descriptions and titles
+- Use structured data (JSON-LD) for games
+- Implement proper heading hierarchy
+- Ensure clean, crawlable URLs
+- Add Open Graph and Twitter Card meta tags
+- Generate XML sitemaps
+
+## BACKEND PREPARATION
+
+### Database Readiness
+- Structure code to easily integrate with chosen backend (Firebase/Supabase)
+- Prepare data models that match the planned schema
+- Implement proper validation for all data inputs
+- Plan for real-time updates and synchronization
+- Consider offline functionality where appropriate
+
+### API Integration
+- Design frontend to work with RESTful APIs
+- Implement proper error handling for network requests
+- Use consistent data formatting (JSON)
+- Plan for authentication token management
+- Implement proper loading states for API calls
+
+### Security Considerations
+- Validate all user inputs on frontend (and plan for backend validation)
+- Implement proper XSS protection
+- Prepare for CSRF protection
+- Plan for rate limiting on forms
+- Secure sensitive data handling
+
+## DEVELOPMENT WORKFLOW
+
+### Git Practices
+- Use descriptive commit messages following conventional commits
+- Create feature branches for new functionality
+- Keep commits focused and atomic
+- Include tests for new features when possible
+- Document breaking changes
+
+### Testing Approach
+- Test across multiple browsers (Chrome, Firefox, Safari, Edge)
+- Verify mobile responsiveness on various devices
+- Test keyboard navigation and accessibility
+- Validate HTML and CSS
+- Check performance with Lighthouse audits
+
+### Code Reviews
+- Focus on code readability and maintainability
+- Ensure adherence to established patterns
+- Check for potential performance issues
+- Verify accessibility compliance
+- Confirm responsive design works properly
+
+## SPECIFIC IMPLEMENTATION NOTES
+
+### Current Architecture
+- Frontend-only application using localStorage
+- Preparing for backend integration (Phase 1)
+- Retro aesthetic with modern functionality
+- Sound system with toggle controls
+- Visual effects system (particles, scanlines, etc.)
+
+### Immediate Priorities (Phase 1)
+1. Set up backend service (Firebase recommended)
+2. Implement user authentication
+3. Create game submission system
+4. Build admin approval workflow
+5. Add search functionality
+
+### Features to Maintain
+- Sound toggle functionality
+- Visual effects toggle
+- Retro aesthetic and animations
+- Responsive grid layout for games
+- Admin console commands
+- Easter eggs (Konami code, etc.)
+
+### Features to Enhance
+- Replace localStorage with database
+- Add user accounts and profiles
+- Implement proper game submission workflow
+- Add categories and tagging system
+- Create admin dashboard
+
+## ERROR HANDLING
+
+### User-Facing Errors
+- Display friendly error messages in retro style
+- Provide clear guidance on how to resolve issues
+- Log errors for debugging while maintaining user privacy
+- Implement graceful fallbacks for failed operations
+
+### Development Errors
+- Use console.error for debugging information
+- Implement proper error boundaries
+- Log important state changes for debugging
+- Provide helpful error messages for developers
+
+## PERFORMANCE TARGETS
+
+### Loading Performance
+- First Contentful Paint: <1.5 seconds
+- Largest Contentful Paint: <2.5 seconds
+- Total page load: <3 seconds
+- Time to Interactive: <3 seconds
+
+### Runtime Performance
+- Smooth 60fps animations
+- Minimal layout shifts (CLS < 0.1)
+- Fast user interactions (FID < 100ms)
+- Efficient memory usage
+
+## BROWSER SUPPORT
+- Chrome 90+
+- Firefox 88+
+- Safari 14+
+- Edge 90+
+- Mobile browsers (iOS Safari, Chrome Mobile)
+
+## DEPLOYMENT CONSIDERATIONS
+- Prepare for static hosting initially
+- Plan for CDN integration
+- Implement proper caching headers
+- Optimize assets for production
+- Set up staging environment
+
+## DOCUMENTATION REQUIREMENTS
+- Update README.md with setup instructions
+- Document API endpoints when implemented
+- Maintain changelog for major updates
+- Document deployment procedures
+- Keep growth plan updated
+
+## SECURITY CHECKLIST
+- [ ] Validate all user inputs
+- [ ] Implement Content Security Policy
+- [ ] Use HTTPS everywhere
+- [ ] Sanitize user-generated content
+- [ ] Implement rate limiting for forms
+- [ ] Protect against XSS and CSRF
+- [ ] Secure authentication implementation
+
+## ACCESSIBILITY CHECKLIST
+- [ ] Keyboard navigation works throughout
+- [ ] Screen reader compatibility
+- [ ] Sufficient color contrast (4.5:1 minimum)
+- [ ] Focus indicators visible
+- [ ] Alternative text for images
+- [ ] Proper heading structure
+- [ ] ARIA labels where needed
+
+## REMEMBER
+1. Keep the retro aesthetic while ensuring modern functionality
+2. Plan all code changes with the growth plan in mind
+3. Prioritize user experience and performance
+4. Maintain backwards compatibility during transitions
+5. Test thoroughly across devices and browsers
+6. Document significant changes and decisions
+7. Keep security and accessibility in mind for all implementations
+
+---
+
+**Reference the DUMBASSGAMES_GROWTH_PLAN.md file for context on project goals, phases, and long-term vision.** 

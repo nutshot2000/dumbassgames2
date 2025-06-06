@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DUMBASSGAMES - Retro AI Gaming Experience</title>
+    <meta name="description" content="Experience the future of gaming with our AI-generated retro games. Classic arcade aesthetics meet cutting-edge artificial intelligence.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎮</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <!-- Compact Header Section -->
+        <header class="header">
+            <div class="header-top">
+                <div class="power-indicator">
+                    <div class="power-dot"></div>
+                    <span class="power-text">ONLINE</span>
+                </div>
+                
+                <h1 class="title glitch" data-text="DUMBASSGAMES">DUMBASSGAMES</h1>
+                
+                <div class="header-controls">
+                    <button id="searchToggle" class="control-btn compact" onclick="showSearchFilter()">🔍</button>
+                    <button id="soundToggle" class="control-btn compact" onclick="toggleSound()">🔊</button>
+                    <button id="effectsToggle" class="control-btn compact" onclick="toggleEffects()">✨</button>
+                    <button id="themeToggle" class="control-btn compact" onclick="toggleThemePicker()">🎨</button>
+                    <button id="authToggle" class="control-btn compact" onclick="toggleAuth()" style="display: none;">👤</button>
+                    <button id="loginBtn" class="control-btn compact" onclick="showAuthModal()">LOGIN</button>
+                    <button class="control-btn compact primary" onclick="showAddGameForm()">+ ADD</button>
+                </div>
+            </div>
+            
+            <div class="header-bottom">
+                <p class="subtitle">Digital Abominations & Glorious Failures Await • Sanity Not Guaranteed • <span class="highlight">Play Anyway</span></p>
+            </div>
+            
+            <!-- Rewritten 8-Bit Music Player -->
+            <div class="retro-music-player" id="musicPlayer">
+                <!-- Progress Bar at Top -->
+                <div class="track-progress-container">
+                    <input type="range" class="track-progress-bar" id="progressBar" min="0" max="100" value="0" oninput="musicPlayer.seekTo(this.value)">
+                </div>
+                
+                <!-- Main Player Layout -->
+                <div class="player-main">
+                    <!-- Track Info Section -->
+                    <div class="track-info-section">
+                        <div class="track-title-display" id="trackTitle">NO TRACK LOADED</div>
+                        <div class="track-time-display">
+                            <span id="currentTime">00:00</span>
+                            <span class="time-separator">:</span>
+                            <span id="totalTime">00:00</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Equalizer Visualization -->
+                    <div class="equalizer-container">
+                        <div class="equalizer-wrapper" id="visualizer">
+                            <div class="eq-bar" data-bar="0"></div>
+                            <div class="eq-bar" data-bar="1"></div>
+                            <div class="eq-bar" data-bar="2"></div>
+                            <div class="eq-bar" data-bar="3"></div>
+                            <div class="eq-bar" data-bar="4"></div>
+                            <div class="eq-bar" data-bar="5"></div>
+                            <div class="eq-bar" data-bar="6"></div>
+                            <div class="eq-bar" data-bar="7"></div>
+                            <div class="eq-bar" data-bar="8"></div>
+                            <div class="eq-bar" data-bar="9"></div>
+                            <div class="eq-bar" data-bar="10"></div>
+                            <div class="eq-bar" data-bar="11"></div>
+                            <div class="eq-bar" data-bar="12"></div>
+                            <div class="eq-bar" data-bar="13"></div>
+                            <div class="eq-bar" data-bar="14"></div>
+                            <div class="eq-bar" data-bar="15"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Volume and Controls -->
+                    <div class="volume-info-section">
+                        <div class="volume-display">
+                            <span class="volume-icon" id="volumeIcon">🔊</span>
+                            <input type="range" class="volume-control-slider" id="volumeSlider" min="0" max="100" value="70" oninput="musicPlayer.setVolume(this.value)">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Control Buttons -->
+                <div class="player-control-panel">
+                    <button class="retro-btn prev-btn" id="prevBtn" onclick="musicPlayer.previousTrack()">
+                        <span class="btn-icon">⏮</span>
+                        <span class="btn-label">PREV</span>
+                    </button>
+                    <button class="retro-btn play-btn" id="playPauseBtn" onclick="musicPlayer.togglePlay()">
+                        <span class="btn-icon">▶</span>
+                        <span class="btn-label">PLAY</span>
+                    </button>
+                    <button class="retro-btn next-btn" id="nextBtn" onclick="musicPlayer.nextTrack()">
+                        <span class="btn-icon">⏭</span>
+                        <span class="btn-label">NEXT</span>
+                    </button>
+                    <button class="retro-btn shuffle-btn" id="shuffleBtn" onclick="musicPlayer.toggleShuffle()">
+                        <span class="btn-icon">🔀</span>
+                        <span class="btn-label">SHUFFLE</span>
+                    </button>
+                    <button class="retro-btn manage-btn" onclick="musicPlayer.openMusicManager()">
+                        <span class="btn-icon">🎵</span>
+                        <span class="btn-label">ADD MUSIC</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Simple Theme Picker -->
+            <div class="simple-theme-picker" id="themePickerModal">
+                <div class="theme-picker-content">
+                    <div class="theme-picker-header">
+                        <span>🎨 Colors</span>
+                        <button class="theme-close" onclick="closeThemePicker()">✕</button>
+                    </div>
+                    <div class="color-row">
+                        <label>Primary:</label>
+                        <input type="color" id="primaryColorPicker" value="#00ff00" onchange="updateThemeColor('primary', this.value)">
+                    </div>
+                    <div class="color-row">
+                        <label>Secondary:</label>
+                        <input type="color" id="secondaryColorPicker" value="#00ffff" onchange="updateThemeColor('secondary', this.value)">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Music Manager Modal -->
+            <div class="music-manager-modal" id="musicManagerModal">
+                <div class="music-manager-content">
+                    <div class="music-manager-header">
+                        <h2>🎵 MUSIC MANAGER</h2>
+                        <button class="close-music-manager" onclick="musicPlayer.closeMusicManager()">✕</button>
+                    </div>
+                    
+                    <div class="music-manager-tabs">
+                        <button class="tab-btn active" data-tab="playlist">📋 CURRENT PLAYLIST</button>
+                        <button class="tab-btn" data-tab="library">🎵 MUSIC LIBRARY</button>
+                        <button class="tab-btn" data-tab="add">➕ ADD MUSIC</button>
+                    </div>
+                    
+                    <div class="music-manager-body">
+                        <!-- Current Playlist Tab -->
+                        <div class="tab-content active" id="playlistTab">
+                            <div class="playlist-controls">
+                                <button class="control-btn" onclick="musicPlayer.clearPlaylist()">🗑️ CLEAR ALL</button>
+                                <button class="control-btn" onclick="musicPlayer.shufflePlaylist()">🔀 SHUFFLE</button>
+                                <button class="control-btn primary" onclick="musicPlayer.resetToDefaults()">🔄 RESET TO DEFAULTS</button>
+                                <span class="track-count">Tracks: <span id="playlistCount">0</span></span>
+                            </div>
+                            <div class="tracks-grid" id="currentPlaylistGrid">
+                                <!-- Current playlist tracks -->
+                            </div>
+                        </div>
+                        
+                        <!-- Music Library Tab -->
+                        <div class="tab-content" id="libraryTab">
+                            <div class="library-search">
+                                <input type="text" id="librarySearch" placeholder="🔍 Search your music library..." onkeyup="musicPlayer.searchLibrary(this.value)">
+                                <button class="control-btn" onclick="musicPlayer.scanMusicFolder()">📁 SCAN FOLDER</button>
+                            </div>
+                            <div class="tracks-grid" id="musicLibraryGrid">
+                                <!-- Music library tracks -->
+                            </div>
+                        </div>
+                        
+                        <!-- Add Music Tab -->
+                        <div class="tab-content" id="addTab">
+                            <div class="add-music-section">
+                                <h3>🎵 Add Music Files</h3>
+                                <div class="file-drop-zone" id="fileDropZone">
+                                    <div class="drop-content">
+                                        <span class="drop-icon">🎵</span>
+                                        <span class="drop-text">Drop music files here or click to browse</span>
+                                        <input type="file" id="musicFileInput" multiple accept="audio/*" style="display: none;">
+                                    </div>
+                                </div>
+                                
+                                <h3>🌐 Add from URL</h3>
+                                <div class="url-input-section">
+                                    <input type="text" id="musicUrlInput" placeholder="https://example.com/music.mp3">
+                                    <input type="text" id="musicTitleInput" placeholder="Track Title">
+                                    <button class="control-btn primary" onclick="musicPlayer.addFromUrl()">➕ ADD URL</button>
+                                </div>
+                                
+                                <h3>📁 Link Music Folder</h3>
+                                <div class="folder-section">
+                                    <button class="control-btn" onclick="musicPlayer.selectMusicFolder()">📁 SELECT FOLDER</button>
+                                    <p class="folder-help">Link a folder to automatically scan for music files (MP3, WAV, OGG, M4A)</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Compact Main Content -->
+        <main class="main">
+            <section class="games-section">
+                <div class="section-header">
+                    <h2 class="section-title">ARCADE</h2>
+                    <div class="section-actions">
+                        <button class="section-btn primary" onclick="playRandomGame()">
+                            🎲 RANDOM
+                        </button>
+                    </div>
+                    <div class="section-stats">
+                        <span id="gameCount" class="stat-number">0</span>
+                        <span class="stat-label">GAMES</span>
+                    </div>
+                </div>
+                
+                <!-- Recent Favorites Section -->
+                <div id="recentFavoritesSection" class="recent-favorites-section" style="display: none;">
+                    <div class="favorites-header">
+                        <h3 class="favorites-title">💛 RECENT FAVORITES</h3>
+                        <button class="view-all-btn" onclick="showUserProfile(); switchProfileTab('favorites')">
+                            VIEW ALL →
+                        </button>
+                    </div>
+                    <div id="recentFavoritesGrid" class="recent-favorites-grid">
+                        <!-- Recent favorites will be dynamically loaded here -->
+                    </div>
+                </div>
+
+                <!-- Compact Games Grid -->
+                <div id="gamesGrid" class="games-grid compact">
+                    <!-- Games will be dynamically loaded here -->
+                    <div class="loading-container">
+                        <div class="loading"></div>
+                        <p class="loading-text">LOADING...</p>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions Bar -->
+                <div class="quick-actions">
+                    <button class="action-btn" onclick="showAddGameForm()">
+                        <span class="btn-icon">+</span>
+                        <span class="btn-text">ADD GAME</span>
+                    </button>
+                    <button class="action-btn" onclick="dumbassGameAdmin.help()">
+                        <span class="btn-icon">⌘</span>
+                        <span class="btn-text">ADMIN</span>
+                    </button>
+                    <button class="action-btn" onclick="location.reload()">
+                        <span class="btn-icon">↻</span>
+                        <span class="btn-text">REFRESH</span>
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Compact Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <span class="copyright">© 2024 DUMBASSGAMES</span>
+                <span class="easter-egg">↑↑↓↓←→←→BA</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Authentication Modal -->
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="authModalTitle">LOGIN</h3>
+                <span class="close" onclick="hideAuthModal()">&times;</span>
+            </div>
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-tab="login" onclick="switchAuthTab('login')">LOGIN</button>
+                <button class="auth-tab" data-tab="signup" onclick="switchAuthTab('signup')">SIGN UP</button>
+            </div>
+            <form id="authForm">
+                <input type="email" id="authEmail" placeholder="EMAIL" required>
+                <input type="password" id="authPassword" placeholder="PASSWORD" required minlength="6">
+                <input type="password" id="authConfirmPassword" placeholder="CONFIRM PASSWORD" style="display: none;">
+                <button type="submit" id="authSubmitBtn">🚀 LOGIN</button>
+            </form>
+            <div id="authError" class="auth-error" style="display: none;"></div>
+            <div id="userInfo" class="user-info" style="display: none;">
+                <p>Welcome, <span id="userEmail"></span>!</p>
+                <button onclick="showUserProfile()" class="profile-btn">👤 PROFILE</button>
+                <button onclick="logout()" class="logout-btn">LOGOUT</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Profile Modal -->
+    <div id="userProfileModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>👤 USER PROFILE</h3>
+                <span class="close" onclick="hideUserProfile()">&times;</span>
+            </div>
+            
+            <div class="profile-tabs">
+                <button class="profile-tab active" data-tab="overview" onclick="switchProfileTab('overview')">📊 OVERVIEW</button>
+                <button class="profile-tab" data-tab="favorites" onclick="switchProfileTab('favorites')">⭐ FAVORITES</button>
+                <button class="profile-tab" data-tab="submissions" onclick="switchProfileTab('submissions')">🎮 MY GAMES</button>
+                <button class="profile-tab" data-tab="settings" onclick="switchProfileTab('settings')">⚙️ SETTINGS</button>
+            </div>
+
+            <div class="profile-content">
+                <!-- Overview Tab -->
+                <div class="profile-tab-content active" id="overviewTab">
+                    <div class="profile-stats">
+                        <div class="stat-card">
+                            <div class="stat-number" id="userGameCount">0</div>
+                            <div class="stat-label">Games Submitted</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="userFavoriteCount">0</div>
+                            <div class="stat-label">Favorites</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="userJoinDate">-</div>
+                            <div class="stat-label">Member Since</div>
+                        </div>
+                    </div>
+                    <div class="profile-info">
+                        <div class="user-avatar">🎮</div>
+                        <div class="user-details">
+                            <h4 id="profileUserEmail">-</h4>
+                            <p id="profileUserBio">Welcome to DUMBASSGAMES! Add your bio here...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Favorites Tab -->
+                <div class="profile-tab-content" id="favoritesTab">
+                    <div class="favorites-header">
+                        <h4>⭐ Your Favorite Games</h4>
+                        <button class="btn-secondary" onclick="refreshFavorites()">🔄 REFRESH</button>
+                    </div>
+                    <div id="favoritesGrid" class="favorites-grid">
+                        <!-- User's favorite games will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Submissions Tab -->
+                <div class="profile-tab-content" id="submissionsTab">
+                    <div class="submissions-header">
+                        <h4>🎮 Your Game Submissions</h4>
+                        <button class="btn-primary" onclick="showAddGameForm()">+ NEW GAME</button>
+                    </div>
+                    <div id="submissionsGrid" class="submissions-grid">
+                        <!-- User's submitted games will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Settings Tab -->
+                <div class="profile-tab-content" id="settingsTab">
+                    <div class="settings-section">
+                        <h4>👤 Profile Settings</h4>
+                        <form id="profileSettingsForm">
+                            <div class="form-group">
+                                <label for="userBio">Bio</label>
+                                <textarea id="userBio" placeholder="Tell us about yourself..." maxlength="200" rows="3"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="displayName">Display Name</label>
+                                <input type="text" id="displayName" placeholder="Your display name" maxlength="30">
+                            </div>
+                            <button type="submit" class="btn-primary">💾 SAVE CHANGES</button>
+                        </form>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h4>🎵 Audio Settings</h4>
+                        <div class="setting-item">
+                            <label>Sound Effects</label>
+                            <button id="profileSoundToggle" class="toggle-btn" onclick="toggleProfileSound()">🔊 ON</button>
+                        </div>
+                        <div class="setting-item">
+                            <label>Visual Effects</label>
+                            <button id="profileEffectsToggle" class="toggle-btn" onclick="toggleProfileEffects()">✨ ON</button>
+                        </div>
+                    </div>
+
+                    <div class="settings-section danger">
+                        <h4>⚠️ Danger Zone</h4>
+                        <button class="btn-danger" onclick="confirmDeleteAccount()">🗑️ DELETE ACCOUNT</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Add Game Modal with Categories -->
+    <div id="addGameModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🎮 ADD NEW GAME</h3>
+                <span class="close" onclick="hideAddGameForm()">&times;</span>
+            </div>
+            <form id="addGameForm">
+                <div class="form-row">
+                    <input type="text" name="gameTitle" placeholder="GAME TITLE" required maxlength="50">
+                    <select name="gameGenre" required>
+                        <option value="">🎮 GAME TYPE</option>
+                        <option value="platformer">🏃 PLATFORMER</option>
+                        <option value="shooter">🔫 SHOOTER</option>
+                        <option value="puzzle">🧩 PUZZLE</option>
+                        <option value="arcade">🕹️ ARCADE</option>
+                        <option value="rpg">⚔️ RPG</option>
+                        <option value="horror">👻 HORROR</option>
+                        <option value="weird">🌀 WEIRD STUFF</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <select name="gameVibe" required>
+                        <option value="">🎪 VIBE CHECK</option>
+                        <option value="dumbass">💩 PEAK DUMBASS</option>
+                        <option value="memes">🐸 MEME TIER</option>
+                        <option value="cursed">😈 CURSED</option>
+                        <option value="political">🤡 POLITICAL</option>
+                        <option value="actually-good">✨ ACTUALLY GOOD</option>
+                        <option value="broken">🔧 BROKEN/WEIRD</option>
+                        <option value="monstrositys">👹 MONSTROSITYS</option>
+                    </select>
+                    <select name="gameDifficulty">
+                        <option value="">🌶️ DIFFICULTY</option>
+                        <option value="easy">😊 EASY</option>
+                        <option value="medium">😐 NORMAL</option>
+                        <option value="hard">😤 HARD</option>
+                        <option value="expert">💀 EXPERT</option>
+                        <option value="impossible">🔥 IMPOSSIBLE</option>
+                        <option value="why">❓ WHY EXIST</option>
+                        <option value="unrated">🤷 UNKNOWN</option>
+                    </select>
+                </div>
+
+                <input type="text" name="gameUrl" placeholder="GAME URL/PATH" required>
+                <textarea name="gameDescription" placeholder="GAME DESCRIPTION (explain the chaos)" required maxlength="300" rows="3"></textarea>
+                <input type="url" name="gameImage" placeholder="IMAGE URL (optional but recommended)">
+                
+                <div class="form-row">
+                    <input type="text" name="gameTags" placeholder="TAGS (comma-separated keywords)" maxlength="100">
+                    <input type="text" name="gameAuthor" placeholder="CREATOR/AUTHOR (optional)" maxlength="50">
+                </div>
+                
+                <button type="submit" class="btn-primary">🚀 SUBMIT FOR REVIEW</button>
+                <p class="form-help">Your game will be reviewed by our team before going live!</p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Chaos Wheel Modal -->
+    <div id="chaosWheelModal" class="modal wheel-modal">
+        <div class="wheel-modal-content">
+            <div class="wheel-container">
+                <div class="wheel-pointer">▼</div>
+                <div class="chaos-wheel" id="chaosWheel">
+                    <div class="wheel-segment" data-label="💩 DUMPSTER FIRE">💩<br>DUMPSTER<br>FIRE</div>
+                    <div class="wheel-segment" data-label="🤡 WHO MADE THIS?">🤡<br>WHO MADE<br>THIS?</div>
+                    <div class="wheel-segment" data-label="😈 CURSED VIBES">😈<br>CURSED<br>VIBES</div>
+                    <div class="wheel-segment" data-label="🔥 ACTUALLY FIRE">🔥<br>ACTUALLY<br>FIRE</div>
+                    <div class="wheel-segment" data-label="👹 BEAUTIFUL DISASTER">👹<br>BEAUTIFUL<br>DISASTER</div>
+                    <div class="wheel-segment" data-label="🌪️ PURE CHAOS">🌪️<br>PURE<br>CHAOS</div>
+                    <div class="wheel-segment" data-label="🎪 DIGITAL CIRCUS">🎪<br>DIGITAL<br>CIRCUS</div>
+                    <div class="wheel-segment" data-label="🛸 ALIEN TECH">🛸<br>ALIEN<br>TECH</div>
+                </div>
+            </div>
+            <div class="wheel-result" id="wheelResult">
+                <h3 id="wheelResultText">SPINNING...</h3>
+                <p id="wheelGameTitle"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Professional Game Search & Filter Modal -->
+    <div id="searchFilterModal" class="modal">
+        <div class="modal-content pro-search-modal">
+            <div class="modal-header">
+                <h3>🎪 CHAOS DISCOVERY ENGINE</h3>
+                <span class="close" onclick="closeSearchModal()">&times;</span>
+            </div>
+            
+            <div class="pro-search-grid">
+                <!-- Search Bar -->
+                <div class="search-bar-section">
+                    <div class="search-input-wrapper">
+                        <input type="text" id="searchInput" placeholder="Find your next digital disaster..." 
+                               onkeyup="performAdvancedSearch(event)" 
+                               onkeydown="handleSearchKeydown(event)"
+                               onfocus="showSearchHistory()"
+                               autocomplete="off">
+                        <button class="search-btn" onclick="executeSearch()">🔍</button>
+                        <div id="searchSuggestions" class="search-suggestions" style="display: none;"></div>
+                    </div>
+                </div>
+
+                <!-- Compact Filter Grid -->
+                <div class="compact-filter-panel">
+                    <!-- Row 1: Game Types + Chaos Categories -->
+                    <div class="filter-row">
+                        <div class="filter-group compact">
+                            <h4>🎮 GAME TYPES</h4>
+                            <div class="filter-grid game-types-grid">
+                                <button class="compact-filter-btn active" data-genre="all" onclick="filterByGenre('all')">ALL GAMES</button>
+                                <button class="compact-filter-btn" data-genre="platformer" onclick="filterByGenre('platformer')">🏃 PLATFORMER</button>
+                                <button class="compact-filter-btn" data-genre="shooter" onclick="filterByGenre('shooter')">🔫 SHOOTER</button>
+                                <button class="compact-filter-btn" data-genre="puzzle" onclick="filterByGenre('puzzle')">🧩 PUZZLE</button>
+                                <button class="compact-filter-btn" data-genre="arcade" onclick="filterByGenre('arcade')">🕹️ ARCADE</button>
+                                <button class="compact-filter-btn" data-genre="rpg" onclick="filterByGenre('rpg')">⚔️ RPG</button>
+                                <button class="compact-filter-btn" data-genre="horror" onclick="filterByGenre('horror')">👻 HORROR</button>
+                                <button class="compact-filter-btn" data-genre="weird" onclick="filterByGenre('weird')">🌀 WEIRD STUFF</button>
+                            </div>
+                        </div>
+
+                        <div class="filter-group compact">
+                            <h4>🎪 VIBE CHECK</h4>
+                            <div class="filter-grid chaos-grid">
+                                <button class="compact-filter-btn active" data-vibe="all" onclick="filterByVibe('all')">ALL VIBES</button>
+                                <button class="compact-filter-btn" data-vibe="dumbass" onclick="filterByVibe('dumbass')">💩 PEAK DUMBASS</button>
+                                <button class="compact-filter-btn" data-vibe="memes" onclick="filterByVibe('memes')">🐸 MEME TIER</button>
+                                <button class="compact-filter-btn" data-vibe="cursed" onclick="filterByVibe('cursed')">😈 CURSED</button>
+                                <button class="compact-filter-btn" data-vibe="political" onclick="filterByVibe('political')">🤡 POLITICAL</button>
+                                <button class="compact-filter-btn" data-vibe="actually-good" onclick="filterByVibe('actually-good')">✨ ACTUALLY GOOD</button>
+                                <button class="compact-filter-btn" data-vibe="broken" onclick="filterByVibe('broken')">🔧 BROKEN/WEIRD</button>
+                                <button class="compact-filter-btn" data-vibe="monstrositys" onclick="filterByVibe('monstrositys')">👹 MONSTROSITYS</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Difficulty + Sort -->
+                    <div class="filter-row">
+                        <div class="filter-group compact">
+                            <h4>🌶️ DIFFICULTY</h4>
+                            <div class="filter-grid pain-grid">
+                                <button class="compact-filter-btn active" data-difficulty="all" onclick="filterByDifficulty('all')">ALL LEVELS</button>
+                                <button class="compact-filter-btn easy" data-difficulty="easy" onclick="filterByDifficulty('easy')">😊 EASY</button>
+                                <button class="compact-filter-btn medium" data-difficulty="medium" onclick="filterByDifficulty('medium')">😐 NORMAL</button>
+                                <button class="compact-filter-btn hard" data-difficulty="hard" onclick="filterByDifficulty('hard')">😤 HARD</button>
+                                <button class="compact-filter-btn expert" data-difficulty="expert" onclick="filterByDifficulty('expert')">💀 EXPERT</button>
+                                <button class="compact-filter-btn impossible" data-difficulty="impossible" onclick="filterByDifficulty('impossible')">🔥 IMPOSSIBLE</button>
+                                <button class="compact-filter-btn why" data-difficulty="why" onclick="filterByDifficulty('why')">❓ WHY EXIST</button>
+                                <button class="compact-filter-btn unrated" data-difficulty="unrated" onclick="filterByDifficulty('unrated')">🤷 UNKNOWN</button>
+                            </div>
+                        </div>
+
+                        <div class="filter-group compact">
+                            <h4>🎲 SORT BY</h4>
+                            <div class="filter-grid sort-grid">
+                                                    <button class="compact-filter-btn active" data-sort="newest" onclick="sortGames('newest')">🆕 NEWEST</button>
+                    <button class="compact-filter-btn" data-sort="popular" onclick="sortGames('popular')">🔥 POPULAR</button>
+                    <button class="compact-filter-btn" data-sort="best" onclick="sortGames('best')">⭐ BEST</button>
+                    <button class="compact-filter-btn" data-sort="alphabetic" onclick="sortGames('alphabetic')">🔤 A-Z</button>
+                    <button class="compact-filter-btn" data-sort="random" onclick="sortGames('random')">🎰 RANDOM</button>
+                    <button class="compact-filter-btn" data-sort="chaos" onclick="sortGames('chaos')">💀 CHAOS</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-panel">
+                    <button class="pro-action-btn clear-btn" onclick="clearAllFilters()">🔥 RESET THE CHAOS</button>
+                    <button class="pro-action-btn apply-btn" onclick="applyFilters()">🎯 UNLEASH THE MADNESS</button>
+                    <button class="pro-action-btn" onclick="closeSearchModal()" style="background: rgba(100, 100, 100, 0.6); border-color: #888;">❌ CLOSE</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, setDoc, getDoc, query, orderBy, where } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
+        import { getAnalytics } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js';
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCuaKGPn6_wVD9p56U2MNHuyVBI-CN3o70",
+            authDomain: "dumbassgames-c1217.firebaseapp.com",
+            projectId: "dumbassgames-c1217",
+            storageBucket: "dumbassgames-c1217.firebasestorage.app",
+            messagingSenderId: "949393088299",
+            appId: "1:949393088299:web:2e412f5e9dc6dd8f17ef6e",
+            measurementId: "G-SX6PEFMQD4"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const analytics = getAnalytics(app);
+
+        // Make Firebase services available globally
+        window.firebaseApp = app;
+        window.firebaseAuth = auth;
+        window.firebaseDb = db;
+        window.firebaseAnalytics = analytics;
+        window.firebaseCollection = collection(db, 'games');
+
+        // Import Firebase functions to global scope
+        window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+        window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+        window.signOut = signOut;
+        window.onAuthStateChanged = onAuthStateChanged;
+        window.firebaseAddDoc = addDoc;
+        window.firebaseGetDocs = getDocs;
+        window.firebaseDoc = doc;
+        window.firebaseUpdateDoc = updateDoc;
+        window.firebaseDeleteDoc = deleteDoc;
+        window.firebaseSetDoc = setDoc;
+        window.firebaseGetDoc = getDoc;
+        window.firebaseQuery = query;
+        window.firebaseOrderBy = orderBy;
+        window.firebaseWhere = where;
+
+        console.log('%c🔥 Firebase initialized successfully!', 'background: #FFA000; color: white; padding: 8px; border-radius: 4px; font-weight: bold;');
+    </script>
+
+    <!-- Enhanced JavaScript -->
+    <script>
+        // Initialize global settings
+        window.soundEnabled = true;
+        window.effectsEnabled = true;
+        
+        // Professional loading message
+        console.log('%c🎮 DUMBASSGAMES v2.1', 'background: linear-gradient(45deg, #00ff00, #00ffff); color: #000; padding: 10px; font-size: 16px; font-weight: bold; border-radius: 5px;');
+        
+        // Enhanced keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'n') {
+                e.preventDefault();
+                showAddGameForm();
+            }
+            if (e.key === 'Escape') {
+                hideAddGameForm();
+            }
+            // Music player shortcuts
+            if (e.key === ' ' && !e.target.matches('input, textarea')) {
+                e.preventDefault();
+                if (window.musicPlayer) musicPlayer.togglePlay();
+            }
+        });
+
+        // Enhanced modal click-outside-to-close
+        document.getElementById('addGameModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideAddGameForm();
+            }
+        });
+        
+        // Game count is automatically updated by the script.js
+        
+        // Performance monitoring
+        window.addEventListener('load', function() {
+            const loadTime = performance.now();
+            console.log(`%c⚡ Loaded in ${Math.round(loadTime)}ms`, 'color: #00ffff; font-weight: bold;');
+        });
+    </script>
+    <script src="script.js"></script>
+</body>
+</html> 
