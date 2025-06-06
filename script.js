@@ -4066,12 +4066,12 @@ class FirebaseAuthManager {
         // Wait for Firebase to be initialized
         setTimeout(() => {
             if (window.firebaseAuth && window.onAuthStateChanged) {
-                window.onAuthStateChanged(window.firebaseAuth, (user) => {
+                window.onAuthStateChanged(window.firebaseAuth, async (user) => {
                     this.currentUser = user;
                     this.updateAuthUI(user);
                     if (user) {
                         console.log('🔥 User signed in:', user.email);
-                        this.notifyUserSignedIn(user);
+                        await this.notifyUserSignedIn(user);
                     } else {
                         console.log('🔓 User signed out');
                     }
@@ -4153,8 +4153,8 @@ class FirebaseAuthManager {
             authToggle.style.display = 'block';
             authToggle.title = `Logged in as ${user.email}`;
             
-            // Update user info in modal
-            document.getElementById('userEmail').textContent = user.email;
+            // Update user info in modal - use display name if available
+            this.updateWelcomeMessage(user);
             document.getElementById('userInfo').style.display = 'block';
             document.getElementById('authForm').style.display = 'none';
             document.querySelector('.auth-tabs').style.display = 'none';
@@ -4172,16 +4172,52 @@ class FirebaseAuthManager {
         // Notify user profile manager of auth state change
         if (window.userProfileManager) {
             window.userProfileManager.loadUserData();
+            // Reload favorites after sign-in with a small delay to ensure Firebase is ready
+            setTimeout(async () => {
+                await window.userProfileManager.loadUserFavorites();
+                window.userProfileManager.updateHeartIcons();
+            }, 1000);
         }
     }
 
-    notifyUserSignedIn(user) {
+    async updateWelcomeMessage(user) {
+        // Try to get display name from user profile
+        let displayName = user.email; // fallback to email
+        
+        try {
+            if (window.persistenceManager) {
+                const userProfile = await window.persistenceManager.loadUserProfile();
+                if (userProfile && userProfile.displayName && userProfile.displayName.trim()) {
+                    displayName = userProfile.displayName;
+                }
+            }
+        } catch (error) {
+            console.log('Could not load user profile for welcome message, using email');
+        }
+        
+        document.getElementById('userEmail').textContent = displayName;
+    }
+
+    async notifyUserSignedIn(user) {
         // Prevent spam: only show once per session
         if (window.hasShownWelcomeBackNotification) return;
         window.hasShownWelcomeBackNotification = true;
         
+        // Try to get display name for notification
+        let displayName = user.email; // fallback to email
+        try {
+            if (window.persistenceManager) {
+                const userProfile = await window.persistenceManager.loadUserProfile();
+                if (userProfile && userProfile.displayName && userProfile.displayName.trim()) {
+                    displayName = userProfile.displayName;
+                }
+            }
+        } catch (error) {
+            console.log('Could not load user profile for notification, using email');
+        }
+        
         if (window.dumbassGame && window.dumbassGame.notificationManager) {
-            window.dumbassGame.notificationManager.showSuccess(`Welcome back, ${user.email}! 🎮`);
+            window.dumbassGame.notificationManager.showSuccess(`Welcome back, ${displayName}! 🎮`);
         }
     }
 
@@ -4688,6 +4724,11 @@ class UserProfileManager {
 
             await window.persistenceManager.saveUserProfile(profileData);
             this.userProfile = profileData;
+            
+            // Update the welcome message in the auth modal
+            if (window.authManager && this.currentUser) {
+                await window.authManager.updateWelcomeMessage(this.currentUser);
+            }
             
             alert('✅ Profile saved successfully!');
 
