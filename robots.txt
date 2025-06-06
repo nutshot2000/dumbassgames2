@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://dumbassgames.xyz/sitemap.xml
+
+# Allow crawling of game files
+Allow: /games/
+Allow: /music/
+
+# Block any admin or private areas (none currently, but good practice)
+# Disallow: /admin/
+
+# Crawl delay (optional - helps with server load)
+Crawl-delay: 1 

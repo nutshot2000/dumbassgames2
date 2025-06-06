@@ -456,6 +456,9 @@ class DumbassGameEnhanced {
     playGame(url, title) {
         this.soundSystem.playClick();
         
+        // Track game launch analytics
+        this.trackGamePlay(title, url);
+        
         // Professional loading overlay
         this.showGameLoadingOverlay(title);
         
@@ -473,6 +476,33 @@ class DumbassGameEnhanced {
             window.open(url, '_blank');
             this.notificationManager.showSuccess(`🎮 Launching ${title}... Have fun!`);
         }, 2000);
+    }
+
+    trackGamePlay(title, url) {
+        try {
+            // Google Analytics tracking
+            if (window.gtag) {
+                window.gtag('event', 'game_play', {
+                    game_title: title,
+                    game_url: url,
+                    event_category: 'games',
+                    event_label: title
+                });
+            }
+
+            // Firebase Analytics tracking
+            if (window.firebaseAnalytics && window.firebaseLogEvent) {
+                window.firebaseLogEvent(window.firebaseAnalytics, 'game_played', {
+                    game_title: title,
+                    game_url: url,
+                    timestamp: new Date().toISOString()
+                });
+            }
+
+            console.log('📊 Analytics tracked for game play:', title);
+        } catch (error) {
+            console.warn('Analytics tracking failed:', error);
+        }
     }
 
     showGameLoadingOverlay(title) {

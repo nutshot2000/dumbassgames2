@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  
+  <!-- Main Pages -->
+  <url>
+    <loc>https://dumbassgames.xyz/</loc>
+    <lastmod>2024-12-17</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  
+  <!-- Individual Games -->
+  <url>
+    <loc>https://dumbassgames.xyz/games/space-adventure.html</loc>
+    <lastmod>2024-12-17</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  
+  <!-- Add more game URLs as they're created -->
+  <!-- Example template for future games:
+  <url>
+    <loc>https://dumbassgames.xyz/games/game-name.html</loc>
+    <lastmod>YYYY-MM-DD</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  -->
+  
+</urlset> 

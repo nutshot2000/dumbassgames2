@@ -3,13 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DUMBASSGAMES - Retro AI Gaming Experience</title>
-    <meta name="description" content="Experience the future of gaming with our AI-generated retro games. Classic arcade aesthetics meet cutting-edge artificial intelligence.">
+    
+    <!-- Primary SEO Tags -->
+    <title>DUMBASSGAMES - Funny Weird Games | Free Browser Games & Bizarre Gaming</title>
+    <meta name="description" content="Play weird, funny, and bizarre free browser games! DUMBASSGAMES features hilarious indie games, strange retro experiences, and wtf gaming content. Digital Abominations & Glorious Failures Await!">
+    <meta name="keywords" content="funny games, weird games, free browser games, online games, wtf games, bizarre games, meme games, strange games, ridiculous games, hilarious games, crazy games, indie games, retro games, free games">
+    <meta name="author" content="DUMBASSGAMES">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#00ff00">
+    
+    <!-- Open Graph Meta Tags (Facebook, LinkedIn, etc.) -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="DUMBASSGAMES">
+    <meta property="og:title" content="DUMBASSGAMES - Vibe Coded Monstrositys & Chaotic Gaming">
+    <meta property="og:description" content="Digital Abominations & Glorious Failures Await • Sanity Not Guaranteed! Discover vibe coded monstrositys and cursed AI games. 🎮💀">
+    <meta property="og:url" content="https://dumbassgames.xyz">
+    <meta property="og:image" content="https://dumbassgames.xyz/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="DUMBASSGAMES - Retro AI Gaming Platform">
+    <meta property="og:locale" content="en_US">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@dumbassgames">
+    <meta name="twitter:creator" content="@dumbassgames">
+    <meta name="twitter:title" content="DUMBASSGAMES - Vibe Coded Monstrositys">
+    <meta name="twitter:description" content="Digital Abominations & Glorious Failures Await • Sanity Not Guaranteed! Vibe coded monstrositys and cursed AI games. 💀🎮">
+    <meta name="twitter:image" content="https://dumbassgames.xyz/twitter-card.png">
+    <meta name="twitter:image:alt" content="DUMBASSGAMES - Retro AI Gaming Platform">
+    
+    <!-- Additional SEO -->
+    <link rel="canonical" href="https://dumbassgames.xyz">
+    <meta name="format-detection" content="telephone=no">
+    
+    <!-- Preconnect for Performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎮</text></svg>">
+    
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "DUMBASSGAMES",
+        "alternateName": "Dumbass Games",
+        "description": "Digital Abominations & Glorious Failures Await • Sanity Not Guaranteed! Chaotic gaming platform featuring vibe coded monstrositys, cursed AI games, and peak dumbass content.",
+        "url": "https://dumbassgames.xyz",
+        "genre": ["Chaotic Gaming", "Meme Games", "Cursed Content", "AI Disasters", "Retro Chaos"],
+        "author": {
+            "@type": "Organization",
+            "name": "DUMBASSGAMES",
+            "url": "https://dumbassgames.xyz"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "DUMBASSGAMES",
+            "url": "https://dumbassgames.xyz"
+        },
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+                "@type": "EntryPoint",
+                "urlTemplate": "https://dumbassgames.xyz?search={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+        },
+        "mainEntity": {
+            "@type": "GamePlatform",
+            "name": "DUMBASSGAMES Platform",
+            "description": "Digital Abominations & Glorious Failures Await • Sanity Not Guaranteed! Browser platform featuring vibe coded monstrositys and cursed games",
+            "gameGenre": ["Peak Dumbass", "Cursed Content", "Meme Tier", "Broken/Weird", "Digital Monstrositys", "Chaotic Evil"],
+            "platform": "Web Browser",
+            "operatingSystem": "Cross-platform"
+        }
+    }
+    </script>
 </head>
 <body>
     <div class="container">
@@ -598,13 +670,29 @@
         </div>
     </div>
 
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-SX6PEFMQD4"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-SX6PEFMQD4', {
+            page_title: 'DUMBASSGAMES - Retro AI Gaming',
+            page_location: window.location.href,
+            custom_map: {'custom_parameter_1': 'game_category'}
+        });
+        
+        // Make gtag available globally for tracking
+        window.gtag = gtag;
+    </script>
+
     <!-- Firebase SDK -->
     <script type="module">
         // Import the functions you need from the SDKs you need
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js';
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
         import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, setDoc, getDoc, query, orderBy, where } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
-        import { getAnalytics } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js';
+        import { getAnalytics, logEvent } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js';
 
         // Your web app's Firebase configuration
         const firebaseConfig = {
@@ -629,6 +717,7 @@
         window.firebaseDb = db;
         window.firebaseAnalytics = analytics;
         window.firebaseCollection = collection(db, 'games');
+        window.firebaseLogEvent = logEvent;
 
         // Import Firebase functions to global scope
         window.signInWithEmailAndPassword = signInWithEmailAndPassword;
