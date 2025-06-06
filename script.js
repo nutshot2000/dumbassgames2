@@ -1515,47 +1515,61 @@ class DumbassGameAdmin {
 
 // Global functions for HTML integration
 function showAddGameForm() {
-    dumbassGame.showAddGameForm();
+    if (window.dumbassGame && window.dumbassGame.showAddGameForm) {
+        window.dumbassGame.showAddGameForm();
+    } else {
+        console.warn('⚠️ dumbassGame not ready yet, please wait...');
+    }
 }
 
 function hideAddGameForm() {
-    dumbassGame.hideAddGameForm();
+    if (window.dumbassGame && window.dumbassGame.hideAddGameForm) {
+        window.dumbassGame.hideAddGameForm();
+    }
 }
 
 function toggleSound() {
-    if (window.soundEnabled !== undefined) {
+    if (window.soundEnabled !== undefined && window.dumbassGame && window.dumbassGame.soundSystem) {
         window.soundEnabled = !window.soundEnabled;
-        dumbassGame.soundSystem.sfxEnabled = window.soundEnabled;
+        window.dumbassGame.soundSystem.sfxEnabled = window.soundEnabled;
         const soundBtn = document.getElementById('soundToggle');
-        soundBtn.innerHTML = window.soundEnabled ? '🔊' : '🔇';
-        soundBtn.style.color = window.soundEnabled ? '#00ff00' : '#ff3300';
-        soundBtn.style.borderColor = window.soundEnabled ? '#00ff00' : '#ff3300';
+        if (soundBtn) {
+            soundBtn.innerHTML = window.soundEnabled ? '🔊' : '🔇';
+            soundBtn.style.color = window.soundEnabled ? '#00ff00' : '#ff3300';
+            soundBtn.style.borderColor = window.soundEnabled ? '#00ff00' : '#ff3300';
+        }
         
         // Show notification
         if (window.soundEnabled) {
-            dumbassGame.notificationManager.showSuccess('Sound effects enabled! 🔊');
-            dumbassGame.soundSystem.playSuccess();
+            window.dumbassGame.notificationManager?.showSuccess('Sound effects enabled! 🔊');
+            window.dumbassGame.soundSystem?.playSuccess();
         } else {
-            dumbassGame.notificationManager.showInfo('Sound effects disabled 🔇');
+            window.dumbassGame.notificationManager?.showInfo('Sound effects disabled 🔇');
         }
+    } else {
+        console.warn('⚠️ Sound system not ready yet, please wait...');
     }
 }
 
 function toggleEffects() {
-    if (window.effectsEnabled !== undefined) {
+    if (window.effectsEnabled !== undefined && window.dumbassGame && window.dumbassGame.effectsManager) {
         window.effectsEnabled = !window.effectsEnabled;
         const effectsBtn = document.getElementById('effectsToggle');
-        effectsBtn.innerHTML = window.effectsEnabled ? '✨' : '💤';
-        effectsBtn.style.color = window.effectsEnabled ? '#00ff00' : '#ff3300';
-        effectsBtn.style.borderColor = window.effectsEnabled ? '#00ff00' : '#ff3300';
+        if (effectsBtn) {
+            effectsBtn.innerHTML = window.effectsEnabled ? '✨' : '💤';
+            effectsBtn.style.color = window.effectsEnabled ? '#00ff00' : '#ff3300';
+            effectsBtn.style.borderColor = window.effectsEnabled ? '#00ff00' : '#ff3300';
+        }
         
         if (window.effectsEnabled) {
-            dumbassGame.effectsManager.enableEffects();
-            dumbassGame.notificationManager.showSuccess('Visual effects enabled! ✨');
+            window.dumbassGame.effectsManager?.enableEffects();
+            window.dumbassGame.notificationManager?.showSuccess('Visual effects enabled! ✨');
         } else {
-            dumbassGame.effectsManager.disableEffects();
-            dumbassGame.notificationManager.showInfo('Visual effects disabled 💤');
+            window.dumbassGame.effectsManager?.disableEffects();
+            window.dumbassGame.notificationManager?.showInfo('Visual effects disabled 💤');
         }
+    } else {
+        console.warn('⚠️ Effects system not ready yet, please wait...');
     }
 }
 
@@ -4000,8 +4014,18 @@ let authManager;
 
 // Global authentication functions
 function showAuthModal() {
-    if (window.authManager) {
+    if (window.authManager && window.authManager.showAuthModal) {
         window.authManager.showAuthModal();
+    } else if (window.firebaseAuth) {
+        // Fallback: create a simple login prompt
+        console.warn('⚠️ Auth manager not ready, please wait for initialization...');
+        setTimeout(() => {
+            if (window.authManager) {
+                window.authManager.showAuthModal();
+            }
+        }, 1000);
+    } else {
+        console.warn('⚠️ Authentication system not ready yet, please wait...');
     }
 }
 
@@ -5828,6 +5852,7 @@ document.addEventListener('DOMContentLoaded', function() {
 console.log('🔥 Initializing Firebase managers...');
 window.dataManager = new FirebaseDataManager();
 window.firebaseAuth = new FirebaseAuthManager();
+window.authManager = window.firebaseAuth; // Alias for compatibility
 
 // Initialize user profile manager
 console.log('👤 Initializing User Profile Manager...');
