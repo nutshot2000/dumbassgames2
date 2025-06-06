@@ -8,14 +8,33 @@ class ThemeCustomizer {
         this.loadSavedTheme();
     }
 
-    loadSavedTheme() {
-        const savedTheme = localStorage.getItem('dumbassTheme');
-        if (savedTheme) {
-            const theme = JSON.parse(savedTheme);
-            this.applyColors(theme.primary, theme.secondary);
-            this.updatePickerValues(theme.primary, theme.secondary);
-        } else {
-            // Apply default colors and ensure alpha variants are set
+    async loadSavedTheme() {
+        try {
+            // Wait for persistence manager if it's not ready
+            if (!window.persistenceManager) {
+                console.log('🎨 Waiting for persistence manager...');
+                await new Promise(resolve => {
+                    const checkManager = () => {
+                        if (window.persistenceManager) {
+                            resolve();
+                        } else {
+                            setTimeout(checkManager, 100);
+                        }
+                    };
+                    checkManager();
+                });
+            }
+            
+            const savedTheme = await window.persistenceManager.loadTheme();
+            if (savedTheme) {
+                this.applyColors(savedTheme.primary, savedTheme.secondary);
+                this.updatePickerValues(savedTheme.primary, savedTheme.secondary);
+            } else {
+                // Apply default colors and ensure alpha variants are set
+                this.applyColors(this.defaultColors.primary, this.defaultColors.secondary);
+            }
+        } catch (error) {
+            console.warn('🎨 Failed to load theme, using defaults:', error);
             this.applyColors(this.defaultColors.primary, this.defaultColors.secondary);
         }
     }
@@ -78,20 +97,20 @@ class ThemeCustomizer {
         }
     }
 
-    saveTheme() {
+    async saveTheme() {
         const primary = document.getElementById('primaryColorPicker').value;
         const secondary = document.getElementById('secondaryColorPicker').value;
         
         const theme = { primary, secondary };
-        localStorage.setItem('dumbassTheme', JSON.stringify(theme));
+        await window.persistenceManager.saveTheme(theme);
         
         showNotification('Theme saved successfully! 🎨');
     }
 
-    resetToDefault() {
+    async resetToDefault() {
         this.applyColors(this.defaultColors.primary, this.defaultColors.secondary);
         this.updatePickerValues(this.defaultColors.primary, this.defaultColors.secondary);
-        localStorage.removeItem('dumbassTheme');
+        await window.persistenceManager.saveTheme(null);
         showNotification('Theme reset to default! 🔄');
     }
 }
@@ -115,6 +134,9 @@ function updateThemeColor(type, color) {
     const secondary = document.getElementById('secondaryColorPicker').value;
     
     themeCustomizer.applyColors(primary, secondary);
+    
+    // Auto-save the theme changes
+    themeCustomizer.saveTheme();
 }
 
 
@@ -399,10 +421,9 @@ class DumbassGameEnhanced {
                     ▶ PLAY NOW
                 </button>
                 <button class="favorite-btn ${window.userProfileManager?.favoriteGames?.some(fav => fav.id === game.id) ? 'active' : ''}" 
-                    onclick="event.preventDefault(); event.stopPropagation(); if (window.userProfileManager) { window.userProfileManager.toggleFavorite('${game.id}'); }" 
-                    title="Add to Favorites"
-                    style="padding: 8px 12px; background: rgba(255, 0, 0, 0.1); border: 1px solid #ff0080; color: #ff0080; border-radius: 6px; cursor: pointer; font-size: 0.5rem; transition: all 0.3s ease;">
-                    ${window.userProfileManager?.favoriteGames?.some(fav => fav.id === game.id) ? '❤️' : '🤍'}
+                    onclick="event.preventDefault(); event.stopPropagation(); if (window.userProfileManager) { window.userProfileManager.toggleFavorite('${game.id}'); window.userProfileManager.updateHeartIcons(); }" 
+                    title="Add to Favorites">
+                    ♥
                 </button>
             </div>
             <div class="delete-btn" onclick="event.preventDefault(); event.stopPropagation(); dumbassGame.deleteGame('${game.id}')" 
@@ -943,107 +964,385 @@ class EffectsManager {
 // Enhanced Notification Manager
 class NotificationManager {
     constructor() {
-        this.notifications = [];
+        this.container = null;
         this.createContainer();
     }
 
     createContainer() {
-        const container = document.createElement('div');
-        container.id = 'notificationContainer';
-        container.style.cssText = `
+        this.container = document.createElement('div');
+        this.container.className = 'notification-container';
+        this.container.style.cssText = `
             position: fixed;
             top: 20px;
             right: 20px;
-            z-index: 10001;
+            z-index: 10000;
             pointer-events: none;
+            max-width: 350px;
         `;
-        document.body.appendChild(container);
+        document.body.appendChild(this.container);
     }
 
     show(message, type = 'info', duration = 4000) {
         const notification = document.createElement('div');
-        const id = Date.now();
+        notification.className = `notification notification-${type}`;
         
-        const colors = {
-            info: '#00ffff',
-            success: '#00ff00',
-            warning: '#ff6600',
-            error: '#ff3300'
+        const bgColors = {
+            info: 'rgba(0, 255, 255, 0.9)',
+            success: 'rgba(0, 255, 0, 0.9)',
+            warning: 'rgba(255, 165, 0, 0.9)',
+            error: 'rgba(255, 0, 0, 0.9)'
         };
-
+        
+        const icons = {
+            info: 'ℹ️',
+            success: '✅',
+            warning: '⚠️',
+            error: '❌'
+        };
+        
         notification.style.cssText = `
-            background: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(15px);
-            border: 2px solid ${colors[type]};
-            border-radius: 12px;
-            padding: 15px 20px;
+            background: ${bgColors[type]};
+            color: #000;
+            padding: 12px 16px;
             margin-bottom: 10px;
-            color: ${colors[type]};
-            font-family: 'Press Start 2P', cursive;
-            font-size: 0.5rem;
-            max-width: 350px;
-            word-wrap: break-word;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px ${colors[type]}40;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border: 2px solid #000;
             transform: translateX(100%);
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
             pointer-events: auto;
             cursor: pointer;
             position: relative;
             overflow: hidden;
         `;
-
+        
         notification.innerHTML = `
-            <div style="position: relative; z-index: 1;">${message}</div>
-            <div style="position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, ${colors[type]}20, transparent); transition: left 0.6s;"></div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 16px;">${icons[type]}</span>
+                <span>${message}</span>
+            </div>
         `;
-
-        const container = document.getElementById('notificationContainer');
-        container.appendChild(notification);
-
-        // Entrance animation
-        requestAnimationFrame(() => {
-            notification.style.transform = 'translateX(0)';
-        });
-
-        // Hover effects
-        notification.addEventListener('mouseenter', () => {
-            notification.querySelector('div:last-child').style.left = '100%';
-            notification.style.transform = 'translateX(-5px) scale(1.02)';
-        });
-
-        notification.addEventListener('mouseleave', () => {
-            notification.style.transform = 'translateX(0) scale(1)';
-        });
-
-        // Click to dismiss
+        
+        // Add close functionality
         notification.addEventListener('click', () => {
             this.remove(notification);
         });
-
-        // Auto remove
+        
+        this.container.appendChild(notification);
+        
+        // Trigger animation
         setTimeout(() => {
-            if (notification.parentNode) {
+            notification.style.transform = 'translateX(0)';
+        }, 10);
+        
+        // Auto-remove after duration
+        if (duration > 0) {
+            setTimeout(() => {
                 this.remove(notification);
-            }
-        }, duration);
-
-        this.notifications.push({ id, element: notification });
+            }, duration);
+        }
+        
+        return notification;
     }
 
     remove(notification) {
-        notification.style.transform = 'translateX(100%) scale(0.8)';
-        notification.style.opacity = '0';
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        }, 300);
+        if (notification && notification.parentNode) {
+            notification.style.transform = 'translateX(100%)';
+            notification.style.opacity = '0';
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }
     }
 
     showInfo(message) { this.show(message, 'info'); }
     showSuccess(message) { this.show(message, 'success'); }
     showWarning(message) { this.show(message, 'warning'); }
     showError(message) { this.show(message, 'error'); }
+}
+
+// ============================================================================
+// UNIFIED DATA PERSISTENCE MANAGER - BULLETPROOF SAVE SYSTEM
+// ============================================================================
+
+class DataPersistenceManager {
+    constructor() {
+        this.maxRetries = 3;
+        this.retryDelay = 1000;
+        this.isInitialized = false;
+        this.currentUser = null;
+        this.notificationManager = null;
+        this.initialize();
+    }
+
+    initialize() {
+        // Initialize immediately for localStorage operations
+        this.isInitialized = true;
+        this.currentUser = window.firebaseAuth?.currentUser || null;
+        this.notificationManager = window.dumbassGame?.notificationManager || null;
+        console.log('💾 DataPersistenceManager initialized');
+        
+        // Set up auth listener for when Firebase becomes available
+        if (window.firebaseAuth && window.onAuthStateChanged) {
+            window.onAuthStateChanged(window.firebaseAuth, (user) => {
+                this.currentUser = user;
+                console.log('💾 Auth state changed, user:', user?.email || 'anonymous');
+            });
+        }
+        
+        // Also check again after a delay for late-loading Firebase
+        setTimeout(() => {
+            if (!this.currentUser) {
+                this.currentUser = window.firebaseAuth?.currentUser || null;
+            }
+            if (!this.notificationManager) {
+                this.notificationManager = window.dumbassGame?.notificationManager || null;
+            }
+        }, 1000);
+    }
+
+    async save(dataType, data, options = {}) {
+        if (!this.isInitialized) {
+            console.warn('💾 DataPersistenceManager not ready, queuing save...');
+            setTimeout(() => this.save(dataType, data, options), 500);
+            return;
+        }
+
+        const { retries = this.maxRetries, silent = false, forceLocal = false, userSpecific = true } = options;
+
+        try {
+            const key = this.generateKey(dataType, userSpecific);
+            let success = false;
+
+            // Try Firebase first (if not forced local and user is logged in)
+            if (!forceLocal && this.currentUser && window.dataManager?.isInitialized) {
+                try {
+                    await this.saveToFirebase(dataType, data);
+                    success = true;
+                    console.log(`☁️ Saved ${dataType} to Firebase`);
+                } catch (firebaseError) {
+                    console.warn(`⚠️ Firebase save failed for ${dataType}:`, firebaseError);
+                }
+            }
+
+            // Always save to localStorage as backup/fallback
+            try {
+                await this.saveToLocalStorage(key, data);
+                console.log(`💾 Saved ${dataType} to localStorage (${success ? 'backup' : 'primary'})`);
+                success = true;
+            } catch (localError) {
+                console.error(`❌ localStorage save failed for ${dataType}:`, localError);
+            }
+
+            if (success) {
+                if (!silent && this.notificationManager) {
+                    this.notificationManager.showSuccess(`💾 ${this.getDataTypeDisplayName(dataType)} saved!`);
+                }
+                return true;
+            } else {
+                throw new Error('All save methods failed');
+            }
+
+        } catch (error) {
+            console.error(`❌ Save failed for ${dataType}:`, error);
+            
+            if (retries > 0) {
+                console.log(`🔄 Retrying save in ${this.retryDelay}ms... (${retries} attempts left)`);
+                setTimeout(() => {
+                    this.save(dataType, data, { ...options, retries: retries - 1 });
+                }, this.retryDelay);
+                return;
+            }
+
+            if (!silent && this.notificationManager) {
+                this.notificationManager.showError(`❌ Failed to save ${this.getDataTypeDisplayName(dataType)}`);
+            }
+            return false;
+        }
+    }
+
+    async load(dataType, options = {}) {
+        if (!this.isInitialized) {
+            console.warn('💾 DataPersistenceManager not ready, waiting...');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            return this.load(dataType, options);
+        }
+
+        const { defaultValue = null, userSpecific = true, preferLocal = false } = options;
+
+        try {
+            const key = this.generateKey(dataType, userSpecific);
+            let data = null;
+
+            // Try Firebase first (unless preferLocal or user not logged in)
+            if (!preferLocal && this.currentUser && window.dataManager?.isInitialized) {
+                try {
+                    data = await this.loadFromFirebase(dataType);
+                    if (data) {
+                        console.log(`☁️ Loaded ${dataType} from Firebase`);
+                        this.saveToLocalStorage(key, data, true);
+                        return data;
+                    }
+                } catch (firebaseError) {
+                    console.warn(`⚠️ Firebase load failed for ${dataType}:`, firebaseError);
+                }
+            }
+
+            // Fallback to localStorage
+            try {
+                data = await this.loadFromLocalStorage(key);
+                if (data) {
+                    console.log(`💾 Loaded ${dataType} from localStorage`);
+                    return data;
+                }
+            } catch (localError) {
+                console.warn(`⚠️ localStorage load failed for ${dataType}:`, localError);
+            }
+
+            console.log(`📝 Using default value for ${dataType}`);
+            return defaultValue;
+
+        } catch (error) {
+            console.error(`❌ Load failed for ${dataType}:`, error);
+            return defaultValue;
+        }
+    }
+
+    async saveToFirebase(dataType, data) {
+        if (!this.currentUser || !window.dataManager?.isInitialized) {
+            throw new Error('Firebase not available');
+        }
+
+        const userRef = window.firebaseDoc(window.dataManager.db, 'users', this.currentUser.uid);
+        const updateData = {
+            [dataType]: data,
+            lastUpdated: new Date().toISOString()
+        };
+
+        await window.firebaseSetDoc(userRef, updateData, { merge: true });
+    }
+
+    async loadFromFirebase(dataType) {
+        if (!this.currentUser || !window.dataManager?.isInitialized) {
+            throw new Error('Firebase not available');
+        }
+
+        const userRef = window.firebaseDoc(window.dataManager.db, 'users', this.currentUser.uid);
+        const userDoc = await window.firebaseGetDoc(userRef);
+        
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            return userData[dataType] || null;
+        }
+        
+        return null;
+    }
+
+    async saveToLocalStorage(key, data, silent = false) {
+        try {
+            const serialized = JSON.stringify({
+                data: data,
+                timestamp: Date.now(),
+                version: '2.1'
+            });
+            
+            localStorage.setItem(key, serialized);
+            
+            if (!silent) {
+                console.log(`💾 Saved to localStorage: ${key}`);
+            }
+        } catch (error) {
+            if (error.name === 'QuotaExceededError') {
+                this.clearOldData();
+                localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now(), version: '2.1' }));
+                console.warn('⚠️ localStorage was full, cleared old data and retried');
+            } else {
+                throw error;
+            }
+        }
+    }
+
+    async loadFromLocalStorage(key) {
+        try {
+            const stored = localStorage.getItem(key);
+            if (!stored) return null;
+
+            const parsed = JSON.parse(stored);
+            
+            if (parsed && typeof parsed === 'object' && parsed.data !== undefined) {
+                return parsed.data;
+            } else {
+                this.saveToLocalStorage(key, parsed, true);
+                return parsed;
+            }
+        } catch (error) {
+            console.warn(`⚠️ Failed to parse localStorage data for ${key}:`, error);
+            return null;
+        }
+    }
+
+    generateKey(dataType, userSpecific = true) {
+        const prefix = 'dumbassgames_';
+        const userSuffix = userSpecific ? 
+            (this.currentUser ? `_${this.currentUser.uid}` : '_anonymous') : 
+            '';
+        return `${prefix}${dataType}${userSuffix}`;
+    }
+
+    getDataTypeDisplayName(dataType) {
+        const displayNames = {
+            userProfile: 'Profile',
+            favorites: 'Favorites',
+            games: 'Games',
+            theme: 'Theme',
+            music: 'Music',
+            searchHistory: 'Search History'
+        };
+        return displayNames[dataType] || dataType;
+    }
+
+    clearOldData() {
+        const keysToCheck = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('dumbassgames_')) {
+                keysToCheck.push(key);
+            }
+        }
+
+        const keyData = keysToCheck.map(key => {
+            try {
+                const data = JSON.parse(localStorage.getItem(key));
+                return { key, timestamp: data.timestamp || 0 };
+            } catch {
+                return { key, timestamp: 0 };
+            }
+        }).sort((a, b) => a.timestamp - b.timestamp);
+
+        const toRemove = keyData.slice(0, Math.floor(keyData.length * 0.25));
+        toRemove.forEach(({ key }) => {
+            localStorage.removeItem(key);
+            console.log(`🧹 Removed old data: ${key}`);
+        });
+    }
+
+    // Convenience methods
+    async saveUserProfile(profile) { return this.save('userProfile', profile, { userSpecific: true }); }
+    async loadUserProfile(defaultProfile = null) { return this.load('userProfile', { defaultValue: defaultProfile, userSpecific: true }); }
+    async saveFavorites(favorites) { return this.save('favorites', favorites, { userSpecific: true }); }
+    async loadFavorites() { return this.load('favorites', { defaultValue: [], userSpecific: true }); }
+    async saveTheme(theme) { return this.save('theme', theme, { userSpecific: false, silent: true }); }
+    async loadTheme() { return this.load('theme', { defaultValue: null, userSpecific: false }); }
+    async saveMusic(musicData) { return this.save('music', musicData, { userSpecific: true, silent: true }); }
+    async loadMusic() { return this.load('music', { defaultValue: { playlist: [], library: [] }, userSpecific: true }); }
+    async saveSearchHistory(history) { return this.save('searchHistory', history, { userSpecific: false, silent: true }); }
+    async loadSearchHistory() { return this.load('searchHistory', { defaultValue: { totalSearches: 0, popularTerms: {}, noResultsTerms: {}, lastSearched: null }, userSpecific: false }); }
 }
 
 // Enhanced Admin Console
@@ -1090,6 +1389,8 @@ class DumbassGameAdmin {
                 console.log('%ccleanupDuplicates() - Remove duplicate games from Firebase', 'color: #00ff00;');
                 console.log('%cgetFirebaseStats() - Show Firebase database statistics', 'color: #00ff00;');
                 console.log('%cnukeFirebase() - [DANGER] Delete ALL games from Firebase', 'color: #ff4444;');
+                console.log('%c=== DEBUG COMMANDS ===', 'color: #00ffff; font-weight: bold;');
+                console.log('%cdebugProfile() - Test profile save/load functionality', 'color: #00ff00;');
                 console.groupEnd();
                 return 'Commands loaded! 🚀';
             },
@@ -1508,6 +1809,14 @@ class DumbassGameAdmin {
                     }
                 }
                 return '❌ Firebase not initialized';
+            },
+
+            // Profile Debug Commands
+            debugProfile: async () => {
+                if (window.userProfileManager) {
+                    return await window.userProfileManager.debugSaveLoad();
+                }
+                return '❌ UserProfileManager not initialized';
             }
         };
     }
@@ -1641,8 +1950,12 @@ class RetroMusicPlayer {
             }
         ];
         
-        // Load from localStorage or use defaults
-        this.loadFromStorage();
+        // Load from localStorage or use defaults (async)
+        this.initializeAsync();
+    }
+
+    async initializeAsync() {
+        await this.loadFromStorage();
         this.currentTab = 'playlist';
         
         this.initializePlayer();
@@ -1806,33 +2119,28 @@ class RetroMusicPlayer {
     }
     
     // Storage functions for persistence
-    loadFromStorage() {
+    async loadFromStorage() {
         try {
-            const savedPlaylist = localStorage.getItem('dumbassMusic_playlist');
-            const savedLibrary = localStorage.getItem('dumbassMusic_library');
+            const musicData = await window.persistenceManager.loadMusic();
             
-            if (savedPlaylist) {
-                const loadedPlaylist = JSON.parse(savedPlaylist);
-                // Filter out tracks that don't exist in the actual music folder
-                this.playlist = this.filterValidTracks(loadedPlaylist);
-                console.log(`💾 Loaded ${this.playlist.length} valid tracks from saved playlist (${loadedPlaylist.length} total scanned)`);
+            if (musicData.playlist && musicData.playlist.length > 0) {
+                this.playlist = this.filterValidTracks(musicData.playlist);
+                console.log(`💾 Loaded ${this.playlist.length} valid tracks from saved playlist`);
             } else {
                 this.playlist = [...this.defaultPlaylist];
                 console.log(`🎵 Using default playlist with ${this.playlist.length} tracks`);
             }
             
-            if (savedLibrary) {
-                const loadedLibrary = JSON.parse(savedLibrary);
-                // Filter out tracks that don't exist in the actual music folder
-                this.musicLibrary = this.filterValidTracks(loadedLibrary);
-                console.log(`💾 Loaded ${this.musicLibrary.length} valid tracks from saved library (${loadedLibrary.length} total scanned)`);
+            if (musicData.library && musicData.library.length > 0) {
+                this.musicLibrary = this.filterValidTracks(musicData.library);
+                console.log(`💾 Loaded ${this.musicLibrary.length} valid tracks from saved library`);
             } else {
                 this.musicLibrary = [...this.defaultPlaylist];
                 console.log(`🎵 Using default library with ${this.musicLibrary.length} tracks`);
             }
             
             // Save the cleaned up lists back to storage
-            if (savedPlaylist || savedLibrary) {
+            if (musicData.playlist || musicData.library) {
                 this.saveToStorage();
                 console.log('🧹 Cleaned up and saved valid tracks to storage');
             }
@@ -1884,18 +2192,16 @@ class RetroMusicPlayer {
         const fileRefs = JSON.parse(localStorage.getItem('dumbassMusic_fileRefs') || '[]');
         const lastFolder = JSON.parse(localStorage.getItem('dumbassMusic_lastFolder') || 'null');
         
-        if (fileRefs.length > 0 || lastFolder) {
-            // Show a helpful message about re-scanning
-            setTimeout(() => {
-                console.log(`💡 You previously added ${fileRefs.length} personal music files.`);
-                if (lastFolder) {
-                    console.log(`💡 Last scanned folder: "${lastFolder.name}"`);
-                }
-                console.log(`💡 To play your personal music again, re-scan your music folder using the Music Manager!`);
-                
-                this.showRescanNotification(fileRefs.length, lastFolder);
-            }, 2000);
-        }
+        console.log('🔍 Debug: fileRefs found:', fileRefs);
+        console.log('🔍 Debug: lastFolder found:', lastFolder);
+        
+        // Clean up any leftover file references - we don't want this notification anymore
+        localStorage.removeItem('dumbassMusic_fileRefs');
+        localStorage.removeItem('dumbassMusic_lastFolder');
+        console.log('🧹 Cleaned up all music file references to stop notifications');
+        
+        // Only show notification if user explicitly re-adds files through the Music Manager
+        // (removing automatic detection to prevent false positives)
     }
     
     showRescanNotification(fileCount, lastFolder) {
@@ -1910,14 +2216,17 @@ class RetroMusicPlayer {
         
         // Create a dismissible notification instead of alert
         if (window.dumbassGame?.notificationManager) {
-            dumbassGame.notificationManager.show(message, 'info', 8000);
+            window.dumbassGame.notificationManager.show(message, 'info', 8000);
         }
     }
     
-    saveToStorage() {
+    async saveToStorage() {
         try {
-            localStorage.setItem('dumbassMusic_playlist', JSON.stringify(this.playlist));
-            localStorage.setItem('dumbassMusic_library', JSON.stringify(this.musicLibrary));
+            const musicData = {
+                playlist: this.playlist,
+                library: this.musicLibrary
+            };
+            await window.persistenceManager.saveMusic(musicData);
             console.log(`💾 Saved playlist (${this.playlist.length}) and library (${this.musicLibrary.length}) to storage`);
         } catch (error) {
             console.warn('⚠️ Error saving music to storage:', error);
@@ -1931,8 +2240,8 @@ class RetroMusicPlayer {
         // Set initial volume slider appearance
         this.setVolume(70);
         
-        // Set initial track
-        if (this.playlist.length > 0) {
+        // Set initial track (check if playlist exists and has content)
+        if (this.playlist && this.playlist.length > 0) {
             this.loadTrack(0);
         }
     }
@@ -2053,7 +2362,7 @@ class RetroMusicPlayer {
             
             // Play retro sound effect
             if (window.dumbassGame?.soundSystem) {
-                dumbassGame.soundSystem.playSuccess();
+                window.dumbassGame.soundSystem.playSuccess();
             }
         }).catch(e => {
             console.warn('🎵 Could not play audio:', e);
@@ -2588,7 +2897,7 @@ class RetroMusicPlayer {
         
         // Play retro sound effect
         if (window.dumbassGame?.soundSystem) {
-            dumbassGame.soundSystem.playClick();
+            window.dumbassGame.soundSystem.playClick();
         }
     }
     
@@ -3220,7 +3529,7 @@ All tracks from "${dirHandle.name}" are now ready to play!
             this.renderMusicLibrary(); // Refresh to update button states
             
             if (window.dumbassGame?.soundSystem) {
-                dumbassGame.soundSystem.playSuccess();
+                window.dumbassGame.soundSystem.playSuccess();
             }
             
             console.log(`🎵 Added to playlist: ${track.title}`);
@@ -3402,7 +3711,7 @@ All tracks from "${dirHandle.name}" are now ready to play!
             console.log(`🎵 Added to library: ${title} (${type})`);
             
             if (window.dumbassGame?.soundSystem) {
-                dumbassGame.soundSystem.playSuccess();
+                window.dumbassGame.soundSystem.playSuccess();
             }
         }
     }
@@ -3859,6 +4168,11 @@ class FirebaseAuthManager {
             document.getElementById('authForm').style.display = 'block';
             document.querySelector('.auth-tabs').style.display = 'flex';
         }
+
+        // Notify user profile manager of auth state change
+        if (window.userProfileManager) {
+            window.userProfileManager.loadUserData();
+        }
     }
 
     notifyUserSignedIn(user) {
@@ -4108,67 +4422,108 @@ class UserProfileManager {
         this.userProfile = null;
         this.favoriteGames = [];
         this.submittedGames = [];
+        this.isSubmitting = false;
+        this.handleProfileSubmit = null;
+        this.lastLoadTime = 0;
         this.initializeProfile();
     }
 
     initializeProfile() {
         // Initialize user profile functionality
         this.setupProfileModalHandlers();
+        
+        // Always load favorites, regardless of login status
+        this.loadUserFavorites();
+        
+        // Load full user data if logged in
         this.loadUserData();
     }
 
     setupProfileModalHandlers() {
-        // Profile settings form handler
-        const profileSettingsForm = document.getElementById('profileSettingsForm');
-        if (profileSettingsForm) {
-            profileSettingsForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.saveProfileSettings();
-            });
-        }
-
-        // Modal click-outside-to-close
-        const userProfileModal = document.getElementById('userProfileModal');
-        if (userProfileModal) {
-            userProfileModal.addEventListener('click', (e) => {
-                if (e.target === userProfileModal) {
-                    this.hideProfile();
+        // Retry setup after DOM is ready, since modal might not exist yet
+        const setupHandlers = () => {
+            // Profile settings form handler
+            const profileSettingsForm = document.getElementById('profileSettingsForm');
+            if (profileSettingsForm) {
+                // Check if handler already exists to prevent duplicates
+                if (!this.handleProfileSubmit) {
+                    // Bind the handler to preserve 'this' context
+                    this.handleProfileSubmit = (e) => {
+                        e.preventDefault();
+                        console.log('🚀 Profile form submitted!');
+                        
+                        // Prevent multiple submissions with a debounce
+                        if (this.isSubmitting) {
+                            console.log('⚠️ Already submitting, ignoring duplicate submission');
+                            return;
+                        }
+                        
+                        this.isSubmitting = true;
+                        this.saveProfileSettings().finally(() => {
+                            setTimeout(() => {
+                                this.isSubmitting = false;
+                            }, 1000); // 1 second cooldown
+                        });
+                    };
+                    
+                    profileSettingsForm.addEventListener('submit', this.handleProfileSubmit);
+                    console.log('✅ Profile form submit listener attached');
+                } else {
+                    console.log('✅ Profile form handler already exists, skipping');
                 }
-            });
-        }
+            } else {
+                console.log('⚠️ Profile form not found, will retry when modal opens');
+            }
+
+            // Modal click-outside-to-close
+            const userProfileModal = document.getElementById('userProfileModal');
+            if (userProfileModal) {
+                userProfileModal.addEventListener('click', (e) => {
+                    if (e.target === userProfileModal) {
+                        this.hideProfile();
+                    }
+                });
+                console.log('✅ Profile modal click handler attached');
+            }
+        };
+
+        // Try setup immediately
+        setupHandlers();
+        
+        // Also retry setup when profile modal is shown
+        this.setupHandlersOnShow = setupHandlers;
     }
 
     async loadUserData() {
-        if (!window.firebaseAuth?.currentUser) return;
+        // Update current user reference
+        this.currentUser = window.firebaseAuth?.currentUser || null;
 
+        // Only load favorites, NOT profile data to avoid overwriting form
         try {
-            this.currentUser = window.firebaseAuth.currentUser;
-            await this.loadUserProfile();
             await this.loadUserFavorites();
-            await this.loadUserSubmissions();
-            this.updateProfileUI();
+            this.updateHeartIcons();
+            console.log('✅ Loaded user favorites only (preserved profile form)');
         } catch (error) {
             console.error('Error loading user data:', error);
         }
     }
 
     async loadUserProfile() {
-        // Properly integrate with Firebase for user profiles
         try {
-            // Try to get profile from Firestore first
-            if (window.dataManager && window.dataManager.isInitialized && this.currentUser) {
-                // For now, create a basic profile (could extend to store in Firestore later)
-                this.userProfile = {
-                    email: this.currentUser.email || '',
-                    displayName: this.currentUser.displayName || '',
-                    bio: 'Welcome to DUMBASSGAMES! Add your bio here...',
-                    joinDate: this.formatJoinDate(this.currentUser.metadata?.creationTime),
-                    preferences: {
-                        soundEnabled: window.soundEnabled,
-                        effectsEnabled: window.effectsEnabled
-                    }
-                };
-            }
+            console.log('🔍 Loading profile for user:', this.currentUser?.email, 'UID:', this.currentUser?.uid);
+            
+            // Use the same persistence manager as save
+            this.userProfile = await window.persistenceManager.loadUserProfile({
+                email: this.currentUser?.email || '',
+                displayName: this.currentUser?.email?.split('@')[0] || 'Anonymous',
+                bio: 'Welcome to DUMBASSGAMES! Add your bio here...',
+                joinDate: this.formatJoinDate(this.currentUser?.metadata?.creationTime),
+                preferences: {
+                    soundEnabled: window.soundEnabled,
+                    effectsEnabled: window.effectsEnabled
+                }
+            });
+            console.log('☁️ Loaded profile using persistence manager:', this.userProfile);
         } catch (error) {
             console.error('Error loading user profile:', error);
             // Fallback to basic profile
@@ -4187,35 +4542,10 @@ class UserProfileManager {
 
     async loadUserFavorites() {
         try {
-            if (this.currentUser) {
-                // LOGGED IN USER: Try Firebase first, fallback to localStorage
-                if (window.dataManager && window.dataManager.isInitialized) {
-                    const userRef = window.firebaseDoc(window.dataManager.db, 'users', this.currentUser.uid);
-                    const userDoc = await window.firebaseGetDoc(userRef);
-                    
-                    if (userDoc.exists() && userDoc.data().favoriteGames) {
-                        this.favoriteGames = userDoc.data().favoriteGames;
-                        console.log(`☁️ Loaded ${this.favoriteGames.length} favorite games from Firebase`);
-                        
-                        // Update localStorage cache
-                        localStorage.setItem('userFavorites_' + this.currentUser.uid, JSON.stringify(this.favoriteGames));
-                        return;
-                    }
-                }
-                
-                // Fallback to localStorage for logged in user
-                const stored = localStorage.getItem('userFavorites_' + this.currentUser.uid);
-                this.favoriteGames = stored ? JSON.parse(stored) : [];
-                console.log(`💾 Loaded ${this.favoriteGames.length} favorite games from localStorage (logged in user)`);
-            } else {
-                // ANONYMOUS USER: Load from localStorage only
-                const stored = localStorage.getItem('userFavorites_anonymous');
-                this.favoriteGames = stored ? JSON.parse(stored) : [];
-                console.log(`💾 Loaded ${this.favoriteGames.length} favorite games from localStorage (anonymous user)`);
-            }
+            this.favoriteGames = await window.persistenceManager.loadFavorites();
+            console.log(`💛 Loaded ${this.favoriteGames.length} favorite games`);
         } catch (error) {
             console.error('❌ Error loading favorites:', error);
-            // Fallback to empty array
             this.favoriteGames = [];
         }
     }
@@ -4229,15 +4559,29 @@ class UserProfileManager {
         if (!this.userProfile) return;
 
         // Update profile overview
-        document.getElementById('profileUserEmail').textContent = this.userProfile.email;
-        document.getElementById('profileUserBio').textContent = this.userProfile.bio;
-        document.getElementById('userJoinDate').textContent = this.userProfile.joinDate;
-        document.getElementById('userGameCount').textContent = this.submittedGames.length;
-        document.getElementById('userFavoriteCount').textContent = this.favoriteGames.length;
+        const emailEl = document.getElementById('profileUserEmail');
+        const bioEl = document.getElementById('profileUserBio');
+        const joinDateEl = document.getElementById('userJoinDate');
+        const gameCountEl = document.getElementById('userGameCount');
+        const favoriteCountEl = document.getElementById('userFavoriteCount');
+        
+        if (emailEl) emailEl.textContent = this.userProfile.email;
+        if (bioEl) bioEl.textContent = this.userProfile.bio;
+        if (joinDateEl) joinDateEl.textContent = this.userProfile.joinDate;
+        if (gameCountEl) gameCountEl.textContent = this.submittedGames.length;
+        if (favoriteCountEl) favoriteCountEl.textContent = this.favoriteGames.length;
 
         // Update settings form
-        document.getElementById('userBio').value = this.userProfile.bio;
-        document.getElementById('displayName').value = this.userProfile.displayName;
+        const bioField = document.getElementById('userBio');
+        const displayNameField = document.getElementById('displayName');
+        
+        if (bioField && !bioField.matches(':focus')) {
+            bioField.value = this.userProfile.bio || '';
+        }
+        
+        if (displayNameField && !displayNameField.matches(':focus')) {
+            displayNameField.value = this.userProfile.displayName || '';
+        }
 
         // Update toggle buttons
         this.updateToggleButtons();
@@ -4245,6 +4589,29 @@ class UserProfileManager {
         this.renderSubmissions();
         
         // Update recent favorites section on main page
+        this.updateRecentFavorites();
+    }
+
+    updateProfileDisplayOnly() {
+        if (!this.userProfile) return;
+
+        // Update ONLY the display elements, not the form fields
+        const emailEl = document.getElementById('profileUserEmail');
+        const bioEl = document.getElementById('profileUserBio');
+        const joinDateEl = document.getElementById('userJoinDate');
+        const gameCountEl = document.getElementById('userGameCount');
+        const favoriteCountEl = document.getElementById('userFavoriteCount');
+        
+        if (emailEl) emailEl.textContent = this.userProfile.email;
+        if (bioEl) bioEl.textContent = this.userProfile.bio;
+        if (joinDateEl) joinDateEl.textContent = this.userProfile.joinDate;
+        if (gameCountEl) gameCountEl.textContent = this.submittedGames.length;
+        if (favoriteCountEl) favoriteCountEl.textContent = this.favoriteGames.length;
+
+        // Update other sections but NOT the form
+        this.updateToggleButtons();
+        this.renderFavorites();
+        this.renderSubmissions();
         this.updateRecentFavorites();
     }
 
@@ -4308,22 +4675,29 @@ class UserProfileManager {
         const displayName = document.getElementById('displayName').value;
 
         try {
-            this.userProfile.bio = bio;
-            this.userProfile.displayName = displayName;
+            const profileData = {
+                email: this.currentUser?.email || '',
+                displayName: displayName,
+                bio: bio,
+                joinDate: this.userProfile?.joinDate || 'Recently',
+                preferences: {
+                    soundEnabled: window.soundEnabled,
+                    effectsEnabled: window.effectsEnabled
+                }
+            };
 
-            // Save to database in real implementation
-            this.updateProfileUI();
+            await window.persistenceManager.saveUserProfile(profileData);
+            this.userProfile = profileData;
             
-            if (window.dumbassGame?.notificationManager) {
-                window.dumbassGame.notificationManager.showSuccess('Profile settings saved! 💾');
-            }
+            alert('✅ Profile saved successfully!');
+
         } catch (error) {
-            console.error('Error saving profile:', error);
-            if (window.dumbassGame?.notificationManager) {
-                window.dumbassGame.notificationManager.showError('Failed to save profile settings.');
-            }
+            console.error('❌ Save failed:', error);
+            alert('❌ Failed to save profile: ' + error.message);
         }
     }
+
+
 
     async toggleFavorite(gameId) {
         console.log('💛 Toggling favorite for game:', gameId);
@@ -4395,46 +4769,45 @@ class UserProfileManager {
 
     async saveFavorites() {
         try {
-            if (this.currentUser) {
-                // LOGGED IN USER: Save to both localStorage and Firebase
-                localStorage.setItem('userFavorites_' + this.currentUser.uid, JSON.stringify(this.favoriteGames));
-                console.log('💾 Saved favorites to localStorage (logged in user)');
-
-                // Also save to Firebase for cross-device sync
-                if (window.dataManager && window.dataManager.isInitialized) {
-                    const userRef = window.firebaseDoc(window.dataManager.db, 'users', this.currentUser.uid);
-                    await window.firebaseSetDoc(userRef, {
-                        email: this.currentUser.email,
-                        favoriteGames: this.favoriteGames,
-                        lastUpdated: new Date().toISOString()
-                    }, { merge: true });
-                    
-                    console.log('☁️ Synced favorites to Firebase');
-                }
-            } else {
-                // ANONYMOUS USER: Save to localStorage only
-                localStorage.setItem('userFavorites_anonymous', JSON.stringify(this.favoriteGames));
-                console.log('💾 Saved favorites to localStorage (anonymous user)');
-            }
+            await window.persistenceManager.saveFavorites(this.favoriteGames);
         } catch (error) {
             console.error('❌ Error saving favorites:', error);
-            if (window.dumbassGame?.notificationManager) {
-                window.dumbassGame.notificationManager.showError('⚠️ Could not save favorites');
-            }
         }
     }
 
     updateHeartIcons() {
         // Update heart button states without re-rendering entire game grid
         const gameCards = document.querySelectorAll('.game-card');
+        console.log(`💛 Updating ${gameCards.length} heart icons...`);
+        
         gameCards.forEach(card => {
-            const gameId = card.dataset.gameId;
-            const heartBtn = card.querySelector('.favorite-btn');
+            // Enhanced cards use data-id, old cards use data-game-id
+            const gameId = card.dataset.id || card.dataset.gameId;
+            
+            // Enhanced cards use .game-action-btn.favorite, old cards use .favorite-btn
+            const heartBtn = card.querySelector('.game-action-btn.favorite') || card.querySelector('.favorite-btn');
             
             if (heartBtn && gameId) {
                 const isFavorited = this.favoriteGames.some(game => game.id === gameId);
-                heartBtn.textContent = isFavorited ? '❤️' : '🤍';
-                heartBtn.style.color = isFavorited ? '#ff0055' : '#aaa';
+                
+                // Toggle active class for CSS styling
+                if (isFavorited) {
+                    heartBtn.classList.add('active');
+                    // Update emoji for enhanced cards
+                    if (heartBtn.classList.contains('game-action-btn')) {
+                        heartBtn.textContent = '💛';
+                    }
+                    console.log(`💛 ✅ Added 'active' class to heart for game ${gameId}`);
+                } else {
+                    heartBtn.classList.remove('active');
+                    // Update emoji for enhanced cards
+                    if (heartBtn.classList.contains('game-action-btn')) {
+                        heartBtn.textContent = '🤍';
+                    }
+                    console.log(`💛 ❌ Removed 'active' class from heart for game ${gameId}`);
+                }
+            } else {
+                console.log(`💛 ⚠️ Missing heart button or gameId for card (gameId: ${gameId})`, card);
             }
         });
     }
@@ -4482,7 +4855,27 @@ class UserProfileManager {
         const modal = document.getElementById('userProfileModal');
         if (modal) {
             modal.style.display = 'block';
-            this.loadUserData();
+            
+            // Load profile data when modal opens
+            this.loadProfileForModal();
+            
+            // Re-setup form handlers since modal content is now available
+            if (this.setupHandlersOnShow) {
+                this.setupHandlersOnShow();
+            }
+        }
+    }
+
+    async loadProfileForModal() {
+        try {
+            // Load profile data only when opening modal
+            if (this.currentUser) {
+                await this.loadUserProfile();
+            }
+            this.updateProfileUI();
+            console.log('✅ Loaded profile for modal');
+        } catch (error) {
+            console.error('Error loading profile for modal:', error);
         }
     }
 
@@ -5130,17 +5523,17 @@ class EnhancedGameManager {
     }
     
     // Search History Management
-    loadSearchHistory() {
+    async loadSearchHistory() {
         try {
-            const history = localStorage.getItem('dumbassgames_search_history');
-            return history ? JSON.parse(history) : [];
+            const history = await window.persistenceManager.loadSearchHistory();
+            return history.searchTerms || [];
         } catch (error) {
             console.error('Error loading search history:', error);
             return [];
         }
     }
     
-    addToSearchHistory(searchTerm) {
+    async addToSearchHistory(searchTerm) {
         if (!searchTerm || searchTerm.length < 2) return;
         
         // Remove if already exists (to move to front)
@@ -5154,8 +5547,9 @@ class EnhancedGameManager {
             this.searchHistory = this.searchHistory.slice(0, 20);
         }
         
-        // Save to localStorage
-        localStorage.setItem('dumbassgames_search_history', JSON.stringify(this.searchHistory));
+        // Save using persistence manager
+        const historyData = { searchTerms: this.searchHistory };
+        await window.persistenceManager.saveSearchHistory(historyData);
     }
     
     getSearchSuggestions(partialTerm) {
@@ -5854,6 +6248,10 @@ window.dataManager = new FirebaseDataManager();
 window.firebaseAuth = new FirebaseAuthManager();
 window.authManager = window.firebaseAuth; // Alias for compatibility
 
+// Initialize unified persistence manager
+console.log('💾 Initializing Data Persistence Manager...');
+window.persistenceManager = new DataPersistenceManager();
+
 // Initialize user profile manager
 console.log('👤 Initializing User Profile Manager...');
 window.userProfileManager = new UserProfileManager();
@@ -5879,3 +6277,268 @@ console.log('🔧 Initializing Admin Console...');
 window.dumbassGameAdmin = new DumbassGameAdmin(window.dumbassGame);
 
 console.log('✅ All systems initialized successfully!');
+
+// ============================================================================
+// STANDALONE FAVORITES MODAL SYSTEM
+// ============================================================================
+
+// Show the standalone favorites modal
+function showFavoritesModal() {
+    const modal = document.getElementById('favoritesModal');
+    if (modal) {
+        modal.style.display = 'block';
+        loadStandaloneFavorites();
+        
+        // Play open sound
+        if (window.dumbassGame?.soundSystem) {
+            window.dumbassGame.soundSystem.playClick();
+        }
+        
+        // Track analytics
+        if (window.enhancedGameManager) {
+            console.log('💛 Favorites modal opened');
+        }
+    }
+}
+
+// Close the standalone favorites modal
+function closeFavoritesModal() {
+    const modal = document.getElementById('favoritesModal');
+    if (modal) {
+        modal.style.display = 'none';
+        
+        // Play close sound
+        if (window.dumbassGame?.soundSystem) {
+            window.dumbassGame.soundSystem.playHover();
+        }
+    }
+}
+
+// Load favorites into the standalone modal
+function loadStandaloneFavorites() {
+    const grid = document.getElementById('standaloneFavoritesGrid');
+    const countElement = document.getElementById('favoritesCount');
+    
+    if (!grid || !countElement) return;
+    
+    let favoriteGames = [];
+    
+    // Get favorites from user profile manager if available
+    if (window.userProfileManager && window.userProfileManager.favoriteGames) {
+        favoriteGames = window.userProfileManager.favoriteGames;
+    }
+    
+    // Update count
+    countElement.textContent = favoriteGames.length;
+    
+    if (favoriteGames.length === 0) {
+        grid.innerHTML = '';
+        return;
+    }
+    
+    // Render favorite games
+    grid.innerHTML = favoriteGames.map(game => `
+        <div class="favorite-game-card">
+            <div class="game-title">${game.title}</div>
+            <div class="game-description">${game.description}</div>
+            <div class="game-metadata">
+                ${game.genre ? `<span class="game-genre">🎮 ${game.genre}</span>` : ''}
+                ${game.vibe ? `<span class="game-vibe">🎪 ${game.vibe}</span>` : ''}
+                ${game.difficulty ? `<span class="game-difficulty ${game.difficulty.toLowerCase()}">${getDifficultyIcon(game.difficulty)} ${game.difficulty}</span>` : ''}
+            </div>
+            <div class="game-actions">
+                <button class="btn-primary" onclick="playGameFromFavorites('${game.url}', '${game.title.replace(/'/g, "\\'")}')">
+                    🕹️ PLAY
+                </button>
+                <button class="action-btn favorite-btn active" onclick="removeFromStandaloneFavorites('${game.id}')" title="Remove from favorites">
+                    💔 REMOVE
+                </button>
+                <button class="btn-secondary" onclick="shareGameFromFavorites('${game.id}')" title="Share game">
+                    📤 SHARE
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Helper function to get difficulty icon
+function getDifficultyIcon(difficulty) {
+    const icons = {
+        'baby': '👶',
+        'easy': '😊',
+        'medium': '😐',
+        'hard': '😤',
+        'expert': '💀',
+        'impossible': '🔥',
+        'suffering': '😫',
+        'why': '❓',
+        'unrated': '🤷'
+    };
+    return icons[difficulty?.toLowerCase()] || '🤷';
+}
+
+// Play game from favorites modal
+function playGameFromFavorites(url, title) {
+    if (window.dumbassGame && typeof window.dumbassGame.playGame === 'function') {
+        window.dumbassGame.playGame(url, title);
+        closeFavoritesModal();
+    } else if (window.enhancedGameManager) {
+        window.enhancedGameManager.playGame(url, title);
+        closeFavoritesModal();
+    }
+}
+
+// Remove game from favorites in standalone modal
+function removeFromStandaloneFavorites(gameId) {
+    if (window.userProfileManager && typeof window.userProfileManager.toggleFavorite === 'function') {
+        window.userProfileManager.toggleFavorite(gameId).then(() => {
+            loadStandaloneFavorites(); // Refresh the grid
+            
+            // Show notification
+            if (window.dumbassGame?.notificationManager) {
+                window.dumbassGame.notificationManager.showInfo('💔 Removed from favorites');
+            }
+        });
+    }
+}
+
+// Share game from favorites
+function shareGameFromFavorites(gameId) {
+    if (window.enhancedGameManager && typeof window.enhancedGameManager.shareGame === 'function') {
+        window.enhancedGameManager.shareGame(gameId);
+    }
+}
+
+// Refresh favorites in standalone modal
+function refreshStandaloneFavorites() {
+    loadStandaloneFavorites();
+    
+    // Show feedback
+    if (window.dumbassGame?.notificationManager) {
+        window.dumbassGame.notificationManager.showSuccess('🔄 Favorites refreshed!');
+    }
+    
+    // Play refresh sound
+    if (window.dumbassGame?.soundSystem) {
+        window.dumbassGame.soundSystem.playSuccess();
+    }
+}
+
+// Clear all favorites with confirmation
+function clearAllFavorites() {
+    if (!window.userProfileManager || !window.userProfileManager.favoriteGames.length) {
+        if (window.dumbassGame?.notificationManager) {
+            window.dumbassGame.notificationManager.showInfo('💛 No favorites to clear');
+        }
+        return;
+    }
+    
+    const count = window.userProfileManager.favoriteGames.length;
+    
+    if (confirm(`💔 Are you sure you want to remove all ${count} favorite games?\n\nThis action cannot be undone!`)) {
+        // Clear favorites array
+        window.userProfileManager.favoriteGames = [];
+        
+        // Save changes
+        if (typeof window.userProfileManager.saveFavorites === 'function') {
+            window.userProfileManager.saveFavorites();
+        }
+        
+        // Update heart icons on main page
+        if (typeof window.userProfileManager.updateHeartIcons === 'function') {
+            window.userProfileManager.updateHeartIcons();
+        }
+        
+        // Refresh modal
+        loadStandaloneFavorites();
+        
+        // Show notification
+        if (window.dumbassGame?.notificationManager) {
+            window.dumbassGame.notificationManager.showSuccess(`💔 Cleared ${count} favorites`);
+        }
+        
+        // Play sound
+        if (window.dumbassGame?.soundSystem) {
+            window.dumbassGame.soundSystem.playError();
+        }
+    }
+}
+
+// Export favorites as JSON
+function exportFavorites() {
+    if (!window.userProfileManager || !window.userProfileManager.favoriteGames.length) {
+        if (window.dumbassGame?.notificationManager) {
+            window.dumbassGame.notificationManager.showInfo('💛 No favorites to export');
+        }
+        return;
+    }
+    
+    const favorites = window.userProfileManager.favoriteGames;
+    const exportData = {
+        exportDate: new Date().toISOString(),
+        gameCount: favorites.length,
+        source: 'DumbassGames v2.1',
+        favorites: favorites
+    };
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(dataBlob);
+    link.download = `dumbassgames-favorites-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    
+    // Show notification
+    if (window.dumbassGame?.notificationManager) {
+        window.dumbassGame.notificationManager.showSuccess(`📤 Exported ${favorites.length} favorites`);
+    }
+    
+    // Play success sound
+    if (window.dumbassGame?.soundSystem) {
+        window.dumbassGame.soundSystem.playSuccess();
+    }
+}
+
+// Add a "Show Favorites" button to the main interface
+function addFavoritesButton() {
+    // Add to header controls if they exist
+    const headerControls = document.querySelector('.header-controls');
+    console.log('💛 Adding favorites button... headerControls found:', !!headerControls);
+    
+    if (headerControls && !document.getElementById('favoritesBtn')) {
+        const favoritesBtn = document.createElement('button');
+        favoritesBtn.id = 'favoritesBtn';
+        favoritesBtn.className = 'control-btn compact';
+        favoritesBtn.innerHTML = '💛 FAVORITES';
+        favoritesBtn.onclick = showFavoritesModal;
+        favoritesBtn.title = 'View your favorite games';
+        
+        headerControls.appendChild(favoritesBtn);
+        console.log('💛 Favorites button added successfully!');
+    } else {
+        console.log('💛 Favorites button already exists or header controls not found');
+    }
+}
+
+// Add additional event listeners for the favorites modal
+setTimeout(() => {
+    // Close modal when clicking outside
+    document.addEventListener('click', function(event) {
+        const modal = document.getElementById('favoritesModal');
+        if (event.target === modal) {
+            closeFavoritesModal();
+        }
+    });
+
+    // Keyboard shortcut for favorites modal (Ctrl+F)
+    document.addEventListener('keydown', function(event) {
+        if (event.ctrlKey && event.key === 'f' && !event.target.matches('input, textarea')) {
+            event.preventDefault();
+            showFavoritesModal();
+        }
+    });
+
+    // Add favorites button to interface
+    addFavoritesButton();
+}, 3000);

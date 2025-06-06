@@ -571,6 +571,33 @@
         </div>
     </div>
 
+    <!-- Standalone Favorites Modal -->
+    <div id="favoritesModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>💛 YOUR FAVORITE GAMES</h3>
+                <span class="close" onclick="closeFavoritesModal()">&times;</span>
+            </div>
+            
+            <div class="favorites-modal-content">
+                <div class="favorites-modal-header">
+                    <div class="favorites-count">
+                        <span id="favoritesCount">0</span> Games in your favorites
+                    </div>
+                    <div class="favorites-actions">
+                        <button class="btn-secondary" onclick="refreshStandaloneFavorites()">🔄 REFRESH</button>
+                        <button class="btn-secondary" onclick="clearAllFavorites()">🗑️ CLEAR ALL</button>
+                        <button class="btn-primary" onclick="exportFavorites()">📤 EXPORT</button>
+                    </div>
+                </div>
+                
+                <div id="standaloneFavoritesGrid" class="standalone-favorites-grid">
+                    <!-- Favorites will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Firebase SDK -->
     <script type="module">
         // Import the functions you need from the SDKs you need
