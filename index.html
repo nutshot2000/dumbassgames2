@@ -42,7 +42,7 @@
             <div class="retro-music-player" id="musicPlayer">
                 <!-- Progress Bar at Top -->
                 <div class="track-progress-container">
-                    <input type="range" class="track-progress-bar" id="progressBar" min="0" max="100" value="0" oninput="musicPlayer.seekTo(this.value)">
+                    <input type="range" class="track-progress-bar" id="progressBar" min="0" max="100" value="0" oninput="window.musicPlayer?.seekTo(this.value)">
                 </div>
                 
                 <!-- Main Player Layout -->
@@ -83,30 +83,30 @@
                     <div class="volume-info-section">
                         <div class="volume-display">
                             <span class="volume-icon" id="volumeIcon">🔊</span>
-                            <input type="range" class="volume-control-slider" id="volumeSlider" min="0" max="100" value="70" oninput="musicPlayer.setVolume(this.value)">
+                            <input type="range" class="volume-control-slider" id="volumeSlider" min="0" max="100" value="70" oninput="window.musicPlayer?.setVolume(this.value)">
                         </div>
                     </div>
                 </div>
                 
                 <!-- Control Buttons -->
                 <div class="player-control-panel">
-                    <button class="retro-btn prev-btn" id="prevBtn" onclick="musicPlayer.previousTrack()">
+                    <button class="retro-btn prev-btn" id="prevBtn" onclick="window.musicPlayer?.previousTrack()">
                         <span class="btn-icon">⏮</span>
                         <span class="btn-label">PREV</span>
                     </button>
-                    <button class="retro-btn play-btn" id="playPauseBtn" onclick="musicPlayer.togglePlay()">
+                    <button class="retro-btn play-btn" id="playPauseBtn" onclick="window.musicPlayer?.togglePlay()">
                         <span class="btn-icon">▶</span>
                         <span class="btn-label">PLAY</span>
                     </button>
-                    <button class="retro-btn next-btn" id="nextBtn" onclick="musicPlayer.nextTrack()">
+                    <button class="retro-btn next-btn" id="nextBtn" onclick="window.musicPlayer?.nextTrack()">
                         <span class="btn-icon">⏭</span>
                         <span class="btn-label">NEXT</span>
                     </button>
-                    <button class="retro-btn shuffle-btn" id="shuffleBtn" onclick="musicPlayer.toggleShuffle()">
+                    <button class="retro-btn shuffle-btn" id="shuffleBtn" onclick="window.musicPlayer?.toggleShuffle()">
                         <span class="btn-icon">🔀</span>
                         <span class="btn-label">SHUFFLE</span>
                     </button>
-                    <button class="retro-btn manage-btn" onclick="musicPlayer.openMusicManager()">
+                    <button class="retro-btn manage-btn" onclick="window.musicPlayer?.openMusicManager()">
                         <span class="btn-icon">🎵</span>
                         <span class="btn-label">ADD MUSIC</span>
                     </button>
@@ -136,7 +136,7 @@
                 <div class="music-manager-content">
                     <div class="music-manager-header">
                         <h2>🎵 MUSIC MANAGER</h2>
-                        <button class="close-music-manager" onclick="musicPlayer.closeMusicManager()">✕</button>
+                        <button class="close-music-manager" onclick="window.musicPlayer?.closeMusicManager()">✕</button>
                     </div>
                     
                     <div class="music-manager-tabs">
@@ -149,9 +149,9 @@
                         <!-- Current Playlist Tab -->
                         <div class="tab-content active" id="playlistTab">
                             <div class="playlist-controls">
-                                <button class="control-btn" onclick="musicPlayer.clearPlaylist()">🗑️ CLEAR ALL</button>
-                                <button class="control-btn" onclick="musicPlayer.shufflePlaylist()">🔀 SHUFFLE</button>
-                                <button class="control-btn primary" onclick="musicPlayer.resetToDefaults()">🔄 RESET TO DEFAULTS</button>
+                                <button class="control-btn" onclick="window.musicPlayer?.clearPlaylist()">🗑️ CLEAR ALL</button>
+                                <button class="control-btn" onclick="window.musicPlayer?.shufflePlaylist()">🔀 SHUFFLE</button>
+                                <button class="control-btn primary" onclick="window.musicPlayer?.resetToDefaults()">🔄 RESET TO DEFAULTS</button>
                                 <span class="track-count">Tracks: <span id="playlistCount">0</span></span>
                             </div>
                             <div class="tracks-grid" id="currentPlaylistGrid">
@@ -162,8 +162,8 @@
                         <!-- Music Library Tab -->
                         <div class="tab-content" id="libraryTab">
                             <div class="library-search">
-                                <input type="text" id="librarySearch" placeholder="🔍 Search your music library..." onkeyup="musicPlayer.searchLibrary(this.value)">
-                                <button class="control-btn" onclick="musicPlayer.scanMusicFolder()">📁 SCAN FOLDER</button>
+                                <input type="text" id="librarySearch" placeholder="🔍 Search your music library..." onkeyup="window.musicPlayer?.searchLibrary(this.value)">
+                                <button class="control-btn" onclick="window.musicPlayer?.scanMusicFolder()">📁 SCAN FOLDER</button>
                             </div>
                             <div class="tracks-grid" id="musicLibraryGrid">
                                 <!-- Music library tracks -->
@@ -186,12 +186,12 @@
                                 <div class="url-input-section">
                                     <input type="text" id="musicUrlInput" placeholder="https://example.com/music.mp3">
                                     <input type="text" id="musicTitleInput" placeholder="Track Title">
-                                    <button class="control-btn primary" onclick="musicPlayer.addFromUrl()">➕ ADD URL</button>
+                                    <button class="control-btn primary" onclick="window.musicPlayer?.addFromUrl()">➕ ADD URL</button>
                                 </div>
                                 
                                 <h3>📁 Link Music Folder</h3>
                                 <div class="folder-section">
-                                    <button class="control-btn" onclick="musicPlayer.selectMusicFolder()">📁 SELECT FOLDER</button>
+                                    <button class="control-btn" onclick="window.musicPlayer?.selectMusicFolder()">📁 SELECT FOLDER</button>
                                     <p class="folder-help">Link a folder to automatically scan for music files (MP3, WAV, OGG, M4A)</p>
                                 </div>
                             </div>
