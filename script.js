@@ -212,124 +212,10 @@ class DumbassGameEnhanced {
     }
 
     loadDefaultGames() {
+        // No default games - load only from Firebase/user submissions
         if (this.games.length === 0) {
-            this.games = [
-                {
-                    id: 'space-adventure',
-                    title: 'AI SPACE ADVENTURE',
-                    description: 'Explore the cosmos in this AI-generated space odyssey. Navigate through asteroid fields, battle alien ships, and discover new worlds in this epic space adventure.',
-                    image: 'https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=400&h=250&fit=crop',
-                    url: 'games/space-adventure.html',
-                    // Enhanced data for search testing
-                    category: 'shooter',
-                    gameType: 'shooter',
-                    genre: 'shooter',
-                    tags: ['space', 'ai', 'adventure', 'sci-fi', 'exploration'],
-                    difficulty: 'medium',
-                    chaosVibe: 'actually-good',
-                    vibe: 'actually-good',
-                    rating: 4.2,
-                    playCount: 1250,
-                    submittedAt: '2024-01-15T10:30:00Z',
-                    status: 'approved'
-                },
-                {
-                    id: 'neural-maze',
-                    title: 'NEURAL MAZE RUNNER',
-                    description: 'Challenge your mind in this AI-designed maze runner. Use strategy and quick reflexes to navigate through ever-changing neural network pathways.',
-                    image: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=250&fit=crop',
-                    url: '#',
-                    // Enhanced data for search testing
-                    category: 'puzzle',
-                    gameType: 'puzzle',
-                    genre: 'puzzle',
-                    tags: ['ai', 'neural', 'maze', 'brain', 'strategy', 'pathfinding'],
-                    difficulty: 'hard',
-                    chaosVibe: 'peak-dumbass',
-                    vibe: 'peak-dumbass',
-                    rating: 3.8,
-                    playCount: 890,
-                    submittedAt: '2024-02-01T14:20:00Z',
-                    status: 'approved'
-                },
-                {
-                    id: 'robot-rebellion',
-                    title: 'ROBOT REBELLION',
-                    description: 'Lead the resistance in this action-packed AI adventure. Fight against rogue robots in a dystopian future where artificial intelligence has turned against humanity.',
-                    image: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400&h=250&fit=crop',
-                    url: '#',
-                    // Enhanced data for search testing
-                    category: 'shooter',
-                    gameType: 'shooter',
-                    genre: 'action',
-                    tags: ['robot', 'ai', 'rebellion', 'dystopian', 'action', 'fighting'],
-                    difficulty: 'expert',
-                    chaosVibe: 'monstrositys',
-                    vibe: 'monstrositys',
-                    rating: 4.5,
-                    playCount: 2100,
-                    submittedAt: '2024-01-22T09:15:00Z',
-                    status: 'approved'
-                },
-                {
-                    id: 'quantum-puzzle',
-                    title: 'QUANTUM PUZZLE WORLD',
-                    description: 'Bend reality in this mind-bending puzzle game. Manipulate quantum mechanics to solve increasingly complex challenges across multiple dimensions.',
-                    image: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&h=250&fit=crop',
-                    url: '#',
-                    // Enhanced data for search testing
-                    category: 'puzzle',
-                    gameType: 'puzzle',
-                    genre: 'puzzle',
-                    tags: ['quantum', 'physics', 'reality', 'dimensions', 'science', 'mind-bending'],
-                    difficulty: 'impossible',
-                    chaosVibe: 'broken',
-                    vibe: 'broken',
-                    rating: 4.0,
-                    playCount: 750,
-                    submittedAt: '2024-02-10T16:45:00Z',
-                    status: 'approved'
-                },
-                {
-                    id: 'cyber-racer',
-                    title: 'CYBER SPEED RACER',
-                    description: 'Race through neon-lit cyberpunk cities at breakneck speeds. Upgrade your vehicle and compete against AI opponents in this high-octane racing experience.',
-                    image: 'https://images.unsplash.com/photo-1541471943749-e5976783b7c4?w=400&h=250&fit=crop',
-                    url: '#',
-                    // Enhanced data for search testing
-                    category: 'arcade',
-                    gameType: 'arcade',
-                    genre: 'racing',
-                    tags: ['cyber', 'racing', 'speed', 'neon', 'cyberpunk', 'vehicles'],
-                    difficulty: 'medium',
-                    chaosVibe: 'memes',
-                    vibe: 'memes',
-                    rating: 3.9,
-                    playCount: 1650,
-                    submittedAt: '2024-01-30T12:00:00Z',
-                    status: 'approved'
-                },
-                {
-                    id: 'mystic-quest',
-                    title: 'MYSTIC AI QUEST',
-                    description: 'Embark on a magical journey through AI-generated fantasy realms. Cast spells, battle mythical creatures, and uncover ancient secrets.',
-                    image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=250&fit=crop',
-                    url: '#',
-                    // Enhanced data for search testing
-                    category: 'rpg',
-                    gameType: 'rpg',
-                    genre: 'fantasy',
-                    tags: ['magic', 'fantasy', 'quest', 'spells', 'mythical', 'adventure'],
-                    difficulty: 'easy',
-                    chaosVibe: 'cursed',
-                    vibe: 'cursed',
-                    rating: 4.1,
-                    playCount: 980,
-                    submittedAt: '2024-02-05T11:30:00Z',
-                    status: 'approved'
-                }
-            ];
-            this.saveGames();
+            this.games = [];
+            console.log('🧹 No default games loaded - using Firebase only');
         }
     }
 
@@ -421,7 +307,7 @@ class DumbassGameEnhanced {
                     ▶ PLAY NOW
                 </button>
                 <button class="favorite-btn ${window.userProfileManager?.favoriteGames?.some(fav => fav.id === game.id) ? 'active' : ''}" 
-                    onclick="event.preventDefault(); event.stopPropagation(); if (window.userProfileManager) { window.userProfileManager.toggleFavorite('${game.id}'); window.userProfileManager.updateHeartIcons(); }" 
+                    onclick="event.preventDefault(); event.stopPropagation(); if (window.userProfileManager) { window.userProfileManager.toggleFavorite('${game.id}'); }" 
                     title="Add to Favorites">
                     ♥
                 </button>
@@ -470,12 +356,85 @@ class DumbassGameEnhanced {
             return;
         }
         
-        // Simulate game loading
+        // Enhanced game loading with better error handling
         setTimeout(() => {
             this.hideGameLoadingOverlay();
-            window.open(url, '_blank');
-            this.notificationManager.showSuccess(`🎮 Launching ${title}... Have fun!`);
+            
+            try {
+                // Try to open the game in a new window
+                const gameWindow = window.open(url, '_blank', 'noopener,noreferrer');
+                
+                if (gameWindow) {
+                    // Window opened successfully
+                    this.notificationManager.showSuccess(`🎮 Launching ${title}... Have fun!`);
+                    
+                    // Check if the window was closed immediately (blocked)
+                    setTimeout(() => {
+                        if (gameWindow.closed) {
+                            this.notificationManager.showWarning(`🚨 Pop-up blocked! Please allow pop-ups for this site and try again.`);
+                        }
+                    }, 1000);
+                } else {
+                    // Window was blocked, offer alternative
+                    this.handleBlockedPopup(url, title);
+                }
+            } catch (error) {
+                console.error('Error launching game:', error);
+                this.handleBlockedPopup(url, title);
+            }
         }, 2000);
+    }
+    
+    handleBlockedPopup(url, title) {
+        // Create a manual launch option when pop-ups are blocked
+        this.notificationManager.showWarning(`🚨 Pop-ups blocked! Click below to manually launch ${title}.`);
+        
+        // Create a temporary link button
+        const linkButton = document.createElement('button');
+        linkButton.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 20px 30px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.8rem;
+            cursor: pointer;
+            border-radius: 5px;
+            z-index: 10001;
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.5);
+            animation: pulse 1s infinite;
+        `;
+        
+        linkButton.innerHTML = `🎮 LAUNCH ${title} 🎮`;
+        linkButton.onclick = () => {
+            window.open(url, '_blank');
+            linkButton.remove();
+        };
+        
+        // Add pulse animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0% { transform: translate(-50%, -50%) scale(1); }
+                50% { transform: translate(-50%, -50%) scale(1.05); }
+                100% { transform: translate(-50%, -50%) scale(1); }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        document.body.appendChild(linkButton);
+        
+        // Auto-remove after 10 seconds
+        setTimeout(() => {
+            if (linkButton.parentNode) {
+                linkButton.remove();
+                style.remove();
+            }
+        }, 10000);
     }
 
     trackGamePlay(title, url) {
@@ -564,11 +523,8 @@ class DumbassGameEnhanced {
     }
 
     async addGame(gameData) {
-        // Redirect to EnhancedGameManager if available - it has better game handling
-        if (window.enhancedGameManager) {
-            await window.enhancedGameManager.addGame(gameData);
-            return;
-        }
+        // Process the game data first, then let EnhancedGameManager handle rendering
+        console.log('🎮 Processing game submission:', gameData.title);
         
         // Fallback if EnhancedGameManager not available
         const newGame = {
@@ -605,6 +561,12 @@ class DumbassGameEnhanced {
             this.renderGames();
             this.soundSystem.playSuccess();
             this.notificationManager.showSuccess(`🎉 "${newGame.title}" added successfully!`);
+            
+            // Refresh user submissions in profile
+            if (window.userProfileManager) {
+                await window.userProfileManager.loadUserSubmissions();
+                window.userProfileManager.updateProfileUI();
+            }
             
             setTimeout(() => this.updateGameCount(), 100);
         } catch (error) {
@@ -826,17 +788,29 @@ class DumbassGameEnhanced {
             try {
                 const firebaseGames = await window.dataManager.getGames();
                 console.log('📥 Loaded games from Firebase:', firebaseGames.length);
+                
+                // Clear localStorage when Firebase is working to prevent old data conflicts
+                localStorage.removeItem('dumbassGames');
+                console.log('🧹 Cleared localStorage games cache');
+                
                 return firebaseGames;
             } catch (error) {
-                console.error('❌ Error loading from Firebase, falling back to localStorage:', error);
+                console.error('❌ Error loading from Firebase, clearing localStorage and starting fresh:', error);
+                // Clear localStorage and start fresh instead of loading old data
+                localStorage.removeItem('dumbassGames');
+                return [];
             }
         }
         
-        // Fallback to localStorage
-        const saved = localStorage.getItem('dumbassGames');
-        const localGames = saved ? JSON.parse(saved) : [];
-        console.log('📁 Loaded games from localStorage:', localGames.length);
-        return localGames;
+        // Clear localStorage since we're now using Firebase-only mode
+        console.log('🧹 Clearing localStorage and starting fresh with Firebase-only mode');
+        localStorage.removeItem('dumbassGames');
+        
+        // Also clear the in-memory games array to prevent conflicts
+        this.games = [];
+        console.log('🧹 Cleared in-memory games array');
+        
+        return [];
     }
 
     async saveGames() {
@@ -4617,8 +4591,51 @@ class UserProfileManager {
     }
 
     async loadUserSubmissions() {
-        // Load user's submitted games from database
-        this.submittedGames = []; // Would fetch from Firestore in real implementation
+        try {
+            // Load user's submitted games from database
+            this.submittedGames = [];
+            
+            if (window.firebaseAuth?.currentUser?.uid) {
+                const userId = window.firebaseAuth.currentUser.uid;
+                const userEmail = window.firebaseAuth.currentUser.email;
+                
+                // Get all games and filter by user
+                if (window.enhancedGameManager?.games) {
+                    this.submittedGames = window.enhancedGameManager.games.filter(game => {
+                        // Check multiple attribution methods for backward compatibility
+                        return game.submittedBy === userId || // New method
+                               game.author === userEmail || // Email as author
+                               (game.author === 'nutshot' && userEmail === 'dumbassgames@proton.me') || // Your specific case
+                               (game.submittedBy === undefined && game.author && userEmail === 'dumbassgames@proton.me'); // Legacy games
+                    });
+                } else if (window.dumbassGame?.games) {
+                    this.submittedGames = window.dumbassGame.games.filter(game => {
+                        return game.submittedBy === userId || 
+                               game.author === userEmail ||
+                               (game.author === 'nutshot' && userEmail === 'dumbassgames@proton.me') ||
+                               (game.submittedBy === undefined && game.author && userEmail === 'dumbassgames@proton.me');
+                    });
+                }
+                
+                console.log(`🎮 Loaded ${this.submittedGames.length} user submissions`);
+            } else {
+                // For anonymous users, check localStorage or games with no user ID
+                if (window.enhancedGameManager?.games) {
+                    this.submittedGames = window.enhancedGameManager.games.filter(game => 
+                        game.submittedBy === 'anonymous' || !game.submittedBy
+                    );
+                } else if (window.dumbassGame?.games) {
+                    this.submittedGames = window.dumbassGame.games.filter(game => 
+                        game.submittedBy === 'anonymous' || !game.submittedBy || game.author === 'Anonymous'
+                    );
+                }
+                
+                console.log(`🎮 Loaded ${this.submittedGames.length} anonymous submissions`);
+            }
+        } catch (error) {
+            console.error('❌ Error loading user submissions:', error);
+            this.submittedGames = [];
+        }
     }
 
     updateProfileUI() {
@@ -4943,6 +4960,11 @@ class UserProfileManager {
             if (this.currentUser) {
                 await this.loadUserProfile();
             }
+            
+            // Always load user submissions and favorites when opening modal
+            await this.loadUserSubmissions();
+            await this.loadUserFavorites();
+            
             this.updateProfileUI();
             console.log('✅ Loaded profile for modal');
         } catch (error) {
@@ -5057,48 +5079,55 @@ class EnhancedGameManager {
     }
     
     loadExistingGames() {
-        // Connect to the main game system and Firebase
-        if (window.dumbassGame && window.dumbassGame.games && window.dumbassGame.games.length > 0) {
-            // Create DEEP COPY to avoid reference sharing and duplication
-            this.games = JSON.parse(JSON.stringify(window.dumbassGame.games));
-            this.filteredGames = [...this.games];
-            console.log('🎮 Enhanced Game Manager loaded', this.games.length, 'games from main system');
-            
-            // CRITICAL: Always render after loading
-            this.renderGames();
-            
-            // Also sync with Firebase to make sure we have the latest
-            if (window.dataManager && window.dataManager.isInitialized) {
-                this.syncWithFirebase();
-            }
+        // Start fresh with Firebase-only mode, don't copy from old system
+        console.log('🧹 Enhanced Game Manager starting fresh with Firebase-only mode');
+        this.games = [];
+        this.filteredGames = [];
+        
+        // Sync with Firebase to get the latest games
+        if (window.dataManager && window.dataManager.isInitialized) {
+            this.syncWithFirebase();
         } else {
-            console.log('🔄 Waiting for main game system to load...');
-            // Wait for main system to load
-            setTimeout(() => {
-                this.loadExistingGames();
-            }, 500);
+            // Wait for Firebase to initialize
+            console.log('🔄 Waiting for Firebase to initialize...');
+            if (!this.loadAttempts) this.loadAttempts = 0;
+            this.loadAttempts++;
+            
+            if (this.loadAttempts < 10) {  // Max 10 attempts (5 seconds)
+                setTimeout(() => {
+                    this.loadExistingGames();
+                }, 500);
+            } else {
+                console.log('⚠️ Max load attempts reached, continuing with empty games array');
+                this.renderGames();
+            }
         }
     }
 
     async syncWithFirebase() {
         try {
             const firebaseGames = await window.dataManager.getGames();
-            if (firebaseGames && firebaseGames.length > 0) {
-                // Merge with existing games (avoid duplicates)
-                const existingIds = this.games.map(g => g.id);
-                const newGames = firebaseGames.filter(g => !existingIds.includes(g.id));
+            if (firebaseGames && firebaseGames.length >= 0) {
+                // Replace games entirely with Firebase data (no merging)
+                this.games = [...firebaseGames];
+                this.filteredGames = [...this.games];
+                console.log(`🔄 Synced ${firebaseGames.length} games from Firebase`);
                 
-                if (newGames.length > 0) {
-                    this.games = [...this.games, ...newGames];
-                    this.filteredGames = [...this.games];
-                    console.log(`🔄 Synced ${newGames.length} additional games from Firebase`);
-                    
-                    // CRITICAL: Re-render after syncing
-                    this.renderGames();
-                }
+                // CRITICAL: Re-render after syncing
+                this.renderGames();
+            } else {
+                // Firebase has no games, start with empty array
+                this.games = [];
+                this.filteredGames = [];
+                console.log('🔄 Firebase has no games, starting fresh');
+                this.renderGames();
             }
         } catch (error) {
             console.error('Error syncing with Firebase:', error);
+            // On error, ensure we start with empty arrays
+            this.games = [];
+            this.filteredGames = [];
+            this.renderGames();
         }
     }
 
@@ -5121,20 +5150,44 @@ class EnhancedGameManager {
         try {
             // Save to Firebase using the correct manager
             if (window.dataManager && window.dataManager.isInitialized) {
-                await window.dataManager.addGame(enhancedGame);
+                const firebaseId = await window.dataManager.addGame(enhancedGame);
+                if (firebaseId) {
+                    enhancedGame.id = firebaseId;
+                }
             }
 
+            // Add to both managers for consistency
             this.games.push(enhancedGame);
+            if (window.dumbassGame?.games) {
+                window.dumbassGame.games.push(enhancedGame);
+                await window.dumbassGame.saveGames();
+            }
+            
             this.applyFilters();
             this.renderGames();
 
             if (window.dumbassGame?.notificationManager) {
-                window.dumbassGame.notificationManager.showSuccess('Game submitted for review! 🎮');
+                window.dumbassGame.notificationManager.showSuccess('🎉 Game submitted successfully! 🎮');
             }
+            
+            // Play success sound
+            if (window.dumbassGame?.soundSystem) {
+                window.dumbassGame.soundSystem.playSuccess();
+            }
+            
+            // Refresh user submissions in profile
+            if (window.userProfileManager) {
+                await window.userProfileManager.loadUserSubmissions();
+                window.userProfileManager.updateProfileUI();
+            }
+            
         } catch (error) {
-            console.error('Error adding game:', error);
+            console.error('❌ Error adding game:', error);
             if (window.dumbassGame?.notificationManager) {
-                window.dumbassGame.notificationManager.showError('Failed to submit game.');
+                window.dumbassGame.notificationManager.showError('❌ Failed to submit game. Please try again.');
+            }
+            if (window.dumbassGame?.soundSystem) {
+                window.dumbassGame.soundSystem.playError();
             }
         }
     }
@@ -5934,6 +5987,73 @@ function toggleProfileEffects() {
     window.userProfileManager?.updateToggleButtons();
 }
 function refreshFavorites() { window.userProfileManager?.renderFavorites(); }
+
+function refreshSubmissions() { 
+    if (window.userProfileManager) {
+        window.userProfileManager.loadUserSubmissions().then(() => {
+            window.userProfileManager.renderSubmissions();
+            window.userProfileManager.updateProfileUI();
+        });
+    }
+}
+
+function debugUserSubmissions() {
+    console.log('🔍 DEBUG: Current user:', window.firebaseAuth?.currentUser?.uid);
+    console.log('🔍 DEBUG: All games:', window.enhancedGameManager?.games);
+    console.log('🔍 DEBUG: User submissions:', window.userProfileManager?.submittedGames);
+    
+    if (window.enhancedGameManager?.games) {
+        window.enhancedGameManager.games.forEach(game => {
+            console.log(`🔍 Game: ${game.title}, submittedBy: ${game.submittedBy}, author: ${game.author}`);
+        });
+    }
+}
+
+async function fixGameAttribution() {
+    if (!window.firebaseAuth?.currentUser || !window.dataManager) {
+        console.error('❌ User not signed in or Firebase not available');
+        return;
+    }
+    
+    const userId = window.firebaseAuth.currentUser.uid;
+    const userEmail = window.firebaseAuth.currentUser.email;
+    
+    console.log('🔧 Fixing game attribution for user:', userEmail);
+    
+    if (window.enhancedGameManager?.games) {
+        for (const game of window.enhancedGameManager.games) {
+            // Fix games that belong to this user but don't have proper attribution
+            if ((game.author === 'nutshot' || !game.submittedBy) && userEmail === 'dumbassgames@proton.me') {
+                console.log(`🔧 Fixing attribution for: ${game.title}`);
+                
+                // Update the game with proper attribution
+                const updatedGame = {
+                    ...game,
+                    submittedBy: userId,
+                    author: userEmail
+                };
+                
+                try {
+                    await window.dataManager.updateGame(game.id, updatedGame);
+                    console.log(`✅ Fixed attribution for: ${game.title}`);
+                    
+                    // Update local copy
+                    Object.assign(game, updatedGame);
+                } catch (error) {
+                    console.error(`❌ Failed to fix attribution for ${game.title}:`, error);
+                }
+            }
+        }
+        
+        // Refresh user submissions after fixing
+        if (window.userProfileManager) {
+            await window.userProfileManager.loadUserSubmissions();
+            window.userProfileManager.updateProfileUI();
+        }
+        
+        console.log('✅ Game attribution fix complete!');
+    }
+}
 function confirmDeleteAccount() { alert('Account deletion not yet implemented.'); }
 function showSearchFilter() { window.searchFilterManager?.showModal(); }
 function hideSearchFilter() { window.searchFilterManager?.hideModal(); }
@@ -6129,22 +6249,13 @@ function closeSearchModal() {
     }
 }
 
-// 🎡 CHAOS WHEEL SYSTEM - Dramatic random game selection!
+// 🎲 SIMPLE RANDOM GAME SYSTEM - Clean and reliable!
 async function playRandomGame() {
-    console.log('🎡 Random button clicked!');
+    console.log('🎲 Random game button clicked!');
     
-    // Debug: Check if enhancedGameManager exists
-    console.log('enhancedGameManager exists:', !!window.enhancedGameManager);
-    console.log('enhancedGameManager object:', window.enhancedGameManager);
-    
-    // Get games from the enhanced game manager (Firebase integration)
+    // Get games from the enhanced game manager
     const games = window.enhancedGameManager?.games || [];
-    console.log('Games found:', games.length);
-    console.log('Games array:', games);
-    
-    // Also check the old location for comparison
-    const oldGames = window.dumbassGame?.games || [];
-    console.log('Old games location still has:', oldGames.length);
+    console.log(`🎮 Found ${games.length} games available`);
     
     if (games.length === 0) {
         console.log('No games found, trying to sync with Firebase...');
@@ -6157,8 +6268,8 @@ async function playRandomGame() {
                 console.log('After Firebase sync, games found:', syncedGames.length);
                 
                 if (syncedGames.length > 0) {
-                    console.log('Games found after sync, showing chaos wheel...');
-                    showChaosWheel(syncedGames);
+                    // Try again with synced games
+                    playRandomGame();
                     return;
                 }
             } catch (error) {
@@ -6166,149 +6277,83 @@ async function playRandomGame() {
             }
         }
         
-        console.log('Still no games found, showing notification');
-        window.dumbassGame?.notificationManager?.showInfo('🎮 No games loaded yet! Add some chaos first.');
+        // Still no games found
+        window.dumbassGame?.notificationManager?.showWarning('🎮 No games loaded yet! Add some games first.');
         return;
     }
     
-    // Show the chaos wheel modal
-    console.log('Showing chaos wheel...');
-    showChaosWheel(games);
+    // Filter out games with invalid URLs
+    const validGames = games.filter(game => game.url && game.url !== '#' && game.url.trim() !== '');
+    
+    if (validGames.length === 0) {
+        window.dumbassGame?.notificationManager?.showError('❌ No playable games found! All games have invalid URLs.');
+        return;
+    }
+    
+    // Pick a random game
+    const randomIndex = Math.floor(Math.random() * validGames.length);
+    const selectedGame = validGames[randomIndex];
+    
+    console.log(`🎯 Randomly selected: "${selectedGame.title}" (${randomIndex + 1}/${validGames.length})`);
+    console.log(`🔗 Game URL: ${selectedGame.url}`);
+    
+    // Show simple selection notification
+    showRandomGameSelection(selectedGame);
 }
 
-function showChaosWheel(games) {
-    console.log('showChaosWheel called with', games.length, 'games');
-    
-    const modal = document.getElementById('chaosWheelModal');
-    const wheel = document.getElementById('chaosWheel');
-    const resultText = document.getElementById('wheelResultText');
-    const gameTitle = document.getElementById('wheelGameTitle');
-    
-    console.log('Modal element:', modal);
-    console.log('Wheel element:', wheel);
-    console.log('Result text element:', resultText);
-    console.log('Game title element:', gameTitle);
-    
-    if (!modal) {
-        console.error('❌ Modal element #chaosWheelModal not found in DOM!');
-        console.log('Available elements with "chaos":', document.querySelectorAll('[id*="chaos"]'));
-        return;
-    }
-    
-    if (!wheel) {
-        console.error('❌ Wheel element #chaosWheel not found in DOM!');
-        return;
-    }
-    
-    // Reset wheel state
-    wheel.classList.remove('spinning');
-    wheel.style.transform = 'rotate(0deg)';
-    resultText.textContent = 'SPINNING...';
-    gameTitle.textContent = '';
-    
-    // Show modal
-    modal.style.display = 'flex';
-    
-    // Play start sound
+function showRandomGameSelection(game) {
+    // Play selection sound
     if (window.dumbassGame?.soundSystem) {
         window.dumbassGame.soundSystem.playClick();
     }
     
-    // Start spinning after brief delay
-    setTimeout(() => {
-        spinChaosWheel(games);
-    }, 500);
-}
-
-function spinChaosWheel(games) {
-    const wheel = document.getElementById('chaosWheel');
-    const resultText = document.getElementById('wheelResultText');
-    const gameTitle = document.getElementById('wheelGameTitle');
-    
-    // Pick random game and segment
-    const randomIndex = Math.floor(Math.random() * games.length);
-    const selectedGame = games[randomIndex];
-    
-    // Pick random wheel segment (0-7)
-    const segmentIndex = Math.floor(Math.random() * 8);
-    const segments = [
-        '💩 DUMPSTER FIRE',
-        '🤡 WHO MADE THIS?',
-        '😈 CURSED VIBES', 
-        '🔥 ACTUALLY FIRE',
-        '👹 BEAUTIFUL DISASTER',
-        '🌪️ PURE CHAOS',
-        '🎪 DIGITAL CIRCUS',
-        '🛸 ALIEN TECH'
+    // Show selection notification with fun random messages
+    const randomMessages = [
+        '🎯 RANDOMLY SELECTED',
+        '🎲 LUCK HAS CHOSEN',
+        '🌟 THE STARS HAVE ALIGNED',
+        '🎪 CHAOS HAS DECIDED',
+        '🎮 FATE PICKED',
+        '✨ MAGIC SELECTED',
+        '🎭 DESTINY CHOSE',
+        '🎨 THE ALGORITHM BLESSED'
     ];
     
-    const selectedSegment = segments[segmentIndex];
+    const randomMessage = randomMessages[Math.floor(Math.random() * randomMessages.length)];
     
-    // Calculate final rotation (multiple spins + land on segment)
-    const baseRotation = 3600; // 10 full spins for more drama!
-    const segmentAngle = 45; // 360/8 segments
-    const finalAngle = baseRotation + (segmentIndex * segmentAngle) + Math.random() * 20 - 10; // Small random offset
+    // Show notification
+    window.dumbassGame?.notificationManager?.showSuccess(
+        `${randomMessage}: "${game.title}"!`
+    );
     
-    // Start spinning
-    wheel.classList.add('spinning');
-    wheel.style.transform = `rotate(${finalAngle}deg)`;
-    
-    // Play spinning sound if available
-    if (window.dumbassGame?.soundSystem) {
-        // Could add spinning sound effect here
-    }
-    
-    // After spin completes (longer dramatic pause)
+    // Brief delay then launch the game
     setTimeout(() => {
-        // Show result with dramatic flashing effect
-        resultText.textContent = selectedSegment;
-        gameTitle.textContent = selectedGame.title;
-        
-        // Add flashing animation to result
-        const resultContainer = document.querySelector('.wheel-result');
-        if (resultContainer) {
-            resultContainer.style.animation = 'flash 0.5s ease-in-out 3';
-        }
-        
-        // Play result sound
-        if (window.dumbassGame?.soundSystem) {
-            window.dumbassGame.soundSystem.playSuccess();
-        }
-        
-        // Wait longer to let them see the result, then launch game
-        setTimeout(() => {
-            closeChaosWheel();
-            
-            // Show notification with selected category
-            window.dumbassGame?.notificationManager?.showSuccess(
-                `${selectedSegment} selected "${selectedGame.title}"!`
-            );
-            
-            // Launch the game
-            window.dumbassGame?.playGame(selectedGame.url, selectedGame.title);
-        }, 3000); // Longer pause to appreciate the result
-        
-    }, 6000); // Much longer spin duration for drama!
+        launchRandomGame(game);
+    }, 800);
 }
 
-function closeChaosWheel() {
-    const modal = document.getElementById('chaosWheelModal');
-    if (modal) {
-        modal.style.display = 'none';
+function launchRandomGame(game) {
+    console.log(`🚀 Launching random game: "${game.title}"`);
+    
+    // Validate URL one more time
+    if (!game.url || game.url === '#' || game.url.trim() === '') {
+        console.error('❌ Invalid game URL:', game.url);
+        window.dumbassGame?.notificationManager?.showError(
+            `❌ Cannot launch "${game.title}" - invalid URL!`
+        );
+        return;
+    }
+    
+    // Launch the game using the same method as the main page
+    if (window.dumbassGame?.playGame) {
+        window.dumbassGame.playGame(game.url, game.title);
+    } else {
+        // Fallback - open directly
+        console.log('🔧 Using fallback launch method');
+        window.open(game.url, '_blank');
+        window.dumbassGame?.notificationManager?.showSuccess(`🎮 Launching "${game.title}"!`);
     }
 }
-
-// Close wheel when clicking outside
-document.addEventListener('DOMContentLoaded', function() {
-    const modal = document.getElementById('chaosWheelModal');
-    if (modal) {
-        modal.addEventListener('click', function(e) {
-            if (e.target === modal) {
-                closeChaosWheel();
-            }
-        });
-    }
-});
 
 // ===== INITIALIZATION SYSTEM =====
 // Initialize all managers in the correct order
@@ -6348,6 +6393,48 @@ console.log('🔧 Initializing Admin Console...');
 window.dumbassGameAdmin = new DumbassGameAdmin(window.dumbassGame);
 
 console.log('✅ All systems initialized successfully!');
+
+// Debug function to check game data from console
+window.debugSpinner = function() {
+    console.log('🔍 SPINNER DEBUG REPORT:');
+    console.log('=============================================');
+    
+    // Check enhanced game manager
+    if (window.enhancedGameManager) {
+        console.log('✅ Enhanced Game Manager exists');
+        console.log(`📊 Games loaded: ${window.enhancedGameManager.games?.length || 0}`);
+        
+        if (window.enhancedGameManager.games?.length > 0) {
+            console.log('🎮 Game details:');
+            window.enhancedGameManager.games.forEach((game, index) => {
+                console.log(`  ${index + 1}. "${game.title}"`);
+                console.log(`     URL: ${game.url}`);
+                console.log(`     Author: ${game.author || 'Unknown'}`);
+                console.log(`     ID: ${game.id}`);
+                console.log('     ---');
+            });
+        }
+    } else {
+        console.log('❌ Enhanced Game Manager not found');
+    }
+    
+    // Check main game manager
+    if (window.dumbassGame) {
+        console.log(`📊 Main Game Manager games: ${window.dumbassGame.games?.length || 0}`);
+    } else {
+        console.log('❌ Main Game Manager not found');
+    }
+    
+    // Check Firebase
+    if (window.dataManager) {
+        console.log(`🔥 Firebase initialized: ${window.dataManager.isInitialized}`);
+    } else {
+        console.log('❌ Firebase Data Manager not found');
+    }
+    
+    console.log('=============================================');
+    console.log('💡 To test spinner: playRandomGame()');
+};
 
 // ============================================================================
 // STANDALONE FAVORITES MODAL SYSTEM
@@ -6613,3 +6700,470 @@ setTimeout(() => {
     // Add favorites button to interface
     addFavoritesButton();
 }, 3000);
+
+// ========================================
+// IMAGE UPLOAD SYSTEM
+// ========================================
+
+class ImageUploadManager {
+    constructor() {
+        this.currentUploadedImageUrl = null;
+        this.maxFileSize = 5 * 1024 * 1024; // 5MB
+        this.allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+        // Wait for DOM to be ready
+        document.addEventListener('DOMContentLoaded', () => {
+            this.initializeUploadInterface();
+        });
+        
+        // If DOM is already loaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                this.initializeUploadInterface();
+            });
+        } else {
+            this.initializeUploadInterface();
+        }
+    }
+
+    initializeUploadInterface() {
+        const dropzone = document.getElementById('imageDropzone');
+        const fileInput = document.getElementById('imageFileInput');
+        const urlInput = document.getElementById('gameImageUrl');
+
+        if (dropzone && fileInput) {
+            this.setupDropzone(dropzone, fileInput);
+            this.setupFileInput(fileInput);
+        }
+
+        if (urlInput) {
+            this.setupUrlPreview(urlInput);
+        }
+    }
+
+    setupDropzone(dropzone, fileInput) {
+        // Click to browse
+        dropzone.addEventListener('click', (e) => {
+            if (e.target.classList.contains('browse-link') || e.target.closest('.dropzone-content')) {
+                fileInput.click();
+            }
+        });
+
+        // Drag and drop events
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+
+        dropzone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            if (!dropzone.contains(e.relatedTarget)) {
+                dropzone.classList.remove('dragover');
+            }
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            
+            const files = Array.from(e.dataTransfer.files);
+            const imageFiles = files.filter(file => this.allowedTypes.includes(file.type));
+            
+            if (imageFiles.length > 0) {
+                this.handleFileUpload(imageFiles[0]);
+            } else {
+                this.showError('Please drop a valid image file (PNG, JPG, GIF, WebP)');
+            }
+        });
+    }
+
+    setupFileInput(fileInput) {
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                this.handleFileUpload(file);
+            }
+        });
+    }
+
+    setupUrlPreview(urlInput) {
+        let debounceTimer;
+        
+        urlInput.addEventListener('input', (e) => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                this.previewUrlImage(e.target.value);
+            }, 500);
+        });
+    }
+
+    async handleFileUpload(file) {
+        // Validate file
+        if (!this.validateFile(file)) {
+            return;
+        }
+
+        try {
+            // Show upload progress
+            this.showUploadProgress();
+            console.log('🚀 Starting image upload process...');
+            
+            // Try Firebase Storage upload, fall back to base64 if needed
+            let imageUrl;
+            let uploadMethod = 'unknown';
+            
+            try {
+                console.log('🔥 Attempting Firebase Storage upload...');
+                imageUrl = await this.uploadToFirebaseStorage(file);
+                uploadMethod = 'Firebase Storage';
+                console.log('✅ Firebase Storage upload successful');
+                this.showSuccess('Image uploaded to cloud storage!');
+            } catch (firebaseError) {
+                console.warn('⚠️ Firebase Storage failed, switching to base64 fallback:', firebaseError.message);
+                
+                // Reset progress for base64 conversion
+                this.updateUploadProgress(0);
+                
+                try {
+                    imageUrl = await this.convertToBase64(file);
+                    uploadMethod = 'Base64 (local storage)';
+                    this.showWarning('Image stored locally (not uploaded to cloud)');
+                } catch (base64Error) {
+                    throw new Error(`Both upload methods failed. Firebase: ${firebaseError.message}, Base64: ${base64Error.message}`);
+                }
+            }
+            
+            console.log(`✅ Upload successful using ${uploadMethod}`);
+            
+            // Show success and preview
+            this.showUploadSuccess(file.name, imageUrl);
+            this.currentUploadedImageUrl = imageUrl;
+            
+            // Update form with the URL
+            this.updateFormWithImageUrl(imageUrl);
+            
+        } catch (error) {
+            console.error('❌ Upload failed completely:', error);
+            this.showError('Upload failed: ' + error.message);
+            this.hideUploadProgress();
+        }
+    }
+
+    validateFile(file) {
+        // Check file type
+        if (!this.allowedTypes.includes(file.type)) {
+            this.showError('Invalid file type. Please use PNG, JPG, GIF, or WebP.');
+            return false;
+        }
+
+        // Check file size
+        if (file.size > this.maxFileSize) {
+            this.showError('File too large. Maximum size is 5MB.');
+            return false;
+        }
+
+        return true;
+    }
+
+    async uploadToFirebaseStorage(file) {
+        // Check if Firebase Storage is available
+        if (!window.firebaseStorage || !window.firebaseStorageRef || !window.firebaseUploadBytesResumable) {
+            throw new Error('Firebase Storage not available');
+        }
+
+        // Check if user is authenticated (required for Firebase Storage upload)
+        if (!window.firebaseAuth?.currentUser) {
+            throw new Error('User not authenticated for Firebase Storage');
+        }
+
+        return new Promise((resolve, reject) => {
+            try {
+                // Create unique filename
+                const timestamp = Date.now();
+                const randomId = Math.random().toString(36).substring(2);
+                const extension = file.name.split('.').pop();
+                const filename = `game-images/${timestamp}-${randomId}.${extension}`;
+                
+                console.log(`📤 Attempting Firebase upload: ${filename}`);
+                
+                // Create storage reference
+                const storageRef = window.firebaseStorageRef(window.firebaseStorage, filename);
+                
+                // Upload file with progress monitoring
+                const uploadTask = window.firebaseUploadBytesResumable(storageRef, file);
+                
+                // Set a timeout to catch CORS issues that don't trigger error events
+                const timeoutId = setTimeout(() => {
+                    console.warn('🕐 Upload timeout - likely CORS issue');
+                    reject(new Error('Upload timeout - CORS policy may be blocking the request'));
+                }, 10000); // 10 second timeout
+                
+                uploadTask.on('state_changed', 
+                    (snapshot) => {
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        this.updateUploadProgress(progress);
+                        console.log(`📈 Firebase upload progress: ${Math.round(progress)}%`);
+                        
+                        // Clear timeout on first progress update
+                        if (progress > 0) {
+                            clearTimeout(timeoutId);
+                        }
+                    },
+                    (error) => {
+                        clearTimeout(timeoutId);
+                        console.error('📤 Firebase upload error:', error);
+                        reject(new Error(`Firebase upload failed: ${error.message}`));
+                    },
+                    async () => {
+                        clearTimeout(timeoutId);
+                        try {
+                            // Upload completed successfully
+                            const downloadURL = await window.firebaseGetDownloadURL(uploadTask.snapshot.ref);
+                            console.log('🖼️ Image uploaded to Firebase Storage:', downloadURL);
+                            resolve(downloadURL);
+                        } catch (error) {
+                            console.error('📥 Download URL error:', error);
+                            reject(new Error(`Failed to get download URL: ${error.message}`));
+                        }
+                    }
+                );
+                
+            } catch (error) {
+                console.error('🔥 Firebase Storage setup failed:', error);
+                reject(new Error(`Firebase Storage setup failed: ${error.message}`));
+            }
+        });
+    }
+
+    async convertToBase64(file) {
+        console.log('📦 Converting to base64...');
+        this.updateUploadProgress(10);
+        
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            
+            reader.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    const progress = 10 + (e.loaded / e.total) * 80; // 10% start + 80% for reading
+                    this.updateUploadProgress(progress);
+                }
+            };
+            
+            reader.onload = () => {
+                this.updateUploadProgress(100);
+                console.log('✅ Base64 conversion complete');
+                resolve(reader.result);
+            };
+            
+            reader.onerror = () => {
+                console.error('❌ Base64 conversion failed');
+                reject(new Error('Failed to convert image to base64'));
+            };
+            
+            reader.readAsDataURL(file);
+        });
+    }
+
+    updateUploadProgress(progress) {
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        
+        if (progressFill) {
+            progressFill.style.width = `${progress}%`;
+        }
+        
+        if (progressText) {
+            progressText.textContent = `Uploading... ${Math.round(progress)}%`;
+        }
+    }
+
+    showUploadProgress() {
+        const dropzoneContent = document.querySelector('.dropzone-content');
+        const uploadProgress = document.getElementById('uploadProgress');
+        
+        if (dropzoneContent) dropzoneContent.style.display = 'none';
+        if (uploadProgress) uploadProgress.style.display = 'block';
+        
+        this.updateUploadProgress(0);
+    }
+
+    hideUploadProgress() {
+        const dropzoneContent = document.querySelector('.dropzone-content');
+        const uploadProgress = document.getElementById('uploadProgress');
+        
+        if (dropzoneContent) dropzoneContent.style.display = 'block';
+        if (uploadProgress) uploadProgress.style.display = 'none';
+    }
+
+    showUploadSuccess(filename, imageUrl) {
+        const dropzoneContent = document.querySelector('.dropzone-content');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const uploadPreview = document.getElementById('uploadPreview');
+        const previewImage = document.getElementById('previewImage');
+        const previewName = document.getElementById('previewName');
+        
+        // Hide other states
+        if (dropzoneContent) dropzoneContent.style.display = 'none';
+        if (uploadProgress) uploadProgress.style.display = 'none';
+        
+        // Show preview
+        if (uploadPreview) uploadPreview.style.display = 'flex';
+        if (previewImage) previewImage.src = imageUrl;
+        if (previewName) previewName.textContent = filename;
+        
+        // Show success notification
+        this.showSuccess('Image uploaded successfully!');
+    }
+
+    updateFormWithImageUrl(imageUrl) {
+        // Update the hidden URL input in the URL method
+        const urlInput = document.getElementById('gameImageUrl');
+        if (urlInput) {
+            urlInput.value = imageUrl;
+        }
+        
+        // Store for form submission
+        this.currentUploadedImageUrl = imageUrl;
+    }
+
+    previewUrlImage(url) {
+        const urlPreview = document.getElementById('urlPreview');
+        const urlPreviewImage = document.getElementById('urlPreviewImage');
+        
+        if (!url || !this.isValidImageUrl(url)) {
+            if (urlPreview) urlPreview.style.display = 'none';
+            return;
+        }
+        
+        if (urlPreviewImage) {
+            urlPreviewImage.src = url;
+            urlPreviewImage.onload = () => {
+                if (urlPreview) urlPreview.style.display = 'block';
+            };
+            urlPreviewImage.onerror = () => {
+                if (urlPreview) urlPreview.style.display = 'none';
+            };
+        }
+    }
+
+    isValidImageUrl(url) {
+        try {
+            new URL(url);
+            return /\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(url);
+        } catch {
+            return false;
+        }
+    }
+
+    showError(message) {
+        if (window.dumbassGame?.notificationManager) {
+            window.dumbassGame.notificationManager.showError(message);
+        } else {
+            alert('Error: ' + message);
+        }
+    }
+
+    showSuccess(message) {
+        if (window.dumbassGame?.notificationManager) {
+            window.dumbassGame.notificationManager.showSuccess(message);
+        } else {
+            console.log('Success: ' + message);
+        }
+    }
+
+    showWarning(message) {
+        if (window.dumbassGame?.notificationManager) {
+            window.dumbassGame.notificationManager.showWarning(message);
+        } else {
+            console.warn('Warning: ' + message);
+        }
+    }
+
+    getCurrentImageUrl() {
+        // Return the uploaded image URL or the URL input value
+        const urlInput = document.getElementById('gameImageUrl');
+        return this.currentUploadedImageUrl || (urlInput ? urlInput.value : '');
+    }
+
+    reset() {
+        // Reset all upload states
+        this.currentUploadedImageUrl = null;
+        
+        const dropzoneContent = document.querySelector('.dropzone-content');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const uploadPreview = document.getElementById('uploadPreview');
+        const urlPreview = document.getElementById('urlPreview');
+        const urlInput = document.getElementById('gameImageUrl');
+        const fileInput = document.getElementById('imageFileInput');
+        
+        if (dropzoneContent) dropzoneContent.style.display = 'block';
+        if (uploadProgress) uploadProgress.style.display = 'none';
+        if (uploadPreview) uploadPreview.style.display = 'none';
+        if (urlPreview) urlPreview.style.display = 'none';
+        if (urlInput) urlInput.value = '';
+        if (fileInput) fileInput.value = '';
+    }
+}
+
+// Global functions for the upload interface
+function switchUploadMethod(method) {
+    const fileMethod = document.getElementById('fileUploadMethod');
+    const urlMethod = document.getElementById('urlUploadMethod');
+    const fileToggle = document.querySelector('[onclick="switchUploadMethod(\'file\')"]');
+    const urlToggle = document.querySelector('[onclick="switchUploadMethod(\'url\')"]');
+    
+    if (method === 'file') {
+        if (fileMethod) fileMethod.style.display = 'block';
+        if (urlMethod) urlMethod.style.display = 'none';
+        if (fileToggle) fileToggle.classList.add('active');
+        if (urlToggle) urlToggle.classList.remove('active');
+    } else {
+        if (fileMethod) fileMethod.style.display = 'none';
+        if (urlMethod) urlMethod.style.display = 'block';
+        if (fileToggle) fileToggle.classList.remove('active');
+        if (urlToggle) urlToggle.classList.add('active');
+    }
+}
+
+function removeImagePreview() {
+    if (window.imageUploadManager) {
+        window.imageUploadManager.reset();
+    }
+}
+
+// Initialize the image upload manager
+window.imageUploadManager = new ImageUploadManager();
+
+// Integrate with existing form submission
+document.addEventListener('DOMContentLoaded', () => {
+    const addGameForm = document.getElementById('addGameForm');
+    if (addGameForm) {
+        // Override the existing form submission to include image URL
+        const originalSubmitHandler = addGameForm.onsubmit;
+        
+        addGameForm.onsubmit = function(e) {
+            // Get the current image URL from upload manager
+            const imageUrl = window.imageUploadManager?.getCurrentImageUrl();
+            
+            // Update the gameImage field if we have an uploaded image
+            if (imageUrl) {
+                const gameImageInput = addGameForm.querySelector('[name="gameImage"]') || 
+                                     document.getElementById('gameImageUrl');
+                if (gameImageInput) {
+                    gameImageInput.value = imageUrl;
+                }
+            }
+            
+            // Call original handler if it exists
+            if (originalSubmitHandler) {
+                return originalSubmitHandler.call(this, e);
+            }
+            
+            // Otherwise let the form submit normally
+            return true;
+        };
+    }
+});

@@ -333,6 +333,10 @@
         <footer class="footer">
             <div class="footer-content">
                 <span class="copyright">© 2024 DUMBASSGAMES</span>
+                <div class="footer-support">
+                    <script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script>
+                    <script type='text/javascript'>kofiwidget2.init('Support dumbassgames', '#0a0a0a', 'D1D81G3DWV');kofiwidget2.draw();</script>
+                </div>
                 <span class="easter-egg">↑↑↓↓←→←→BA</span>
             </div>
         </footer>
@@ -418,10 +422,13 @@
 
                 <!-- Submissions Tab -->
                 <div class="profile-tab-content" id="submissionsTab">
-                    <div class="submissions-header">
-                        <h4>🎮 Your Game Submissions</h4>
+                                    <div class="submissions-header">
+                    <h4>🎮 Your Game Submissions</h4>
+                    <div class="submissions-actions">
+                        <button class="btn-secondary" onclick="refreshSubmissions()">🔄 REFRESH</button>
                         <button class="btn-primary" onclick="showAddGameForm()">+ NEW GAME</button>
                     </div>
+                </div>
                     <div id="submissionsGrid" class="submissions-grid">
                         <!-- User's submitted games will be loaded here -->
                     </div>
@@ -512,7 +519,50 @@
 
                 <input type="text" name="gameUrl" placeholder="GAME URL/PATH" required>
                 <textarea name="gameDescription" placeholder="GAME DESCRIPTION (explain the chaos)" required maxlength="300" rows="3"></textarea>
-                <input type="url" name="gameImage" placeholder="IMAGE URL (optional but recommended)">
+                
+                <!-- Image Upload Section -->
+                <div class="image-upload-section">
+                    <div class="upload-method-toggle">
+                        <button type="button" class="upload-toggle active" onclick="switchUploadMethod('file')">📁 UPLOAD FILE</button>
+                        <button type="button" class="upload-toggle" onclick="switchUploadMethod('url')">🔗 USE URL</button>
+                    </div>
+                    
+                    <!-- File Upload Method -->
+                    <div id="fileUploadMethod" class="upload-method">
+                        <div class="file-upload-dropzone" id="imageDropzone">
+                            <div class="dropzone-content">
+                                <div class="dropzone-icon">🖼️</div>
+                                <div class="dropzone-text">
+                                    <strong>Drag & drop an image here</strong><br>
+                                    or <span class="browse-link">click to browse</span><br>
+                                    <small>PNG, JPG, GIF up to 5MB</small>
+                                </div>
+                                <input type="file" id="imageFileInput" accept="image/*" style="display: none;">
+                            </div>
+                            <div class="upload-progress" id="uploadProgress" style="display: none;">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="progressFill"></div>
+                                </div>
+                                <div class="progress-text" id="progressText">Uploading...</div>
+                            </div>
+                            <div class="upload-preview" id="uploadPreview" style="display: none;">
+                                <img id="previewImage" src="" alt="Preview">
+                                <div class="preview-info">
+                                    <span id="previewName"></span>
+                                    <button type="button" class="remove-preview" onclick="removeImagePreview()">✕</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- URL Upload Method -->
+                    <div id="urlUploadMethod" class="upload-method" style="display: none;">
+                        <input type="url" name="gameImage" id="gameImageUrl" placeholder="IMAGE URL (optional but recommended)">
+                        <div class="url-preview" id="urlPreview" style="display: none;">
+                            <img id="urlPreviewImage" src="" alt="URL Preview">
+                        </div>
+                    </div>
+                </div>
                 
                 <div class="form-row">
                     <input type="text" name="gameTags" placeholder="TAGS (comma-separated keywords)" maxlength="100">
@@ -525,28 +575,7 @@
         </div>
     </div>
 
-    <!-- Chaos Wheel Modal -->
-    <div id="chaosWheelModal" class="modal wheel-modal">
-        <div class="wheel-modal-content">
-            <div class="wheel-container">
-                <div class="wheel-pointer">▼</div>
-                <div class="chaos-wheel" id="chaosWheel">
-                    <div class="wheel-segment" data-label="💩 DUMPSTER FIRE">💩<br>DUMPSTER<br>FIRE</div>
-                    <div class="wheel-segment" data-label="🤡 WHO MADE THIS?">🤡<br>WHO MADE<br>THIS?</div>
-                    <div class="wheel-segment" data-label="😈 CURSED VIBES">😈<br>CURSED<br>VIBES</div>
-                    <div class="wheel-segment" data-label="🔥 ACTUALLY FIRE">🔥<br>ACTUALLY<br>FIRE</div>
-                    <div class="wheel-segment" data-label="👹 BEAUTIFUL DISASTER">👹<br>BEAUTIFUL<br>DISASTER</div>
-                    <div class="wheel-segment" data-label="🌪️ PURE CHAOS">🌪️<br>PURE<br>CHAOS</div>
-                    <div class="wheel-segment" data-label="🎪 DIGITAL CIRCUS">🎪<br>DIGITAL<br>CIRCUS</div>
-                    <div class="wheel-segment" data-label="🛸 ALIEN TECH">🛸<br>ALIEN<br>TECH</div>
-                </div>
-            </div>
-            <div class="wheel-result" id="wheelResult">
-                <h3 id="wheelResultText">SPINNING...</h3>
-                <p id="wheelGameTitle"></p>
-            </div>
-        </div>
-    </div>
+
 
     <!-- Professional Game Search & Filter Modal -->
     <div id="searchFilterModal" class="modal">
@@ -692,6 +721,7 @@
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js';
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
         import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, setDoc, getDoc, query, orderBy, where } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
+        import { getStorage, ref, uploadBytes, getDownloadURL, uploadBytesResumable } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-storage.js';
         import { getAnalytics, logEvent } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js';
 
         // Your web app's Firebase configuration
@@ -709,15 +739,23 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const storage = getStorage(app);
         const analytics = getAnalytics(app);
 
         // Make Firebase services available globally
         window.firebaseApp = app;
         window.firebaseAuth = auth;
         window.firebaseDb = db;
+        window.firebaseStorage = storage;
         window.firebaseAnalytics = analytics;
         window.firebaseCollection = collection(db, 'games');
         window.firebaseLogEvent = logEvent;
+        
+        // Storage functions
+        window.firebaseStorageRef = ref;
+        window.firebaseUploadBytes = uploadBytes;
+        window.firebaseUploadBytesResumable = uploadBytesResumable;
+        window.firebaseGetDownloadURL = getDownloadURL;
 
         // Import Firebase functions to global scope
         window.signInWithEmailAndPassword = signInWithEmailAndPassword;
@@ -734,6 +772,10 @@
         window.firebaseQuery = query;
         window.firebaseOrderBy = orderBy;
         window.firebaseWhere = where;
+        window.firebaseStorageRef = ref;
+        window.firebaseUploadBytes = uploadBytes;
+        window.firebaseGetDownloadURL = getDownloadURL;
+        window.firebaseUploadBytesResumable = uploadBytesResumable;
 
         console.log('%c🔥 Firebase initialized successfully!', 'background: #FFA000; color: white; padding: 8px; border-radius: 4px; font-weight: bold;');
     </script>

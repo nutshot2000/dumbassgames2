@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Storage Test</title>
+</head>
+<body>
+    <h1>Firebase Storage Test</h1>
+    <input type="file" id="testFile" accept="image/*">
+    <button onclick="testUpload()">Test Upload</button>
+    <div id="status"></div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js';
+        import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
+        import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-storage.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCuaKGPn6_wVD9p56U2MNHuyVBI-CN3o70",
+            authDomain: "dumbassgames-c1217.firebaseapp.com",
+            projectId: "dumbassgames-c1217",
+            storageBucket: "dumbassgames-c1217.firebasestorage.app",
+            messagingSenderId: "949393088299",
+            appId: "1:949393088299:web:2e412f5e9dc6dd8f17ef6e"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const storage = getStorage(app);
+
+        // Sign in anonymously first
+        signInAnonymously(auth).then(() => {
+            console.log('Signed in anonymously');
+            document.getElementById('status').innerHTML = 'Signed in anonymously. Ready to test upload.';
+        }).catch((error) => {
+            console.error('Anonymous sign-in failed:', error);
+            document.getElementById('status').innerHTML = 'Failed to sign in: ' + error.message;
+        });
+
+        window.testUpload = async () => {
+            const fileInput = document.getElementById('testFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a file first');
+                return;
+            }
+
+            try {
+                const timestamp = Date.now();
+                const filename = `test-images/${timestamp}-${file.name}`;
+                const storageRef = ref(storage, filename);
+                
+                console.log('Starting upload:', filename);
+                document.getElementById('status').innerHTML = 'Starting upload...';
+                
+                const uploadTask = uploadBytesResumable(storageRef, file);
+                
+                uploadTask.on('state_changed',
+                    (snapshot) => {
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        console.log('Upload is ' + progress + '% done');
+                        document.getElementById('status').innerHTML = `Upload is ${Math.round(progress)}% done`;
+                    },
+                    (error) => {
+                        console.error('Upload failed:', error);
+                        document.getElementById('status').innerHTML = 'Upload failed: ' + error.message;
+                    },
+                    async () => {
+                        try {
+                            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                            console.log('File available at', downloadURL);
+                            document.getElementById('status').innerHTML = `Upload successful! URL: <a href="${downloadURL}" target="_blank">${downloadURL}</a>`;
+                        } catch (error) {
+                            console.error('Failed to get download URL:', error);
+                            document.getElementById('status').innerHTML = 'Upload complete but failed to get URL: ' + error.message;
+                        }
+                    }
+                );
+                
+            } catch (error) {
+                console.error('Upload error:', error);
+                document.getElementById('status').innerHTML = 'Upload error: ' + error.message;
+            }
+        };
+    </script>
+</body>
+</html> 
