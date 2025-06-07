@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <!-- Primary SEO Tags -->
-    <title>DUMBASSGAMES - Funny Weird Games | Free Browser Games & Bizarre Gaming</title>
+    <title>DUMBASSGAMES - Retro Indie Game Discovery Platform</title>
     <meta name="description" content="Play weird, funny, and bizarre free browser games! DUMBASSGAMES features hilarious indie games, strange retro experiences, and wtf gaming content. Digital Abominations & Glorious Failures Await!">
     <meta name="keywords" content="funny games, weird games, free browser games, online games, wtf games, bizarre games, meme games, strange games, ridiculous games, hilarious games, crazy games, indie games, retro games, free games">
     <meta name="author" content="DUMBASSGAMES">
@@ -82,6 +82,143 @@
         }
     }
     </script>
+    <style>
+        /* Submission Game Card Actions */
+        .submission-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: space-between;
+        }
+
+        .submission-actions .play-btn {
+            background: var(--primary-alpha-3);
+            border: 2px solid var(--primary-color);
+            border-radius: 6px;
+            color: var(--primary-color);
+            padding: 8px 15px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+
+        .submission-actions .play-btn:hover {
+            background: var(--primary-alpha-5);
+            box-shadow: 0 0 12px var(--primary-alpha-4);
+            transform: translateY(-2px);
+        }
+
+        .submission-actions .delete-btn {
+            background: rgba(255, 0, 0, 0.2);
+            border: 2px solid #ff6666;
+            border-radius: 6px;
+            color: #ff6666;
+            padding: 8px 15px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+
+        .submission-actions .delete-btn:hover {
+            background: rgba(255, 0, 0, 0.4);
+            border-color: #ff0000;
+            color: #ff0000;
+            box-shadow: 0 0 12px rgba(255, 0, 0, 0.4);
+            transform: translateY(-2px);
+        }
+
+        /* Terms of Service Styles */
+        .terms-agreement {
+            margin: 15px 0;
+            padding: 15px;
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            background: var(--primary-alpha-2);
+        }
+
+        .terms-checkbox {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            color: var(--primary-color);
+            cursor: pointer;
+        }
+
+        .terms-checkbox input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary-color);
+            cursor: pointer;
+        }
+
+        .terms-link {
+            color: var(--primary-color);
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .terms-link:hover {
+            color: #fff;
+            text-shadow: 0 0 5px var(--primary-color);
+        }
+
+        .terms-content {
+            max-height: 60vh;
+            overflow-y: auto;
+            padding: 20px;
+            color: var(--primary-color);
+            font-family: 'Courier New', monospace;
+            line-height: 1.6;
+        }
+
+        .terms-content h4 {
+            color: #fff;
+            margin-bottom: 15px;
+            text-align: center;
+            text-shadow: 0 0 10px var(--primary-color);
+        }
+
+        .terms-content h5 {
+            color: var(--primary-color);
+            margin: 20px 0 10px 0;
+            text-shadow: 0 0 5px var(--primary-alpha-4);
+        }
+
+        .terms-content ul {
+            margin: 10px 0 10px 20px;
+            list-style-type: none;
+        }
+
+        .terms-content li {
+            margin: 8px 0;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .terms-content li:before {
+            content: "▶";
+            position: absolute;
+            left: 0;
+            color: var(--primary-color);
+            font-size: 10px;
+        }
+
+        .terms-footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid var(--primary-color);
+            text-align: center;
+            font-size: 11px;
+            opacity: 0.8;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -333,6 +470,9 @@
         <footer class="footer">
             <div class="footer-content">
                 <span class="copyright">© 2024 DUMBASSGAMES</span>
+                <div class="footer-disclaimer">
+                    <p>⚠️ <strong>DISCLAIMER:</strong> User-submitted content is not reviewed or endorsed by DUMBASSGAMES. We are not responsible for the quality, safety, or legality of user-submitted games or content. Play at your own risk. Report inappropriate content.</p>
+                </div>
                 <div class="footer-support">
                     <script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script>
                     <script type='text/javascript'>kofiwidget2.init('Support dumbassgames', '#0a0a0a', 'D1D81G3DWV');kofiwidget2.draw();</script>
@@ -357,6 +497,16 @@
                 <input type="email" id="authEmail" placeholder="EMAIL" required>
                 <input type="password" id="authPassword" placeholder="PASSWORD" required minlength="6">
                 <input type="password" id="authConfirmPassword" placeholder="CONFIRM PASSWORD" style="display: none;">
+                
+                <!-- Terms of Service Agreement (only shown during signup) -->
+                <div id="termsAgreement" class="terms-agreement" style="display: none;">
+                    <label class="terms-checkbox">
+                        <input type="checkbox" id="agreeToTerms" required>
+                        <span class="checkmark"></span>
+                        I agree to the <a href="#" onclick="showTermsModal(event)" class="terms-link">Terms of Service</a> and will not submit inappropriate, illegal, or harmful content
+                    </label>
+                </div>
+                
                 <button type="submit" id="authSubmitBtn">🚀 LOGIN</button>
             </form>
             <div id="authError" class="auth-error" style="display: none;"></div>
@@ -694,6 +844,69 @@
                 
                 <div id="standaloneFavoritesGrid" class="standalone-favorites-grid">
                     <!-- Favorites will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terms of Service Modal -->
+    <div id="termsModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>📜 TERMS OF SERVICE</h3>
+                <span class="close" onclick="hideTermsModal()">&times;</span>
+            </div>
+            <div class="terms-content">
+                <h4>🎮 DUMBASSGAMES CONTENT POLICY</h4>
+                <p>By creating an account and submitting content to DUMBASSGAMES, you agree to the following:</p>
+                
+                <h5>✅ ACCEPTABLE CONTENT:</h5>
+                <ul>
+                    <li>Indie games and experimental projects</li>
+                    <li>Retro-style and nostalgic games</li>
+                    <li>Fighting games, shooters, and action games</li>
+                    <li>Strategy games with combat elements</li>
+                    <li>Creative and artistic expressions</li>
+                    <li>Educational or programming experiments</li>
+                    <li>Weird but harmless content</li>
+                    <li>Game violence in fantasy/sci-fi contexts</li>
+                </ul>
+
+                <h5>❌ PROHIBITED CONTENT:</h5>
+                <ul>
+                    <li>Illegal content of any kind</li>
+                    <li>Malware, viruses, or harmful software</li>
+                    <li>Hate speech, harassment, or discrimination</li>
+                    <li>Sexual or adult content</li>
+                    <li>Excessive gore or graphic torture content</li>
+                    <li>Content promoting real-world violence</li>
+                    <li>Copyright infringement</li>
+                    <li>Spam or misleading content</li>
+                    <li>Content that promotes illegal activities</li>
+                </ul>
+
+                <h5>⚖️ YOUR RESPONSIBILITIES:</h5>
+                <ul>
+                    <li>You are solely responsible for content you submit</li>
+                    <li>You must own or have rights to submitted content</li>
+                    <li>You grant DUMBASSGAMES the right to host and display your content</li>
+                    <li>You will not attempt to hack or damage the platform</li>
+                    <li>You will respect other users and the community</li>
+                </ul>
+
+                <h5>🚨 ENFORCEMENT:</h5>
+                <ul>
+                    <li>Violations may result in content removal</li>
+                    <li>Repeat violations may result in account suspension</li>
+                    <li>We reserve the right to remove any content at our discretion</li>
+                    <li>Users can report inappropriate content</li>
+                </ul>
+
+                <p><strong>By checking the agreement box, you acknowledge that you have read, understood, and agree to comply with these terms.</strong></p>
+                
+                <div class="terms-footer">
+                    <p>Last updated: June 2025</p>
+                    <p>Questions? Contact: admin@dumbassgames.xyz</p>
                 </div>
             </div>
         </div>

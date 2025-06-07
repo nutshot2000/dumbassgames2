@@ -4122,6 +4122,15 @@ class FirebaseAuthManager {
             return;
         }
 
+        // Check terms agreement for signup
+        if (!this.isAuthTabLogin) {
+            const agreeToTerms = document.getElementById('agreeToTerms');
+            if (!agreeToTerms || !agreeToTerms.checked) {
+                this.showAuthError('You must agree to the Terms of Service to create an account.');
+                return;
+            }
+        }
+
         if (password.length < 6) {
             this.showAuthError('Password must be at least 6 characters long.');
             return;
@@ -4344,17 +4353,24 @@ class FirebaseAuthManager {
         
         // Update form
         const confirmPasswordField = document.getElementById('authConfirmPassword');
+        const termsAgreement = document.getElementById('termsAgreement');
         const submitBtn = document.getElementById('authSubmitBtn');
         const modalTitle = document.getElementById('authModalTitle');
         
         if (tab === 'login') {
             confirmPasswordField.style.display = 'none';
             confirmPasswordField.required = false;
+            if (termsAgreement) {
+                termsAgreement.style.display = 'none';
+            }
             submitBtn.innerHTML = '🚀 LOGIN';
             modalTitle.textContent = 'LOGIN';
         } else {
             confirmPasswordField.style.display = 'block';
             confirmPasswordField.required = true;
+            if (termsAgreement) {
+                termsAgreement.style.display = 'block';
+            }
             submitBtn.innerHTML = '🚀 SIGN UP';
             modalTitle.textContent = 'SIGN UP';
         }
@@ -4405,6 +4421,18 @@ async function logout() {
     if (window.authManager) {
         await window.authManager.signOut();
     }
+}
+
+// Terms of Service modal functions
+function showTermsModal(event) {
+    if (event) {
+        event.preventDefault();
+    }
+    document.getElementById('termsModal').style.display = 'block';
+}
+
+function hideTermsModal() {
+    document.getElementById('termsModal').style.display = 'none';
 }
 
 // Initialize Firebase managers after DOM loads
@@ -4749,6 +4777,14 @@ class UserProfileManager {
                 <div class="game-title">${game.title}</div>
                 <div class="game-description">${game.description}</div>
                 <div class="game-category">${game.category?.toUpperCase() || 'UNCATEGORIZED'}</div>
+                <div class="submission-actions">
+                    <button class="play-btn" onclick="window.dumbassGame.playGame('${game.url}', '${game.title}')" title="Play Game">
+                        ▶ PLAY
+                    </button>
+                    <button class="delete-btn" onclick="userProfileManager.deleteSubmittedGame('${game.id}')" title="Delete Game">
+                        🗑️ DELETE
+                    </button>
+                </div>
             </div>
         `).join('');
     }
@@ -4860,6 +4896,71 @@ class UserProfileManager {
             await window.persistenceManager.saveFavorites(this.favoriteGames);
         } catch (error) {
             console.error('❌ Error saving favorites:', error);
+        }
+    }
+
+    async deleteSubmittedGame(gameId) {
+        // Confirm deletion with user
+        const game = this.submittedGames.find(g => g.id === gameId);
+        const gameName = game ? game.title : 'this game';
+        
+        if (!confirm(`🗑️ Are you sure you want to delete "${gameName}"? This action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            // Delete from Firebase
+            if (window.dataManager && window.dataManager.isInitialized) {
+                await window.dataManager.deleteGame(gameId);
+                console.log('🗑️ Game deleted from Firebase:', gameId);
+            }
+
+            // Remove from enhanced game manager
+            if (window.enhancedGameManager && window.enhancedGameManager.games) {
+                window.enhancedGameManager.games = window.enhancedGameManager.games.filter(g => g.id !== gameId);
+                window.enhancedGameManager.filteredGames = window.enhancedGameManager.filteredGames.filter(g => g.id !== gameId);
+                window.enhancedGameManager.renderGames();
+            }
+
+            // Remove from old game manager if it exists
+            if (window.dumbassGame && window.dumbassGame.games) {
+                window.dumbassGame.games = window.dumbassGame.games.filter(g => g.id !== gameId);
+                await window.dumbassGame.saveGames();
+            }
+
+            // Remove from user's submitted games list
+            this.submittedGames = this.submittedGames.filter(g => g.id !== gameId);
+
+            // Remove from favorites if it's there
+            this.favoriteGames = this.favoriteGames.filter(g => g.id !== gameId);
+            await this.saveFavorites();
+
+            // Re-render submissions and update UI
+            this.renderSubmissions();
+            this.updateProfileUI();
+
+            // Show success notification
+            if (window.dumbassGame?.notificationManager) {
+                window.dumbassGame.notificationManager.showSuccess(`🗑️ "${gameName}" deleted successfully!`);
+            }
+
+            // Play success sound
+            if (window.dumbassGame?.soundSystem) {
+                window.dumbassGame.soundSystem.playSuccess();
+            }
+
+        } catch (error) {
+            console.error('❌ Error deleting game:', error);
+            
+            // Show error notification
+            if (window.dumbassGame?.notificationManager) {
+                window.dumbassGame.notificationManager.showError(`❌ Failed to delete "${gameName}". Please try again.`);
+            }
+            
+            // Play error sound
+            if (window.dumbassGame?.soundSystem) {
+                window.dumbassGame.soundSystem.playError();
+            }
         }
     }
 
@@ -5136,7 +5237,7 @@ class EnhancedGameManager {
         const enhancedGame = {
             ...gameData,
             id: this.generateGameId(),
-            category: gameData.category || 'other',
+            category: gameData.category || gameData.genre || 'weird',
             tags: gameData.tags ? gameData.tags.split(',').map(tag => tag.trim()) : [],
             difficulty: gameData.difficulty || 'medium',
             status: 'pending', // pending, approved, rejected
@@ -5197,15 +5298,15 @@ class EnhancedGameManager {
     }
 
     createEnhancedGameCard(game) {
-        // Use the gameTypes mapping since categories property doesn't exist
-        const gameType = game.category || game.gameType || 'weird';
+        // Check multiple possible field names for category
+        const gameType = game.category || game.gameType || game.genre || 'weird';
         const categoryLabel = this.gameTypes[gameType] || this.gameTypes['weird'];
         
         return `
-            <div class="game-card" data-id="${game.id}" data-category="${game.category}" data-difficulty="${game.difficulty}">
+            <div class="game-card" data-id="${game.id}" data-category="${gameType}" data-difficulty="${game.difficulty}">
                 <div class="game-category">${categoryLabel}</div>
                 ${game.rating ? `<div class="game-rating">⭐ ${game.rating.toFixed(1)}</div>` : ''}
-                ${game.difficulty !== 'medium' ? `<div class="game-difficulty ${game.difficulty}">${this.getDifficultyLabel(game.difficulty)}</div>` : ''}
+                ${game.difficulty ? `<div class="game-difficulty ${game.difficulty}">${this.getDifficultyLabel(game.difficulty)}</div>` : ''}
                 
                 <div class="game-image">
                     <img src="${game.image || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&h=250&fit=crop'}" 
@@ -5233,7 +5334,7 @@ class EnhancedGameManager {
     getDifficultyLabel(difficulty) {
         const labels = {
             'easy': '😊 EASY',
-            'medium': '😐 MEDIUM', 
+            'medium': '😐 NORMAL', 
             'hard': '😤 HARD',
             'expert': '💀 EXPERT'
         };
