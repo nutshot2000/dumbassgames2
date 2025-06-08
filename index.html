@@ -42,6 +42,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="header-improvements.css">
+    <link rel="stylesheet" href="tier-system.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎮</text></svg>">
     
     <!-- Structured Data (JSON-LD) -->
@@ -232,15 +234,29 @@
                 
                 <h1 class="title glitch" data-text="DUMBASSGAMES">DUMBASSGAMES</h1>
                 
-                <div class="header-controls">
-                    <button id="searchToggle" class="control-btn compact" onclick="showSearchFilter()">🔍</button>
-                    <button id="soundToggle" class="control-btn compact" onclick="toggleSound()">🔊</button>
-                    <button id="effectsToggle" class="control-btn compact" onclick="toggleEffects()">✨</button>
-                    <button id="themeToggle" class="control-btn compact" onclick="toggleThemePicker()">🎨</button>
-                    <button id="authToggle" class="control-btn compact" onclick="toggleAuth()" style="display: none;">👤</button>
-                    <button id="loginBtn" class="control-btn compact" onclick="showAuthModal()">LOGIN</button>
-                    <button class="control-btn compact primary" onclick="showAddGameForm()">+ ADD</button>
+                <div class="user-indicator" id="userIndicator" style="display: none;">
+                    <span class="user-text">👤 <span id="headerUsername">-</span></span>
                 </div>
+            </div>
+            
+            <div class="header-controls-row">
+                <button id="searchToggle" class="control-btn compact" onclick="showSearchFilter()">
+                    <span class="btn-icon">🔍</span>
+                </button>
+                <button id="soundToggle" class="control-btn compact" onclick="toggleSound()">
+                    <span class="btn-icon">🔊</span>
+                </button>
+                <button id="effectsToggle" class="control-btn compact" onclick="toggleEffects()">
+                    <span class="btn-icon">✨</span>
+                </button>
+                <button id="themeToggle" class="control-btn compact" onclick="toggleThemePicker()">
+                    <span class="btn-icon">🎨</span>
+                </button>
+                <button class="control-btn compact primary" onclick="showAddGameForm()">+ ADD</button>
+                <button class="control-btn compact primary" onclick="showUserProfile()">💛 FAVORITES</button>
+                <button id="authBtn" class="control-btn compact primary" onclick="handleAuthClick()">
+                    <span class="btn-icon">👤</span><span id="authBtnText">LOGIN</span>
+                </button>
             </div>
             
             <div class="header-bottom">
@@ -557,6 +573,22 @@
                             <p id="profileUserBio">Welcome to DUMBASSGAMES! Add your bio here...</p>
                         </div>
                     </div>
+                    
+                    <!-- Tier Information -->
+                    <div class="tier-info" id="tierInfo">
+                        <div class="tier-card">
+                            <div class="tier-header">
+                                <span class="tier-badge-large" id="tierBadge">🕹️</span>
+                                <div class="tier-details">
+                                    <h5 id="tierName">Free Player</h5>
+                                    <p id="tierLimits">15 favorites max, 2 submissions/month</p>
+                                </div>
+                            </div>
+                            <div class="tier-upgrade" id="tierUpgrade" style="display: none;">
+                                <button class="btn-upgrade" onclick="showUpgradeModal()">💎 UPGRADE</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Favorites Tab -->
@@ -614,7 +646,8 @@
                     </div>
 
                     <div class="settings-section danger">
-                        <h4>⚠️ Danger Zone</h4>
+                        <h4>⚠️ Account Actions</h4>
+                        <button class="btn-logout" onclick="logout()">🚪 LOGOUT</button>
                         <button class="btn-danger" onclick="confirmDeleteAccount()">🗑️ DELETE ACCOUNT</button>
                     </div>
                 </div>
@@ -726,6 +759,64 @@
     </div>
 
 
+
+    <!-- Tier Upgrade Modal -->
+    <div id="upgradeModal" class="modal">
+        <div class="modal-content upgrade-modal">
+            <div class="modal-header">
+                <h3>⭐ UPGRADE YOUR ACCOUNT</h3>
+                <span class="close" onclick="hideUpgradeModal()">&times;</span>
+            </div>
+            
+            <div class="upgrade-tiers">
+                <!-- PRO Tier -->
+                <div class="tier-option" data-tier="PRO">
+                    <div class="tier-plan-header">
+                        <span class="tier-badge-xl">⭐</span>
+                        <h4>PRO GAMER</h4>
+                        <div class="tier-price">$5<span>/month</span></div>
+                    </div>
+                    <div class="tier-features">
+                        <div class="feature">✅ Everything in FREE</div>
+                        <div class="feature">⭐ 100 favorites max</div>
+                        <div class="feature">🎮 8 submissions per month</div>
+                        <div class="feature">🏆 PRO badge on profile</div>
+                        <div class="feature">📊 Basic play count stats</div>
+                    </div>
+                    <button class="btn-upgrade-tier" onclick="initiateUpgrade('PRO', 5)">
+                        UPGRADE TO PRO
+                    </button>
+                </div>
+                
+                <!-- DEV Tier -->
+                <div class="tier-option recommended" data-tier="DEV">
+                    <div class="recommended-badge">🔥 RECOMMENDED</div>
+                    <div class="tier-plan-header">
+                        <span class="tier-badge-xl">🚀</span>
+                        <h4>DEV LEGEND</h4>
+                        <div class="tier-price">$10<span>/month</span></div>
+                    </div>
+                    <div class="tier-features">
+                        <div class="feature">✅ Everything in PRO</div>
+                        <div class="feature">♾️ Unlimited favorites</div>
+                        <div class="feature">🎮 Unlimited submissions</div>
+                        <div class="feature">🚀 DEV badge with special icon</div>
+                        <div class="feature">📈 Game analytics dashboard</div>
+                        <div class="feature">✏️ Edit games after submission</div>
+                    </div>
+                    <button class="btn-upgrade-tier recommended" onclick="initiateUpgrade('DEV', 10)">
+                        UPGRADE TO DEV
+                    </button>
+                </div>
+            </div>
+            
+            <div class="upgrade-footer">
+                <p>💰 Secure payment processing via PayPal</p>
+                <p>🔄 Cancel anytime from your profile settings</p>
+                <p>💡 Upgrade or downgrade at any time</p>
+            </div>
+        </div>
+    </div>
 
     <!-- Professional Game Search & Filter Modal -->
     <div id="searchFilterModal" class="modal">
@@ -1033,6 +1124,9 @@
             console.log(`%c⚡ Loaded in ${Math.round(loadTime)}ms`, 'color: #00ffff; font-weight: bold;');
         });
     </script>
+    <!-- Stripe Payment Processing -->
+    <script src="https://js.stripe.com/v3/"></script>
+    
     <script src="script.js"></script>
 </body>
 </html> 

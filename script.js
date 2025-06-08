@@ -562,6 +562,16 @@ class DumbassGameEnhanced {
             this.soundSystem.playSuccess();
             this.notificationManager.showSuccess(`🎉 "${newGame.title}" added successfully!`);
             
+            // Record submission for tier tracking (logged in users only)
+            if (window.userProfileManager?.currentUser && window.userProfileManager?.userProfile) {
+                try {
+                    await window.userProfileManager.tierManager.recordSubmission(window.userProfileManager.userProfile);
+                    console.log('✅ Recorded submission for tier tracking');
+                } catch (error) {
+                    console.warn('⚠️ Failed to record submission for tier tracking:', error);
+                }
+            }
+            
             // Refresh user submissions in profile
             if (window.userProfileManager) {
                 await window.userProfileManager.loadUserSubmissions();
@@ -682,7 +692,42 @@ class DumbassGameEnhanced {
             return;
         }
 
-        await this.addGame(gameData);
+        // Smart duplicate detection and rate limiting
+        const validationResult = await this.validateGameSubmission(gameData);
+        if (!validationResult.valid) {
+            this.soundSystem.playError();
+            
+            // Check if this is a submission limit that should show upgrade prompt
+            if (validationResult.showUpgrade) {
+                if (validationResult.isAnonymous) {
+                    // Show sign-up prompt for anonymous users
+                    const shouldSignUp = confirm(
+                        `${validationResult.message}\n\n${validationResult.upgradeMessage}\n\nWould you like to sign up now?`
+                    );
+                    if (shouldSignUp) {
+                        window.userProfileManager?.showAuthModal();
+                    }
+                } else if (validationResult.upgradeAction) {
+                    // Show upgrade modal for logged-in users
+                    validationResult.upgradeAction();
+                } else {
+                    // Fallback to showing upgrade modal
+                    showUpgradeModal();
+                }
+                return;
+            }
+            
+            this.notificationManager.showError(validationResult.message);
+            return;
+        }
+
+        // Handle update vs new submission
+        if (validationResult.isUpdate) {
+            await this.updateExistingGame(validationResult.existingGame, gameData);
+        } else {
+            await this.addGame(gameData);
+        }
+        
         this.hideAddGameForm();
         e.target.reset();
     }
@@ -693,6 +738,352 @@ class DumbassGameEnhanced {
             return true;
         } catch (_) {
             return string.includes('.html') || string.includes('games/') || string.startsWith('/') || string.startsWith('./');
+        }
+    }
+
+    async validateGameSubmission(gameData) {
+        // 1. Rate limiting check
+        const rateLimitResult = await this.checkRateLimit();
+        if (!rateLimitResult.valid) {
+            return rateLimitResult;
+        }
+
+        // 2. Duplicate URL detection with smart update logic
+        const urlCheckResult = await this.checkDuplicateUrl(gameData.url, gameData);
+        if (urlCheckResult.isUpdate) {
+            return {
+                valid: true,
+                isUpdate: true,
+                existingGame: urlCheckResult.existingGame,
+                message: '🔄 Game URL already exists. Updating existing entry...'
+            };
+        } else if (!urlCheckResult.valid) {
+            return urlCheckResult;
+        }
+
+        // 3. Similar title detection (fuzzy matching)
+        const titleCheckResult = await this.checkSimilarTitles(gameData.title);
+        if (!titleCheckResult.valid) {
+            return titleCheckResult;
+        }
+
+        return { valid: true, isUpdate: false };
+    }
+
+    async checkRateLimit() {
+        // Use new tier-based rate limiting system
+        const userId = window.firebaseAuth?.currentUser?.uid || 'anonymous';
+        
+        if (userId === 'anonymous') {
+            // Anonymous users - basic rate limiting using old system
+            const currentTime = Date.now();
+            const ONE_DAY = 24 * 60 * 60 * 1000;
+            
+            let submissionHistory = JSON.parse(localStorage.getItem(`submissionHistory_anonymous`) || '[]');
+            submissionHistory = submissionHistory.filter(timestamp => currentTime - timestamp < ONE_DAY);
+            
+            if (submissionHistory.length >= 1) {
+                const nextAllowedTime = new Date(Math.min(...submissionHistory) + ONE_DAY);
+                return {
+                    valid: false,
+                    showUpgrade: true,
+                    isAnonymous: true,
+                    message: `🚫 Anonymous limit exceeded! You can submit 1 game per day. Next submission: ${nextAllowedTime.toLocaleString()}`,
+                    upgradeMessage: 'Sign up to increase your submission limits!'
+                };
+            }
+            
+            submissionHistory.push(currentTime);
+            localStorage.setItem(`submissionHistory_anonymous`, JSON.stringify(submissionHistory));
+            return { valid: true };
+        }
+
+        // Logged in users - tier-based rate limiting
+        try {
+            const userProfile = window.userProfileManager?.userProfile;
+            if (!userProfile) {
+                console.warn('No user profile found for rate limiting');
+                return { valid: true }; // Allow if can't check
+            }
+
+            const tierManager = window.userProfileManager?.tierManager;
+            if (!tierManager) {
+                console.warn('No tier manager found');
+                return { valid: true };
+            }
+
+            const limitCheck = await tierManager.checkSubmissionLimits(userProfile);
+            if (!limitCheck.allowed) {
+                // Get current tier info and recommended upgrade
+                const currentTier = tierManager.getTierInfo(userProfile.tier);
+                const recommendedTier = userProfile.tier === 'FREE' ? 'PRO' : 'DEV';
+                const recommendedTierInfo = tierManager.getTierInfo(recommendedTier);
+
+                return {
+                    valid: false,
+                    showUpgrade: true,
+                    isAnonymous: false,
+                    currentTier: currentTier,
+                    recommendedTier: recommendedTierInfo,
+                    message: `⏰ ${limitCheck.reason}`,
+                    upgradeMessage: `Upgrade to ${recommendedTierInfo.displayName} for ${recommendedTierInfo.limits.submissionsPerMonth === -1 ? 'unlimited' : recommendedTierInfo.limits.submissionsPerMonth} submissions per month!`,
+                    upgradeAction: () => this.showSubmissionLimitModal(currentTier, recommendedTierInfo, limitCheck)
+                };
+            }
+            
+            return { valid: true };
+            
+        } catch (error) {
+            console.warn('Error checking tier-based rate limits:', error);
+            return { valid: true }; // Allow submission if check fails
+        }
+    }
+
+    showSubmissionLimitModal(currentTier, recommendedTier, limitCheck) {
+        // Create and show a custom submission limit modal
+        const modal = document.createElement('div');
+        modal.className = 'modal submission-limit-modal';
+        modal.style.display = 'block';
+        
+        // Get all available upgrade tiers
+        const tierManager = window.userProfileManager?.tierManager;
+        const allTiers = tierManager ? Object.values(tierManager.tiers) : [];
+        const availableUpgrades = allTiers.filter(tier => 
+            tier.price > currentTier.price && tier.name !== currentTier.name
+        );
+        
+        // Generate upgrade options HTML
+        const upgradeOptionsHTML = availableUpgrades.map(tier => `
+            <div class="upgrade-tier-option">
+                <div class="tier-header">
+                    <span class="tier-badge tier-${tier.name.toLowerCase()}">${tier.badge}</span>
+                    <div class="tier-info">
+                        <h4>${tier.displayName}</h4>
+                        <p class="tier-price">$${tier.price}/month</p>
+                    </div>
+                </div>
+                <ul class="tier-benefits">
+                    <li>${tier.limits.submissionsPerMonth === -1 ? 'Unlimited' : tier.limits.submissionsPerMonth} submissions per month</li>
+                    <li>${tier.limits.favorites === -1 ? 'Unlimited' : tier.limits.favorites} favorites</li>
+                    <li>Priority support</li>
+                    ${tier.name === 'DEV' ? '<li>Game analytics & editing</li>' : ''}
+                </ul>
+                <button class="btn-primary upgrade-btn tier-upgrade-btn" onclick="showUpgradeModal(); this.closest('.modal').remove()">
+                    💎 UPGRADE TO ${tier.name}
+                </button>
+            </div>
+        `).join('');
+        
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>🚫 SUBMISSION LIMIT REACHED</h3>
+                    <span class="close" onclick="this.closest('.modal').remove()">&times;</span>
+                </div>
+                <div class="limit-modal-body">
+                    <div class="limit-status">
+                        <div class="current-tier">
+                            <span class="tier-badge tier-${currentTier.name.toLowerCase()}">${currentTier.badge}</span>
+                            <div class="tier-info">
+                                <h4>${currentTier.displayName}</h4>
+                                <p>${limitCheck.reason}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="upgrade-arrow">⬇️ CHOOSE YOUR UPGRADE ⬇️</div>
+                    
+                    <div class="upgrade-options">
+                        ${upgradeOptionsHTML}
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button class="btn-secondary" onclick="this.closest('.modal').remove()">
+                            ❌ MAYBE LATER
+                        </button>
+                    </div>
+                    
+                    <p class="limit-help">Upgrade now to submit more games and grow your collection!</p>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Auto-focus the first upgrade button
+        setTimeout(() => {
+            const upgradeBtn = modal.querySelector('.upgrade-btn');
+            if (upgradeBtn) upgradeBtn.focus();
+        }, 100);
+    }
+
+    async checkDuplicateUrl(url, gameData) {
+        const normalizedUrl = url.trim().toLowerCase();
+        const allGames = window.enhancedGameManager?.games || this.games || [];
+        
+        const existingGame = allGames.find(game => 
+            game.url.trim().toLowerCase() === normalizedUrl
+        );
+
+        if (existingGame) {
+            // Check if the user owns this game (can update it)
+            const currentUserId = window.firebaseAuth?.currentUser?.uid;
+            const currentUserEmail = window.firebaseAuth?.currentUser?.email;
+            
+            const canUpdate = 
+                existingGame.submittedBy === currentUserId ||
+                existingGame.author === currentUserEmail ||
+                (!currentUserId && existingGame.submittedBy === 'anonymous');
+
+            if (canUpdate) {
+                // Offer update option
+                const shouldUpdate = confirm(
+                    `🔄 You already have a game with this URL: "${existingGame.title}"\n\n` +
+                    `Would you like to update the existing game instead of creating a duplicate?\n\n` +
+                    `Click OK to UPDATE existing game, or Cancel to abort submission.`
+                );
+                
+                if (shouldUpdate) {
+                    return { 
+                        valid: true, 
+                        isUpdate: true, 
+                        existingGame: existingGame 
+                    };
+                } else {
+                    return { 
+                        valid: false, 
+                        message: '❌ Submission cancelled. Use a different URL or update your existing game.' 
+                    };
+                }
+            } else {
+                return {
+                    valid: false,
+                    message: `🚫 This URL is already used by another game: "${existingGame.title}". Please use a different URL.`
+                };
+            }
+        }
+
+        return { valid: true };
+    }
+
+    async checkSimilarTitles(title) {
+        const normalizedTitle = title.trim().toLowerCase();
+        const allGames = window.enhancedGameManager?.games || this.games || [];
+        
+        // Check for exact title matches
+        const exactMatch = allGames.find(game => 
+            game.title.trim().toLowerCase() === normalizedTitle
+        );
+
+        if (exactMatch) {
+            return {
+                valid: false,
+                message: `🚫 A game with the title "${exactMatch.title}" already exists. Please choose a different title.`
+            };
+        }
+
+        // Check for very similar titles (fuzzy matching)
+        const similarGames = allGames.filter(game => {
+            const gameTitle = game.title.trim().toLowerCase();
+            return this.calculateTitleSimilarity(normalizedTitle, gameTitle) > 0.8;
+        });
+
+        if (similarGames.length > 0) {
+            const shouldContinue = confirm(
+                `⚠️ Similar game titles found:\n\n` +
+                similarGames.map(game => `• "${game.title}"`).join('\n') +
+                `\n\nYour title: "${title}"\n\n` +
+                `Click OK to continue anyway, or Cancel to choose a different title.`
+            );
+            
+            if (!shouldContinue) {
+                return {
+                    valid: false,
+                    message: '❌ Submission cancelled. Please choose a more unique title.'
+                };
+            }
+        }
+
+        return { valid: true };
+    }
+
+    calculateTitleSimilarity(title1, title2) {
+        // Simple Levenshtein distance for similarity calculation
+        const len1 = title1.length;
+        const len2 = title2.length;
+        const matrix = Array(len1 + 1).fill().map(() => Array(len2 + 1).fill(0));
+
+        for (let i = 0; i <= len1; i++) matrix[i][0] = i;
+        for (let j = 0; j <= len2; j++) matrix[0][j] = j;
+
+        for (let i = 1; i <= len1; i++) {
+            for (let j = 1; j <= len2; j++) {
+                const cost = title1[i - 1] === title2[j - 1] ? 0 : 1;
+                matrix[i][j] = Math.min(
+                    matrix[i - 1][j] + 1,
+                    matrix[i][j - 1] + 1,
+                    matrix[i - 1][j - 1] + cost
+                );
+            }
+        }
+
+        const maxLen = Math.max(len1, len2);
+        return maxLen === 0 ? 1 : (maxLen - matrix[len1][len2]) / maxLen;
+    }
+
+    async updateExistingGame(existingGame, newGameData) {
+        try {
+            console.log(`🔄 Updating existing game: "${existingGame.title}"`);
+            
+            // Create updated game object
+            const updatedGame = {
+                ...existingGame,
+                title: newGameData.title.toUpperCase(),
+                description: newGameData.description,
+                image: newGameData.image || existingGame.image,
+                genre: newGameData.genre || existingGame.genre,
+                vibe: newGameData.vibe || existingGame.vibe,
+                difficulty: newGameData.difficulty || existingGame.difficulty,
+                tags: newGameData.tags || existingGame.tags,
+                author: newGameData.author || existingGame.author,
+                lastUpdated: new Date().toISOString()
+            };
+
+            // Update in Firebase
+            if (window.dataManager && window.dataManager.isInitialized) {
+                await window.dataManager.updateGame(existingGame.id, updatedGame);
+                console.log('✅ Game updated in Firebase successfully');
+            }
+
+            // Update in local arrays
+            const allManagers = [
+                window.enhancedGameManager,
+                window.dumbassGame
+            ].filter(manager => manager && manager.games);
+
+            for (const manager of allManagers) {
+                const gameIndex = manager.games.findIndex(g => g.id === existingGame.id);
+                if (gameIndex !== -1) {
+                    manager.games[gameIndex] = updatedGame;
+                    if (manager.renderGames) manager.renderGames();
+                    if (manager.applyFilters) manager.applyFilters();
+                }
+            }
+
+            // Update user submissions in profile
+            if (window.userProfileManager) {
+                await window.userProfileManager.loadUserSubmissions();
+                window.userProfileManager.updateProfileUI();
+            }
+
+            // Show success notification
+            this.soundSystem.playSuccess();
+            this.notificationManager.showSuccess(`🔄 "${updatedGame.title}" updated successfully!`);
+            
+        } catch (error) {
+            console.error('❌ Error updating game:', error);
+            this.soundSystem.playError();
+            this.notificationManager.showError('❌ Failed to update game. Please try again.');
         }
     }
 
@@ -1393,6 +1784,11 @@ class DumbassGameAdmin {
                 console.log('%ccleanupDuplicates() - Remove duplicate games from Firebase', 'color: #00ff00;');
                 console.log('%cgetFirebaseStats() - Show Firebase database statistics', 'color: #00ff00;');
                 console.log('%cnukeFirebase() - [DANGER] Delete ALL games from Firebase', 'color: #ff4444;');
+                console.log('%c=== TIER SYSTEM ===', 'color: #00ffff; font-weight: bold;');
+                console.log('%cmigrateTiers() - Force migrate existing profiles to tier system', 'color: #00ff00;');
+                console.log('%ccheckTierProfile() - Check current user tier profile', 'color: #00ff00;');
+                console.log('%ctestUpgrade(tier) - Test tier upgrade simulation (PRO/DEV)', 'color: #00ff00;');
+                console.log('%cforceUpgradeButton() - Force show upgrade button for testing', 'color: #00ff00;');
                 console.log('%c=== DEBUG COMMANDS ===', 'color: #00ffff; font-weight: bold;');
                 console.log('%cdebugProfile() - Test profile save/load functionality', 'color: #00ff00;');
                 console.groupEnd();
@@ -1821,6 +2217,88 @@ class DumbassGameAdmin {
                     return await window.userProfileManager.debugSaveLoad();
                 }
                 return '❌ UserProfileManager not initialized';
+            },
+
+            // Tier System Commands
+            migrateTiers: async () => {
+                if (!window.userProfileManager?.currentUser) {
+                    return '❌ User not logged in - please sign in first';
+                }
+                
+                console.log('🔄 Starting tier migration for current user...');
+                
+                try {
+                    await window.userProfileManager.loadUserProfile();
+                    console.log('✅ Tier migration completed!');
+                    
+                    // Update the tier display
+                    window.userProfileManager.updateTierDisplay();
+                    
+                    return '✅ Profile migrated to tier system successfully!';
+                } catch (error) {
+                    console.error('❌ Migration failed:', error);
+                    return '❌ Migration failed - check console';
+                }
+            },
+
+            checkTierProfile: () => {
+                if (!window.userProfileManager?.userProfile) {
+                    return '❌ No user profile loaded - please sign in';
+                }
+                
+                const profile = window.userProfileManager.userProfile;
+                console.group('%c💎 TIER PROFILE CHECK', 'color: #00ffff; font-weight: bold;');
+                console.log('%cUser Email:', 'color: #00ff00;', profile.email);
+                console.log('%cTier:', 'color: #00ff00;', profile.tier || 'NOT SET');
+                console.log('%cTier Expiry:', 'color: #00ff00;', profile.tierExpiry || 'N/A');
+                console.log('%cSubmission Count:', 'color: #00ff00;', profile.submissionCount);
+                console.log('%cLast Submission:', 'color: #00ff00;', profile.lastSubmission || 'Never');
+                console.log('%cFavorites Count:', 'color: #00ff00;', profile.favoritesCount || 0);
+                console.log('%cGames Played:', 'color: #00ff00;', profile.gamesPlayed || 0);
+                
+                // Check if migration is needed
+                const needsMigration = !profile.tier || !profile.submissionCount;
+                console.log('%cNeeds Migration:', 'color: #ffff00;', needsMigration ? 'YES' : 'NO');
+                
+                console.groupEnd();
+                
+                return `Profile check complete - Tier: ${profile.tier || 'NOT SET'}`;
+            },
+
+            testUpgrade: async (tier) => {
+                if (!window.userProfileManager?.paymentManager) {
+                    return '❌ Payment manager not initialized';
+                }
+                
+                if (!tier || !['PRO', 'DEV'].includes(tier.toUpperCase())) {
+                    return '❌ Invalid tier - use PRO or DEV';
+                }
+                
+                const tierUpper = tier.toUpperCase();
+                const price = tierUpper === 'PRO' ? 5 : 10;
+                
+                console.log(`🧪 Testing ${tierUpper} upgrade simulation ($${price}/month)...`);
+                
+                try {
+                    await window.userProfileManager.paymentManager.upgradeUser(tierUpper);
+                    window.userProfileManager.updateTierDisplay();
+                    return `✅ Successfully upgraded to ${tierUpper} tier (simulation)!`;
+                } catch (error) {
+                    console.error('❌ Test upgrade failed:', error);
+                    return '❌ Test upgrade failed - check console';
+                }
+            },
+
+            forceUpgradeButton: () => {
+                const tierUpgrade = document.getElementById('tierUpgrade');
+                if (tierUpgrade) {
+                    tierUpgrade.style.display = 'block';
+                    console.log('✅ Forced upgrade button to show');
+                    return '✅ Upgrade button forced to show';
+                } else {
+                    console.warn('⚠️ tierUpgrade element not found');
+                    return '❌ tierUpgrade element not found in DOM';
+                }
             }
         };
     }
@@ -1902,54 +2380,174 @@ class RetroMusicPlayer {
         this.source = null;
         this.isAnalysisSetup = false;
         
-        // Default tracks - GXSCC converted 8-bit masterpieces!
+        // Default tracks - ALL 28 Epic MP3s!
         this.defaultPlaylist = [
             {
-                title: "I CAN'T GO FOR THAT - 8BIT",
-                url: "music/Hall_and_Oates_-_I_Cant_Go_for_That.WAV",
-                duration: "4:12",
+                title: "CELESTIAL SORROW SONG",
+                url: "music/Celestial Sorrow Song.mp3",
+                duration: "3:30",
                 type: "embedded"
             },
             {
-                title: "LITTLE LIES - 8BIT",
-                url: "music/Fleetwood_Mac_-_Little_Lies.WAV", 
-                duration: "3:48",
-                type: "embedded"
-            },
-            {
-                title: "BORN ON THE BAYOU - 8BIT",
-                url: "music/Born On The Bayou.WAV",
-                duration: "5:15",
-                type: "embedded"
-            },
-            {
-                title: "KASHMIR - 8BIT",
-                url: "music/Led_Zeppelin_-_Kashmir.WAV",
-                duration: "8:28",
-                type: "embedded"
-            },
-            {
-                title: "LAYLA - 8BIT",
-                url: "music/Eric_Clapton_-_Layla.WAV",
-                duration: "7:05",
-                type: "embedded"
-            },
-            {
-                title: "ONLY HAPPY WHEN IT RAINS - 8BIT",
-                url: "music/Garbage_-_Only_Happy_When_It_Rains.WAV",
-                duration: "3:56",
-                type: "embedded"
-            },
-            {
-                title: "RASPUTIN - 8BIT",
-                url: "music/Boney M.Rasputin .WAV",
+                title: "CLUE IN THE BEAT",
+                url: "music/Clue in the Beat.mp3",
                 duration: "4:30",
                 type: "embedded"
             },
             {
-                title: "ROCKY WAR - 8BIT",
-                url: "music/Rocky-War.WAV",
-                duration: "4:20",
+                title: "CRATER DREAM DRIFT",
+                url: "music/Crater Dream Drift.mp3",
+                duration: "4:54",
+                type: "embedded"
+            },
+            {
+                title: "CRUISING LOW HUM",
+                url: "music/Cruising Low Hum.mp3",
+                duration: "3:54",
+                type: "embedded"
+            },
+            {
+                title: "DESERT SILK RUMBLE",
+                url: "music/Desert Silk Rumble.mp3", 
+                duration: "7:24",
+                type: "embedded"
+            },
+            {
+                title: "EARTHY RHYTHM ROOTS",
+                url: "music/Earthy Rhythm Roots.mp3",
+                duration: "4:18",
+                type: "embedded"
+            },
+            {
+                title: "EYE-CATCHING LOVE GLANCE",
+                url: "music/Eye-Catching Love Glance.mp3",
+                duration: "3:12",
+                type: "embedded"
+            },
+            {
+                title: "FALSE TUNE",
+                url: "music/False Tune.mp3",
+                duration: "4:42",
+                type: "embedded"
+            },
+            {
+                title: "FAREWELL OR FIGHT NOTE",
+                url: "music/Farewell or Fight Note.mp3",
+                duration: "2:48",
+                type: "embedded"
+            },
+            {
+                title: "FESTIVE ESCAPE MELODY",
+                url: "music/Festive Escape Melody.mp3",
+                duration: "4:12",
+                type: "embedded"
+            },
+            {
+                title: "GLOBAL CHAOS REGGAE",
+                url: "music/Global Chaos Reggae.mp3",
+                duration: "3:30",
+                type: "embedded"
+            },
+            {
+                title: "HEARTSTRINGS WHISPER",
+                url: "music/Heartstrings Whisper.mp3",
+                duration: "5:24",
+                type: "embedded"
+            },
+            {
+                title: "MIDNIGHT FABRIC PULSE",
+                url: "music/Midnight Fabric Pulse).mp3",
+                duration: "3:54",
+                type: "embedded"
+            },
+            {
+                title: "MISTY VISION FLOW",
+                url: "music/Misty Vision Flow.mp3",
+                duration: "4:00",
+                type: "embedded"
+            },
+            {
+                title: "MYSTIC DANCER'S CHANT",
+                url: "music/Mystic Dancer's Chant.mp3",
+                duration: "4:06",
+                type: "embedded"
+            },
+            {
+                title: "NERDY LOVE JINGLE",
+                url: "music/Nerdy Love Jingle.mp3",
+                duration: "2:42",
+                type: "embedded"
+            },
+            {
+                title: "PERSONAL ANTHEM WAVE",
+                url: "music/Personal Anthem Wave.mp3",
+                duration: "4:00",
+                type: "embedded"
+            },
+            {
+                title: "POLISHED SUIT SWING",
+                url: "music/Polished Suit Swing.mp3",
+                duration: "3:06",
+                type: "embedded"
+            },
+            {
+                title: "POWDERED RIFF RUSH",
+                url: "music/Powdered Riff Rush.mp3",
+                duration: "3:30",
+                type: "embedded"
+            },
+            {
+                title: "RAINDROP JOY RIFF",
+                url: "music/Raindrop Joy Riff.mp3",
+                duration: "3:36",
+                type: "embedded"
+            },
+            {
+                title: "ROYAL PURPLE JAM",
+                url: "music/Royal Purple Jam.mp3",
+                duration: "4:00",
+                type: "embedded"
+            },
+            {
+                title: "SLICK SOUL GLIDE",
+                url: "music/Slick Soul Glide.mp3",
+                duration: "4:12",
+                type: "embedded"
+            },
+            {
+                title: "SOARING WING TUNE",
+                url: "music/Soaring-Wing-Tune.mp3",
+                duration: "1:48",
+                type: "embedded"
+            },
+            {
+                title: "TIMELESS LAMENT LOOP",
+                url: "music/Timeless-Lament-Loop.mp3",
+                duration: "3:48",
+                type: "embedded"
+            },
+            {
+                title: "TOPSY-TURVY LOVE TUNE",
+                url: "music/Topsy-Turvy-Love-Tune.mp3",
+                duration: "3:00",
+                type: "embedded"
+            },
+            {
+                title: "UNWILLING GROOVE SHIFT",
+                url: "music/Unwilling-Groove-Shift.mp3",
+                duration: "2:42",
+                type: "embedded"
+            },
+            {
+                title: "UPLIFTED SOUL RISE",
+                url: "music/Uplifted-Soul-Rise.mp3",
+                duration: "2:12",
+                type: "embedded"
+            },
+            {
+                title: "WILD HOME BEAT",
+                url: "music/Wild-Home-Beat.mp3",
+                duration: "2:00",
                 type: "embedded"
             }
         ];
@@ -2158,15 +2756,35 @@ class RetroMusicPlayer {
     
     filterValidTracks(trackList) {
         // Keep embedded tracks (the ones that come with the site)
-                const validUrls = [
-            "music/Hall_and_Oates_-_I_Cant_Go_for_That.WAV",
-            "music/Fleetwood_Mac_-_Little_Lies.WAV",
-            "music/Born On The Bayou.WAV",
-            "music/Led_Zeppelin_-_Kashmir.WAV",
-            "music/Eric_Clapton_-_Layla.WAV",
-            "music/Garbage_-_Only_Happy_When_It_Rains.WAV",
-            "music/Boney M.Rasputin .WAV",
-            "music/Rocky-War.WAV"
+        const validUrls = [
+            "music/Celestial Sorrow Song.mp3",
+            "music/Clue in the Beat.mp3",
+            "music/Crater Dream Drift.mp3",
+            "music/Cruising Low Hum.mp3",
+            "music/Desert Silk Rumble.mp3",
+            "music/Earthy Rhythm Roots.mp3",
+            "music/Eye-Catching Love Glance.mp3",
+            "music/False Tune.mp3",
+            "music/Farewell or Fight Note.mp3",
+            "music/Festive Escape Melody.mp3",
+            "music/Global Chaos Reggae.mp3",
+            "music/Heartstrings Whisper.mp3",
+            "music/Midnight Fabric Pulse).mp3",
+            "music/Misty Vision Flow.mp3",
+            "music/Mystic Dancer's Chant.mp3",
+            "music/Nerdy Love Jingle.mp3",
+            "music/Personal Anthem Wave.mp3",
+            "music/Polished Suit Swing.mp3",
+            "music/Powdered Riff Rush.mp3",
+            "music/Raindrop Joy Riff.mp3",
+            "music/Royal Purple Jam.mp3",
+            "music/Slick Soul Glide.mp3",
+            "music/Soaring-Wing-Tune.mp3",
+            "music/Timeless-Lament-Loop.mp3",
+            "music/Topsy-Turvy-Love-Tune.mp3",
+            "music/Unwilling-Groove-Shift.mp3",
+            "music/Uplifted-Soul-Rise.mp3",
+            "music/Wild-Home-Beat.mp3"
         ];
         
         return trackList.filter(track => {
@@ -3795,9 +4413,9 @@ class EmergencyMusicPlayer {
         document.body.appendChild(this.audio);
         
         this.tracks = [
-            'music/Hall_and_Oates_-_I_Cant_Go_for_That.WAV',
-            'music/Fleetwood_Mac_-_Little_Lies.WAV',
-            'music/Born On The Bayou.WAV'
+            'music/Celestial Sorrow Song.mp3',
+            'music/Global Chaos Reggae.mp3',
+            'music/Royal Purple Jam.mp3'
         ];
         
         this.currentTrack = 0;
@@ -4157,38 +4775,65 @@ class FirebaseAuthManager {
     }
 
     updateAuthUI(user) {
-        const loginBtn = document.getElementById('loginBtn');
-        const authToggle = document.getElementById('authToggle');
+        const authBtn = document.getElementById('authBtn');
+        const authBtnText = document.getElementById('authBtnText');
         
         if (user) {
-            // User is signed in
-            loginBtn.style.display = 'none';
-            authToggle.style.display = 'block';
-            authToggle.title = `Logged in as ${user.email}`;
+            // User is signed in - show profile button
+            if (authBtnText) {
+                authBtnText.textContent = 'PROFILE';
+            }
+            if (authBtn) {
+                authBtn.title = `Logged in as ${user.email}`;
+                authBtn.classList.remove('primary');
+                authBtn.classList.add('profile-mode');
+            }
             
             // Update user info in modal - use display name if available
             this.updateWelcomeMessage(user);
-            document.getElementById('userInfo').style.display = 'block';
-            document.getElementById('authForm').style.display = 'none';
-            document.querySelector('.auth-tabs').style.display = 'none';
+            if (document.getElementById('userInfo')) {
+                document.getElementById('userInfo').style.display = 'block';
+            }
+            if (document.getElementById('authForm')) {
+                document.getElementById('authForm').style.display = 'none';
+            }
+            if (document.querySelector('.auth-tabs')) {
+                document.querySelector('.auth-tabs').style.display = 'none';
+            }
         } else {
-            // User is signed out
-            loginBtn.style.display = 'block';
-            authToggle.style.display = 'none';
+            // User is signed out - show login button
+            if (authBtnText) {
+                authBtnText.textContent = 'LOGIN';
+            }
+            if (authBtn) {
+                authBtn.title = 'Sign in to your account';
+                authBtn.classList.add('primary');
+                authBtn.classList.remove('profile-mode');
+            }
             
             // Reset modal to form view
-            document.getElementById('userInfo').style.display = 'none';
-            document.getElementById('authForm').style.display = 'block';
-            document.querySelector('.auth-tabs').style.display = 'flex';
+            if (document.getElementById('userInfo')) {
+                document.getElementById('userInfo').style.display = 'none';
+            }
+            if (document.getElementById('authForm')) {
+                document.getElementById('authForm').style.display = 'block';
+            }
+            if (document.querySelector('.auth-tabs')) {
+                document.querySelector('.auth-tabs').style.display = 'flex';
+            }
         }
 
         // Notify user profile manager of auth state change
         if (window.userProfileManager) {
             window.userProfileManager.loadUserData();
+            // Try to update header username immediately
+            setTimeout(() => window.userProfileManager.updateHeaderUsername(), 100);
             // Reload favorites after sign-in with a small delay to ensure Firebase is ready
             setTimeout(async () => {
                 await window.userProfileManager.loadUserFavorites();
                 window.userProfileManager.updateHeartIcons();
+                // Update header username after everything is loaded
+                window.userProfileManager.updateHeaderUsername();
             }, 1000);
         }
     }
@@ -4257,6 +4902,37 @@ class FirebaseAuthManager {
             }
             
             const userCredential = await window.createUserWithEmailAndPassword(window.firebaseAuth, email, password);
+            
+            // Save terms agreement and initial user profile to Firebase
+            try {
+                const newUserProfile = {
+                    email: email,
+                    displayName: '',
+                    bio: '',
+                    joinDate: new Date().toISOString(),
+                    termsAccepted: true,
+                    termsAcceptedDate: new Date().toISOString(),
+                    version: '1.0',
+                    // Tier system
+                    tier: 'FREE',
+                    tierExpiry: null,
+                    submissionCount: { daily: 0, weekly: 0, monthly: 0 },
+                    lastSubmission: null,
+                    favoritesCount: 0,
+                    // Play tracking for analytics
+                    gamesPlayed: 0,
+                    lastActive: new Date().toISOString()
+                };
+                
+                if (window.persistenceManager) {
+                    await window.persistenceManager.saveUserProfile(newUserProfile);
+                    console.log('✅ Saved initial user profile with terms agreement to Firebase');
+                }
+            } catch (profileError) {
+                console.warn('⚠️ Could not save initial user profile:', profileError);
+                // Don't fail the signup if profile saving fails
+            }
+            
             this.hideAuthError();
             this.hideAuthModal();
             if (window.dumbassGame && window.dumbassGame.notificationManager) {
@@ -4328,6 +5004,8 @@ class FirebaseAuthManager {
     showAuthModal() {
         document.getElementById('authModal').style.display = 'flex';
         document.body.style.overflow = 'hidden';
+        // Always default to login tab when opening modal
+        this.switchTab('login');
         // Focus on email field
         setTimeout(() => {
             document.getElementById('authEmail').focus();
@@ -4362,6 +5040,11 @@ class FirebaseAuthManager {
             confirmPasswordField.required = false;
             if (termsAgreement) {
                 termsAgreement.style.display = 'none';
+                // Disable the checkbox to prevent form validation issues
+                const checkbox = document.getElementById('agreeToTerms');
+                if (checkbox) {
+                    checkbox.required = false;
+                }
             }
             submitBtn.innerHTML = '🚀 LOGIN';
             modalTitle.textContent = 'LOGIN';
@@ -4370,6 +5053,11 @@ class FirebaseAuthManager {
             confirmPasswordField.required = true;
             if (termsAgreement) {
                 termsAgreement.style.display = 'block';
+                // Enable the checkbox for signup
+                const checkbox = document.getElementById('agreeToTerms');
+                if (checkbox) {
+                    checkbox.required = true;
+                }
             }
             submitBtn.innerHTML = '🚀 SIGN UP';
             modalTitle.textContent = 'SIGN UP';
@@ -4383,6 +5071,17 @@ class FirebaseAuthManager {
 let authManager;
 
 // Global authentication functions
+function handleAuthClick() {
+    // Check if user is logged in
+    if (window.authManager && window.authManager.currentUser) {
+        // User is logged in - show profile
+        showUserProfile();
+    } else {
+        // User is not logged in - show auth modal
+        showAuthModal();
+    }
+}
+
 function showAuthModal() {
     if (window.authManager && window.authManager.showAuthModal) {
         window.authManager.showAuthModal();
@@ -4420,6 +5119,12 @@ function toggleAuth() {
 async function logout() {
     if (window.authManager) {
         await window.authManager.signOut();
+    }
+    
+    // Hide the header username display
+    const userIndicator = document.getElementById('userIndicator');
+    if (userIndicator) {
+        userIndicator.style.display = 'none';
     }
 }
 
@@ -4483,6 +5188,613 @@ window.addEventListener('load', function() {
 //    PHASE 3: ADVANCED FEATURES
 // =============================
 
+// Tier Management System
+class TierManager {
+    constructor() {
+        this.tiers = {
+            FREE: {
+                name: 'FREE',
+                displayName: 'Free Player',
+                price: 0,
+                limits: {
+                    favorites: 15,
+                    submissionsPerMonth: 2,
+                    submissionsPerWeek: 1,
+                    submissionsPerDay: 1
+                },
+                features: ['Browse & play all games', 'Basic profile'],
+                badge: '🕹️',
+                color: '#666666'
+            },
+            PRO: {
+                name: 'PRO',
+                displayName: 'Pro Gamer',
+                price: 5,
+                limits: {
+                    favorites: 100,
+                    submissionsPerMonth: 8,
+                    submissionsPerWeek: 2,
+                    submissionsPerDay: 2
+                },
+                features: ['Everything in FREE', 'PRO badge', 'Basic stats'],
+                badge: '⭐',
+                color: '#00ffff'
+            },
+            DEV: {
+                name: 'DEV',
+                displayName: 'Game Dev',
+                price: 10,
+                limits: {
+                    favorites: -1, // unlimited
+                    submissionsPerMonth: -1,
+                    submissionsPerWeek: -1,
+                    submissionsPerDay: -1
+                },
+                features: ['Everything in PRO', 'DEV badge', 'Game analytics', 'Edit games'],
+                badge: '🚀',
+                color: '#00ff00'
+            }
+        };
+    }
+
+    getTierInfo(tierName) {
+        return this.tiers[tierName] || this.tiers.FREE;
+    }
+
+    async checkSubmissionLimits(userProfile) {
+        if (!userProfile) return { allowed: false, reason: 'No user profile found' };
+
+        const tier = this.getTierInfo(userProfile.tier);
+        const now = new Date();
+        const today = now.toDateString();
+        
+        // Initialize submission counts if missing
+        if (!userProfile.submissionCount) {
+            userProfile.submissionCount = { daily: 0, weekly: 0, monthly: 0 };
+        }
+
+        // Reset counts if needed
+        const lastSubmission = userProfile.lastSubmission ? new Date(userProfile.lastSubmission) : null;
+        if (!lastSubmission || lastSubmission.toDateString() !== today) {
+            userProfile.submissionCount.daily = 0;
+        }
+
+        const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+        if (!lastSubmission || lastSubmission < weekStart) {
+            userProfile.submissionCount.weekly = 0;
+        }
+
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        if (!lastSubmission || lastSubmission < monthStart) {
+            userProfile.submissionCount.monthly = 0;
+        }
+
+        // Check limits
+        const counts = userProfile.submissionCount;
+
+        if (tier.limits.submissionsPerDay > 0 && counts.daily >= tier.limits.submissionsPerDay) {
+            const tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(0, 0, 0, 0);
+            return { 
+                allowed: false, 
+                reason: `Daily limit reached (${tier.limits.submissionsPerDay}). Next submission: ${tomorrow.toLocaleDateString()}`,
+                nextAllowed: tomorrow
+            };
+        }
+
+        if (tier.limits.submissionsPerWeek > 0 && counts.weekly >= tier.limits.submissionsPerWeek) {
+            const nextWeek = new Date(weekStart);
+            nextWeek.setDate(nextWeek.getDate() + 7);
+            return { 
+                allowed: false, 
+                reason: `Weekly limit reached (${tier.limits.submissionsPerWeek}). Next submission: ${nextWeek.toLocaleDateString()}`,
+                nextAllowed: nextWeek
+            };
+        }
+
+        if (tier.limits.submissionsPerMonth > 0 && counts.monthly >= tier.limits.submissionsPerMonth) {
+            const nextMonth = new Date(monthStart);
+            nextMonth.setMonth(nextMonth.getMonth() + 1);
+            return { 
+                allowed: false, 
+                reason: `Monthly limit reached (${tier.limits.submissionsPerMonth}). Next submission: ${nextMonth.toLocaleDateString()}`,
+                nextAllowed: nextMonth
+            };
+        }
+
+        return { allowed: true };
+    }
+
+    async recordSubmission(userProfile) {
+        if (!userProfile.submissionCount) {
+            userProfile.submissionCount = { daily: 0, weekly: 0, monthly: 0 };
+        }
+
+        userProfile.submissionCount.daily++;
+        userProfile.submissionCount.weekly++;
+        userProfile.submissionCount.monthly++;
+        userProfile.lastSubmission = new Date().toISOString();
+
+        // Save updated profile
+        if (window.persistenceManager) {
+            await window.persistenceManager.saveUserProfile(userProfile);
+        }
+    }
+
+    checkFavoritesLimit(userProfile, currentFavoritesCount) {
+        const tier = this.getTierInfo(userProfile.tier);
+        if (tier.limits.favorites === -1) return { allowed: true }; // unlimited
+
+        if (currentFavoritesCount >= tier.limits.favorites) {
+            return { 
+                allowed: false, 
+                reason: `Favorites limit reached (${tier.limits.favorites}). Upgrade to add more!`,
+                limit: tier.limits.favorites
+            };
+        }
+
+        return { allowed: true };
+    }
+
+    async trackGamePlay(userProfile) {
+        if (!userProfile) return;
+
+        userProfile.gamesPlayed = (userProfile.gamesPlayed || 0) + 1;
+        userProfile.lastActive = new Date().toISOString();
+
+        // Save updated profile (silent to avoid spam)
+        if (window.persistenceManager) {
+            await window.persistenceManager.saveUserProfile(userProfile);
+        }
+    }
+
+    getTierBadgeHtml(userProfile) {
+        if (!userProfile || !userProfile.tier) return '';
+        
+        const tier = this.getTierInfo(userProfile.tier);
+        return `<span class="tier-badge tier-${tier.name.toLowerCase()}" title="${tier.displayName}" style="color: ${tier.color}">${tier.badge}</span>`;
+    }
+
+    getTierLimitsText(tierName) {
+        const tier = this.getTierInfo(tierName);
+        const limits = [];
+        
+        if (tier.limits.favorites === -1) {
+            limits.push('Unlimited favorites');
+        } else {
+            limits.push(`${tier.limits.favorites} favorites max`);
+        }
+
+        if (tier.limits.submissionsPerMonth === -1) {
+            limits.push('Unlimited submissions');
+        } else {
+            limits.push(`${tier.limits.submissionsPerMonth} submissions/month`);
+        }
+
+        return limits.join(', ');
+    }
+}
+
+// Payment and Upgrade System
+class PaymentManager {
+    constructor() {
+        this.paypal = null;
+        this.initializePayPal();
+    }
+
+    async initializePayPal() {
+        // Initialize PayPal - you'll need to replace with your actual client ID
+        this.paypalClientId = 'AVTp0aGYOSe6gBiJh5RA1EFEX7UDKBLwXAGb1bwNCz48o4K9DvMNcq5UO8ODYQJssO0VR1o1FP-AAuQU'; // PayPal Sandbox Client ID
+        this.paypalSDKLoaded = false;
+        console.log('💰 PayPal payment manager initialized');
+        
+        // Load PayPal SDK if not already loaded
+        if (!window.paypal && !document.querySelector('script[src*="paypal"]') && !this.paypalSDKLoaded) {
+            await this.loadPayPalSDK();
+        }
+    }
+
+    async loadPayPalSDK() {
+        if (this.paypalSDKLoaded) return;
+        
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            // Simplified PayPal SDK loading for better compatibility
+            script.src = `https://www.paypal.com/sdk/js?client-id=${this.paypalClientId}&currency=USD&intent=capture&commit=true&disable-funding=paylater,card`;
+            script.onload = () => {
+                console.log('💰 PayPal SDK loaded');
+                this.paypalSDKLoaded = true;
+                resolve();
+            };
+            script.onerror = () => {
+                console.error('❌ Failed to load PayPal SDK');
+                reject(new Error('Failed to load PayPal SDK'));
+            };
+            document.head.appendChild(script);
+        });
+    }
+
+    async initiateUpgrade(tier, priceInDollars) {
+        if (!window.userProfileManager?.currentUser) {
+            window.userProfileManager?.showAuthModal();
+            window.notificationManager?.showError('Please sign in to upgrade your account');
+            return;
+        }
+
+        try {
+            console.log(`💎 Initiating PayPal upgrade to ${tier} ($${priceInDollars}/month)`);
+            
+            // Show PayPal button modal
+            this.showPayPalModal(tier, priceInDollars);
+            
+        } catch (error) {
+            console.error('❌ Upgrade error:', error);
+            window.notificationManager?.showError('Failed to initialize payment. Please try again.');
+        }
+    }
+
+    showPayPalModal(tier, priceInDollars) {
+        // Remove any existing PayPal modals first
+        const existingModal = document.querySelector('.paypal-modal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // Create PayPal payment modal
+        const modal = document.createElement('div');
+        modal.className = 'modal paypal-modal';
+        modal.style.display = 'block';
+        
+        modal.innerHTML = `
+            <div class="modal-content paypal-modal-content">
+                <div class="modal-header">
+                    <h3>💰 Complete Your Upgrade</h3>
+                    <span class="close" onclick="this.closest('.modal').remove()">&times;</span>
+                </div>
+                <div class="paypal-modal-body">
+                    <div class="upgrade-summary">
+                        <div class="tier-info">
+                            <h4>Upgrading to: ${tier} TIER</h4>
+                            <p class="price">$${priceInDollars}/month</p>
+                        </div>
+                    </div>
+                    <div class="payment-section">
+                        <h5>Complete Payment:</h5>
+                        <div class="payment-options">
+                            <div class="paypal-container-centered">
+                                <div id="paypal-button-container-${tier.toLowerCase()}" class="paypal-button-fixed"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Initialize PayPal button
+        setTimeout(() => {
+            if (window.paypal && window.paypal.Buttons) {
+                this.initializePayPalButton(tier, priceInDollars);
+            } else {
+                const container = document.getElementById(`paypal-button-container-${tier.toLowerCase()}`);
+                if (container) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 30px; color: #ff4444;">
+                            <h4 style="color: #ff4444; margin: 0 0 15px 0;">⚠️ Payment Unavailable</h4>
+                            <p style="font-size: 12px; margin: 10px 0;">PayPal is currently unavailable.</p>
+                            <p style="font-size: 10px; color: #888;">Please try refreshing the page or contact support.</p>
+                        </div>
+                    `;
+                }
+            }
+        }, 150);
+    }
+
+    async initializePayPalButton(tier, priceInDollars) {
+        const containerId = `paypal-button-container-${tier.toLowerCase()}`;
+        const container = document.getElementById(containerId);
+        
+        if (!window.paypal) {
+            console.error('PayPal SDK not available');
+            return;
+        }
+
+        if (!container) {
+            console.error('PayPal container not found:', containerId);
+            return;
+        }
+
+        // Clear container first to prevent duplicates
+        container.innerHTML = '';
+        
+        try {
+            await window.paypal.Buttons({
+                style: {
+                    shape: 'rect',
+                    color: 'blue',
+                    layout: 'vertical',
+                    label: 'pay'
+                },
+                
+                createOrder: (data, actions) => {
+                    return actions.order.create({
+                        purchase_units: [{
+                            amount: {
+                                value: priceInDollars.toString(),
+                                currency_code: 'USD'
+                            },
+                            description: `${tier} Tier Subscription - DumbassGames`
+                        }],
+                        application_context: {
+                            shipping_preference: 'NO_SHIPPING',
+                            user_action: 'PAY_NOW',
+                            payment_method: {
+                                payer_selected: 'PAYPAL',
+                                payee_preferred: 'IMMEDIATE_PAYMENT_REQUIRED'
+                            }
+                        }
+                    });
+                },
+                
+                onApprove: async (data, actions) => {
+                    try {
+                        const details = await actions.order.capture();
+                        console.log('💰 PayPal payment successful:', details);
+                        
+                        // Process the successful payment
+                        await this.handleSuccessfulPayment(tier, priceInDollars, details);
+                        
+                        // Close modal
+                        document.querySelector('.paypal-modal')?.remove();
+                        
+                    } catch (error) {
+                        console.error('❌ Error capturing PayPal payment:', error);
+                        window.notificationManager?.showError('Payment processing failed. Please try again.');
+                    }
+                },
+                
+                onError: (err) => {
+                    console.error('❌ PayPal payment error:', err);
+                    // Don't show error for blocked analytics calls
+                    if (!err.toString().includes('logger')) {
+                        window.notificationManager?.showError('Payment failed. Please try again or use manual payment.');
+                    }
+                },
+                
+                onCancel: (data) => {
+                    console.log('💰 PayPal payment cancelled:', data);
+                    window.notificationManager?.showInfo('Payment cancelled. You can try again anytime.');
+                }
+                
+            }).render(`#${containerId}`);
+            
+        } catch (error) {
+            console.error('❌ Error initializing PayPal button:', error);
+            // Show fallback message in container if PayPal fails
+            container.innerHTML = `
+                <div style="text-align: center; padding: 20px; color: #ffa500;">
+                    <p>⚠️ PayPal button unavailable</p>
+                    <p style="font-size: 10px;">Please use manual payment below</p>
+                </div>
+            `;
+        }
+    }
+
+    async handleSuccessfulPayment(tier, priceInDollars, paymentDetails) {
+        try {
+            // Store payment details for verification
+            const paymentRecord = {
+                tier: tier,
+                amount: priceInDollars,
+                paymentId: paymentDetails.id,
+                payerEmail: paymentDetails.payer?.email_address,
+                status: paymentDetails.status,
+                timestamp: new Date().toISOString(),
+                userId: window.userProfileManager?.currentUser?.uid
+            };
+            
+            console.log('💰 Recording payment:', paymentRecord);
+            
+            // Save payment record to Firebase (for verification)
+            if (window.firebaseDb) {
+                await window.firebaseSetDoc(
+                    window.firebaseDoc(window.firebaseDb, 'payments', paymentDetails.id),
+                    paymentRecord
+                );
+            }
+            
+            // Upgrade the user
+            await this.upgradeUser(tier);
+            
+            window.notificationManager?.showSuccess(`🎉 Payment successful! Welcome to ${tier} tier!`);
+            hideUpgradeModal();
+            
+            if (window.userProfileManager) {
+                await window.userProfileManager.loadUserData();
+                window.userProfileManager.updateProfileUI();
+            }
+            
+        } catch (error) {
+            console.error('❌ Error processing successful payment:', error);
+            window.notificationManager?.showError('Payment received but upgrade failed. Please contact support.');
+        }
+    }
+
+    handleManualPayment(tier, priceInDollars) {
+        const userEmail = window.userProfileManager?.currentUser?.email || 'Unknown';
+        const paymentEmail = 'payments@dumbassgames.xyz';
+        const subject = encodeURIComponent(`${tier} Subscription Payment`);
+        const body = encodeURIComponent(`Hello,
+
+I would like to upgrade to the ${tier} tier for $${priceInDollars}/month.
+
+My account email: ${userEmail}
+Payment amount: $${priceInDollars} USD
+Subscription type: ${tier} Tier
+
+Please confirm receipt and activate my subscription.
+
+Thank you!`);
+        
+        // Open email client or copy payment details
+        const mailtoLink = `mailto:${paymentEmail}?subject=${subject}&body=${body}`;
+        
+        // Try to open email client
+        window.open(mailtoLink);
+        
+        // Also show a modal with payment details to copy
+        const detailsModal = document.createElement('div');
+        detailsModal.className = 'modal payment-details-modal';
+        detailsModal.style.display = 'block';
+        
+        detailsModal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>💳 Manual Payment Details</h3>
+                    <span class="close" onclick="this.closest('.modal').remove()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <p>Please send payment to:</p>
+                    <div class="payment-details">
+                        <p><strong>PayPal Email:</strong> <span class="copyable" onclick="navigator.clipboard?.writeText('${paymentEmail}')">${paymentEmail}</span> <button onclick="navigator.clipboard?.writeText('${paymentEmail}')">📋 Copy</button></p>
+                        <p><strong>Amount:</strong> $${priceInDollars} USD</p>
+                        <p><strong>Note/Description:</strong> <span class="copyable">${tier} Subscription - ${userEmail}</span> <button onclick="navigator.clipboard?.writeText('${tier} Subscription - ${userEmail}')">📋 Copy</button></p>
+                    </div>
+                    <p>⚠️ <strong>Important:</strong> Include your account email (${userEmail}) in the payment note so we can activate your subscription.</p>
+                    <p>🕐 Processing time: 1-2 business days after payment is received.</p>
+                    <div class="modal-actions">
+                        <button class="btn-primary" onclick="this.closest('.modal').remove()">Got it!</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(detailsModal);
+        
+        // Close the PayPal modal
+        document.querySelector('.paypal-modal')?.remove();
+        
+        window.notificationManager?.showInfo('Payment details copied! Please check your email for payment instructions.');
+    }
+
+
+
+    async upgradeUser(tier) {
+        if (!window.userProfileManager?.currentUser) return false;
+
+        try {
+            const userProfile = window.userProfileManager.userProfile;
+            const currentTime = new Date().toISOString();
+            
+            // Calculate expiry date (1 month from now)
+            const expiryDate = new Date();
+            expiryDate.setMonth(expiryDate.getMonth() + 1);
+            
+            // Update user profile with new tier
+            const updatedProfile = {
+                ...userProfile,
+                tier: tier,
+                tierExpiry: expiryDate.toISOString(),
+                tierUpgradeDate: currentTime,
+                version: '1.1'
+            };
+            
+            // Save to Firebase
+            await window.firebaseSetDoc(
+                window.firebaseDoc(window.firebaseDb, 'userProfiles', window.userProfileManager.currentUser.uid),
+                updatedProfile
+            );
+            
+            // Update local profile
+            window.userProfileManager.userProfile = updatedProfile;
+            
+            console.log(`✅ User upgraded to ${tier} successfully`);
+            return true;
+        } catch (error) {
+            console.error('❌ Error upgrading user:', error);
+            return false;
+        }
+    }
+
+    async checkTierExpiry(userProfile) {
+        if (!userProfile.tierExpiry || userProfile.tier === 'FREE') {
+            return { expired: false, tier: userProfile.tier };
+        }
+
+        const now = new Date();
+        const expiry = new Date(userProfile.tierExpiry);
+        
+        if (now > expiry) {
+            // Tier has expired, downgrade to FREE
+            console.log('⏰ Tier expired, downgrading to FREE');
+            await this.downgradeToFree(userProfile);
+            return { expired: true, tier: 'FREE' };
+        }
+        
+        return { expired: false, tier: userProfile.tier };
+    }
+
+    async downgradeToFree(userProfile) {
+        try {
+            const updatedProfile = {
+                ...userProfile,
+                tier: 'FREE',
+                tierExpiry: null,
+                tierDowngradeDate: new Date().toISOString(),
+                version: '1.1'
+            };
+            
+            // Save to Firebase
+            await window.firebaseSetDoc(
+                window.firebaseDoc(window.firebaseDb, 'userProfiles', window.userProfileManager.currentUser.uid),
+                updatedProfile
+            );
+            
+            // Update local profile
+            window.userProfileManager.userProfile = updatedProfile;
+            
+            console.log('📉 User downgraded to FREE due to expiry');
+            window.notificationManager?.showWarning('Your premium tier has expired. You\'ve been moved to the FREE tier.');
+        } catch (error) {
+            console.error('❌ Error downgrading user:', error);
+        }
+    }
+
+    async cancelSubscription() {
+        if (!window.userProfileManager?.currentUser) return false;
+
+        try {
+            // In real implementation, this would call your backend to cancel the Stripe subscription
+            const userProfile = window.userProfileManager.userProfile;
+            
+            // Set expiry to end of current billing period instead of immediate cancellation
+            const endOfPeriod = new Date(userProfile.tierExpiry);
+            
+            const updatedProfile = {
+                ...userProfile,
+                tierCancelledDate: new Date().toISOString(),
+                tierWillExpire: endOfPeriod.toISOString(),
+                version: '1.1'
+            };
+            
+            await window.firebaseSetDoc(
+                window.firebaseDoc(window.firebaseDb, 'userProfiles', window.userProfileManager.currentUser.uid),
+                updatedProfile
+            );
+            
+            window.userProfileManager.userProfile = updatedProfile;
+            
+            window.notificationManager?.showInfo(`Your subscription will end on ${endOfPeriod.toLocaleDateString()}. You'll keep your current tier until then.`);
+            return true;
+        } catch (error) {
+            console.error('❌ Error cancelling subscription:', error);
+            return false;
+        }
+    }
+}
+
 // User Profile Management System
 class UserProfileManager {
     constructor() {
@@ -4493,6 +5805,10 @@ class UserProfileManager {
         this.isSubmitting = false;
         this.handleProfileSubmit = null;
         this.lastLoadTime = 0;
+        this.tierManager = new TierManager();
+        this.paymentManager = new PaymentManager();
+        // Make payment manager globally accessible
+        window.paymentManager = this.paymentManager;
         this.initializeProfile();
     }
 
@@ -4566,11 +5882,12 @@ class UserProfileManager {
         // Update current user reference
         this.currentUser = window.firebaseAuth?.currentUser || null;
 
-        // Only load favorites, NOT profile data to avoid overwriting form
+        // Load both profile and favorites data
         try {
+            await this.loadUserProfile();
             await this.loadUserFavorites();
             this.updateHeartIcons();
-            console.log('✅ Loaded user favorites only (preserved profile form)');
+            console.log('✅ Loaded user profile and favorites');
         } catch (error) {
             console.error('Error loading user data:', error);
         }
@@ -4589,12 +5906,49 @@ class UserProfileManager {
                 preferences: {
                     soundEnabled: window.soundEnabled,
                     effectsEnabled: window.effectsEnabled
-                }
+                },
+                // Tier system defaults for new profiles
+                tier: 'FREE',
+                tierExpiry: null,
+                submissionCount: { daily: 0, weekly: 0, monthly: 0 },
+                lastSubmission: null,
+                favoritesCount: 0,
+                gamesPlayed: 0,
+                lastActive: new Date().toISOString()
             });
+            
             console.log('☁️ Loaded profile using persistence manager:', this.userProfile);
+            
+            // MIGRATE EXISTING PROFILES: Add tier system fields if missing
+            const needsMigration = !this.userProfile.tier || 
+                                 !this.userProfile.submissionCount || 
+                                 typeof this.userProfile.submissionCount !== 'object';
+            
+            if (needsMigration) {
+                console.log('🔄 Migrating existing profile to tier system...');
+                
+                // Preserve existing data and add tier fields
+                this.userProfile = {
+                    ...this.userProfile,
+                    tier: this.userProfile.tier || 'FREE',
+                    tierExpiry: this.userProfile.tierExpiry || null,
+                    submissionCount: this.userProfile.submissionCount || { daily: 0, weekly: 0, monthly: 0 },
+                    lastSubmission: this.userProfile.lastSubmission || null,
+                    favoritesCount: this.userProfile.favoritesCount || 0,
+                    gamesPlayed: this.userProfile.gamesPlayed || 0,
+                    lastActive: new Date().toISOString()
+                };
+                
+                // Save the migrated profile
+                await this.saveProfile();
+                console.log('✅ Profile migrated to tier system successfully!');
+            }
+            
+            // Update header username immediately after profile loads
+            this.updateHeaderUsername();
         } catch (error) {
             console.error('Error loading user profile:', error);
-            // Fallback to basic profile
+            // Fallback to basic profile with tier system
             this.userProfile = {
                 email: this.currentUser?.email || '',
                 displayName: '',
@@ -4603,7 +5957,15 @@ class UserProfileManager {
                 preferences: {
                     soundEnabled: true,
                     effectsEnabled: true
-                }
+                },
+                // Tier system defaults
+                tier: 'FREE',
+                tierExpiry: null,
+                submissionCount: { daily: 0, weekly: 0, monthly: 0 },
+                lastSubmission: null,
+                favoritesCount: 0,
+                gamesPlayed: 0,
+                lastActive: new Date().toISOString()
             };
         }
     }
@@ -4682,6 +6044,9 @@ class UserProfileManager {
         if (gameCountEl) gameCountEl.textContent = this.submittedGames.length;
         if (favoriteCountEl) favoriteCountEl.textContent = this.favoriteGames.length;
 
+        // Update tier information
+        this.updateTierDisplay();
+
         // Update settings form
         const bioField = document.getElementById('userBio');
         const displayNameField = document.getElementById('displayName');
@@ -4701,6 +6066,9 @@ class UserProfileManager {
         
         // Update recent favorites section on main page
         this.updateRecentFavorites();
+        
+        // Update header username display
+        this.updateHeaderUsername();
     }
 
     updateProfileDisplayOnly() {
@@ -4713,7 +6081,14 @@ class UserProfileManager {
         const gameCountEl = document.getElementById('userGameCount');
         const favoriteCountEl = document.getElementById('userFavoriteCount');
         
-        if (emailEl) emailEl.textContent = this.userProfile.email;
+        // Show display name if available, otherwise fall back to email
+        if (emailEl) {
+            const displayText = this.userProfile.displayName && this.userProfile.displayName.trim() 
+                ? this.userProfile.displayName 
+                : this.userProfile.email;
+            const tierBadge = this.tierManager.getTierBadgeHtml(this.userProfile);
+            emailEl.innerHTML = `${displayText} ${tierBadge}`;
+        }
         if (bioEl) bioEl.textContent = this.userProfile.bio;
         if (joinDateEl) joinDateEl.textContent = this.userProfile.joinDate;
         if (gameCountEl) gameCountEl.textContent = this.submittedGames.length;
@@ -4776,7 +6151,7 @@ class UserProfileManager {
                 <div class="submission-status ${game.status}">${game.status.toUpperCase()}</div>
                 <div class="game-title">${game.title}</div>
                 <div class="game-description">${game.description}</div>
-                <div class="game-category">${game.category?.toUpperCase() || 'UNCATEGORIZED'}</div>
+                <div class="game-category">${(game.category || game.genre || game.gameGenre)?.toUpperCase() || 'UNCATEGORIZED'}</div>
                 <div class="submission-actions">
                     <button class="play-btn" onclick="window.dumbassGame.playGame('${game.url}', '${game.title}')" title="Play Game">
                         ▶ PLAY
@@ -4789,12 +6164,26 @@ class UserProfileManager {
         `).join('');
     }
 
+    async saveProfile() {
+        if (!this.userProfile) return;
+
+        try {
+            await window.persistenceManager.saveUserProfile(this.userProfile);
+            console.log('✅ Profile saved successfully');
+        } catch (error) {
+            console.error('❌ Error saving profile:', error);
+            throw error;
+        }
+    }
+
     async saveProfileSettings() {
         const bio = document.getElementById('userBio').value;
         const displayName = document.getElementById('displayName').value;
 
         try {
-            const profileData = {
+            // Preserve existing tier system data and update user-editable fields
+            this.userProfile = {
+                ...this.userProfile,
                 email: this.currentUser?.email || '',
                 displayName: displayName,
                 bio: bio,
@@ -4802,16 +6191,32 @@ class UserProfileManager {
                 preferences: {
                     soundEnabled: window.soundEnabled,
                     effectsEnabled: window.effectsEnabled
-                }
+                },
+                // Ensure tier system fields are preserved
+                tier: this.userProfile?.tier || 'FREE',
+                tierExpiry: this.userProfile?.tierExpiry || null,
+                submissionCount: this.userProfile?.submissionCount || { daily: 0, weekly: 0, monthly: 0 },
+                lastSubmission: this.userProfile?.lastSubmission || null,
+                favoritesCount: this.userProfile?.favoritesCount || 0,
+                gamesPlayed: this.userProfile?.gamesPlayed || 0,
+                lastActive: new Date().toISOString()
             };
 
-            await window.persistenceManager.saveUserProfile(profileData);
-            this.userProfile = profileData;
+            await this.saveProfile();
             
             // Update the welcome message in the auth modal
             if (window.authManager && this.currentUser) {
                 await window.authManager.updateWelcomeMessage(this.currentUser);
             }
+            
+            // Update the profile display to show the new name immediately
+            this.updateProfileDisplayOnly();
+            
+            // Update the header username display
+            this.updateHeaderUsername();
+            
+            // Update tier display to ensure upgrade button appears for FREE users
+            this.updateTierDisplay();
             
             alert('✅ Profile saved successfully!');
 
@@ -4838,6 +6243,19 @@ class UserProfileManager {
                 window.dumbassGame.notificationManager.showInfo(`💔 Removed "${removedGame.title}" from favorites`);
             }
         } else {
+            // Check tier limits before adding to favorites (logged in users only)
+            if (this.currentUser && this.userProfile) {
+                const limitCheck = this.tierManager.checkFavoritesLimit(this.userProfile, this.favoriteGames.length);
+                if (!limitCheck.allowed) {
+                    // Show upgrade modal instead of just a warning
+                    this.showFavoritesLimitModal(limitCheck);
+                    if (window.dumbassGame?.soundSystem) {
+                        window.dumbassGame.soundSystem.playError();
+                    }
+                    return;
+                }
+            }
+
             // Add to favorites - get game from enhanced game manager
             let game = window.enhancedGameManager?.games.find(g => g.id === gameId);
             
@@ -4864,6 +6282,15 @@ class UserProfileManager {
             if (game) {
                 this.favoriteGames.push(game);
                 console.log('💛 Added to favorites:', game.title);
+                
+                // Update favorites count in user profile
+                if (this.currentUser && this.userProfile) {
+                    this.userProfile.favoritesCount = this.favoriteGames.length;
+                    // Save updated profile silently
+                    window.persistenceManager?.saveUserProfile(this.userProfile).catch(err => 
+                        console.warn('Failed to update favorites count:', err)
+                    );
+                }
                 
                 // Show feedback
                 if (window.dumbassGame?.notificationManager) {
@@ -4897,6 +6324,85 @@ class UserProfileManager {
         } catch (error) {
             console.error('❌ Error saving favorites:', error);
         }
+    }
+
+    showFavoritesLimitModal(limitCheck) {
+        // Get current tier info and all available upgrades
+        const currentTier = this.tierManager.getTierInfo(this.userProfile.tier);
+        const tierManager = this.tierManager;
+        const allTiers = Object.values(tierManager.tiers);
+        const availableUpgrades = allTiers.filter(tier => 
+            tier.price > currentTier.price && tier.name !== currentTier.name
+        );
+
+        // Generate upgrade options HTML
+        const upgradeOptionsHTML = availableUpgrades.map(tier => `
+            <div class="upgrade-tier-option">
+                <div class="tier-header">
+                    <span class="tier-badge tier-${tier.name.toLowerCase()}">${tier.badge}</span>
+                    <div class="tier-info">
+                        <h4>${tier.displayName}</h4>
+                        <p class="tier-price">$${tier.price}/month</p>
+                    </div>
+                </div>
+                <ul class="tier-benefits">
+                    <li>${tier.limits.favorites === -1 ? 'Unlimited' : tier.limits.favorites} favorites</li>
+                    <li>${tier.limits.submissionsPerMonth === -1 ? 'Unlimited' : tier.limits.submissionsPerMonth} submissions per month</li>
+                    <li>Priority support</li>
+                    ${tier.name === 'DEV' ? '<li>Game analytics & editing</li>' : ''}
+                </ul>
+                <button class="btn-primary upgrade-btn tier-upgrade-btn" onclick="showUpgradeModal(); this.closest('.modal').remove()">
+                    💎 UPGRADE TO ${tier.name}
+                </button>
+            </div>
+        `).join('');
+
+        // Create and show a custom favorites limit modal
+        const modal = document.createElement('div');
+        modal.className = 'modal favorites-limit-modal';
+        modal.style.display = 'block';
+        
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>💛 FAVORITES LIMIT REACHED</h3>
+                    <span class="close" onclick="this.closest('.modal').remove()">&times;</span>
+                </div>
+                <div class="limit-modal-body">
+                    <div class="limit-status">
+                        <div class="current-tier">
+                            <span class="tier-badge tier-${currentTier.name.toLowerCase()}">${currentTier.badge}</span>
+                            <div class="tier-info">
+                                <h4>${currentTier.displayName}</h4>
+                                <p>${limitCheck.reason}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="upgrade-arrow">⬇️ CHOOSE YOUR UPGRADE ⬇️</div>
+                    
+                    <div class="upgrade-options">
+                        ${upgradeOptionsHTML}
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button class="btn-secondary" onclick="this.closest('.modal').remove()">
+                            ❌ MAYBE LATER
+                        </button>
+                    </div>
+                    
+                    <p class="limit-help">Upgrade now to favorite unlimited games and support DumbassGames!</p>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Auto-focus the upgrade button
+        setTimeout(() => {
+            const upgradeBtn = modal.querySelector('.upgrade-btn');
+            if (upgradeBtn) upgradeBtn.focus();
+        }, 100);
     }
 
     async deleteSubmittedGame(gameId) {
@@ -5032,6 +6538,142 @@ class UserProfileManager {
                 </div>
             </div>
         `).join('');
+    }
+
+    updateTierDisplay() {
+        if (!this.userProfile) {
+            console.log('🚫 updateTierDisplay: No user profile found');
+            return;
+        }
+
+        console.log('💎 updateTierDisplay: Current user tier:', this.userProfile.tier);
+
+        const tierBadge = document.getElementById('tierBadge');
+        const tierName = document.getElementById('tierName');
+        const tierLimits = document.getElementById('tierLimits');
+        const tierUpgrade = document.getElementById('tierUpgrade');
+
+        console.log('🔍 Tier display elements:', {
+            tierBadge: !!tierBadge,
+            tierName: !!tierName,
+            tierLimits: !!tierLimits,
+            tierUpgrade: !!tierUpgrade
+        });
+
+        if (!tierBadge || !tierName || !tierLimits) {
+            console.warn('⚠️ Missing tier display elements');
+            return;
+        }
+
+        const tierInfo = this.tierManager.getTierInfo(this.userProfile.tier);
+        console.log('📊 Tier info:', tierInfo);
+        
+        // Check tier expiry first
+        if (this.paymentManager) {
+            this.paymentManager.checkTierExpiry(this.userProfile).then(result => {
+                if (result.expired) {
+                    // Reload profile after downgrade
+                    this.loadUserData();
+                    return;
+                }
+            });
+        }
+        
+        if (tierBadge) {
+            tierBadge.textContent = tierInfo.badge;
+            tierBadge.style.color = tierInfo.color;
+        }
+        
+        if (tierName) {
+            tierName.textContent = tierInfo.displayName;
+        }
+        
+        if (tierLimits) {
+            let limitsText = this.tierManager.getTierLimitsText(this.userProfile.tier);
+            
+            // Add expiry info for paid tiers
+            if (this.userProfile.tier !== 'FREE' && this.userProfile.tierExpiry) {
+                const expiry = new Date(this.userProfile.tierExpiry);
+                const now = new Date();
+                const daysLeft = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+                
+                if (daysLeft > 0) {
+                    limitsText += ` • Expires in ${daysLeft} days`;
+                } else if (daysLeft === 0) {
+                    limitsText += ` • Expires today`;
+                } else {
+                    limitsText += ` • Expired`;
+                }
+            }
+            
+            tierLimits.textContent = limitsText;
+        }
+
+        // Show upgrade button for FREE tier users (or users without tier set)
+        if (tierUpgrade) {
+            // Show upgrade button for FREE tier OR if tier is not set (legacy users)
+            if (!this.userProfile.tier || this.userProfile.tier === 'FREE') {
+                console.log('✅ Showing upgrade button for FREE/unset tier user:', this.userProfile.tier || 'UNSET');
+                tierUpgrade.style.display = 'block';
+                
+                // Force migration if tier is not set
+                if (!this.userProfile.tier) {
+                    console.log('🔄 Auto-migrating user profile without tier...');
+                    this.userProfile.tier = 'FREE';
+                    this.userProfile.tierExpiry = null;
+                    this.userProfile.submissionCount = this.userProfile.submissionCount || { daily: 0, weekly: 0, monthly: 0 };
+                    this.userProfile.lastSubmission = this.userProfile.lastSubmission || null;
+                    this.userProfile.favoritesCount = this.userProfile.favoritesCount || 0;
+                    this.userProfile.gamesPlayed = this.userProfile.gamesPlayed || 0;
+                    this.userProfile.lastActive = new Date().toISOString();
+                    
+                    // Save the migrated profile
+                    this.saveProfile().catch(err => console.warn('Failed to save migrated profile:', err));
+                }
+            } else {
+                console.log('🚫 Hiding upgrade button for', this.userProfile.tier, 'user');
+                tierUpgrade.style.display = 'none';
+            }
+        } else {
+            console.warn('⚠️ tierUpgrade element not found in DOM');
+        }
+    }
+
+    updateHeaderUsername() {
+        const userIndicator = document.getElementById('userIndicator');
+        const headerUsername = document.getElementById('headerUsername');
+        
+        if (!userIndicator || !headerUsername) return;
+
+        if (this.currentUser) {
+            // If profile isn't loaded yet, try again in a moment
+            if (!this.userProfile) {
+                console.log('🕒 Profile not loaded yet, retrying header username update in 500ms');
+                setTimeout(() => this.updateHeaderUsername(), 500);
+                return;
+            }
+            
+            // Show display name if available, otherwise show email
+            const displayText = this.userProfile.displayName && this.userProfile.displayName.trim() 
+                ? this.userProfile.displayName 
+                : this.currentUser.email.split('@')[0]; // Just the part before @
+            
+            headerUsername.textContent = displayText;
+            
+            // Smooth fade-in animation
+            userIndicator.style.display = 'block';
+            setTimeout(() => {
+                userIndicator.classList.add('show');
+            }, 10);
+            
+            console.log('✅ Header username updated with smooth animation:', displayText);
+        } else {
+            // Smooth fade-out animation then hide
+            userIndicator.classList.remove('show');
+            setTimeout(() => {
+                userIndicator.style.display = 'none';
+            }, 400); // Match CSS transition duration
+        }
     }
 
     formatJoinDate(timestamp) {
@@ -5305,7 +6947,7 @@ class EnhancedGameManager {
         return `
             <div class="game-card" data-id="${game.id}" data-category="${gameType}" data-difficulty="${game.difficulty}">
                 <div class="game-category">${categoryLabel}</div>
-                ${game.rating ? `<div class="game-rating">⭐ ${game.rating.toFixed(1)}</div>` : ''}
+
                 ${game.difficulty ? `<div class="game-difficulty ${game.difficulty}">${this.getDifficultyLabel(game.difficulty)}</div>` : ''}
                 
                 <div class="game-image">
@@ -5498,6 +7140,19 @@ class EnhancedGameManager {
             return;
         }
         gamesGrid.innerHTML = this.filteredGames.map(game => this.createEnhancedGameCard(game)).join('');
+        
+        // Add turd rating components to all game cards
+        if (window.turdRatingManager) {
+            setTimeout(() => {
+                this.filteredGames.forEach(game => {
+                    const gameCard = document.querySelector(`[data-id="${game.id}"]`);
+                    if (gameCard && !gameCard.querySelector('.turd-rating-container')) {
+                        window.turdRatingManager.addRatingToGameCard(gameCard, game);
+                    }
+                });
+            }, 100); // Small delay to ensure DOM is ready
+        }
+        
         this.updateGameCount();
     }
 
@@ -6489,6 +8144,14 @@ window.enhancedGameManager = new EnhancedGameManager();
 console.log('🚀 Initializing Main Game System...');
 window.dumbassGame = new DumbassGameEnhanced();
 
+// Initialize global sound and effects state
+window.soundEnabled = true;
+window.effectsEnabled = true;
+
+// Initialize Firebase Auth Manager
+console.log('🔥 Initializing Firebase Auth Manager...');
+window.authManager = new FirebaseAuthManager();
+
 // Initialize admin console
 console.log('🔧 Initializing Admin Console...');
 window.dumbassGameAdmin = new DumbassGameAdmin(window.dumbassGame);
@@ -7238,6 +8901,636 @@ function removeImagePreview() {
 // Initialize the image upload manager
 window.imageUploadManager = new ImageUploadManager();
 
+// 💩 TURD RATING SYSTEM 💩
+class TurdRatingManager {
+    constructor() {
+        this.userRatings = new Map(); // Store user's individual ratings
+        this.gameRatings = new Map(); // Store average ratings per game
+        this.initializeRatingSystem();
+    }
+
+    initializeRatingSystem() {
+        console.log('💩 Initializing Turd Rating System...');
+        this.loadUserRatings();
+        this.setupRatingStyles();
+    }
+
+    async loadUserRatings() {
+        try {
+            if (window.firebaseAuth?.currentUser && window.persistenceManager) {
+                const ratings = await window.persistenceManager.load('userRatings', { 
+                    defaultValue: {}, 
+                    userSpecific: true 
+                });
+                
+                if (ratings) {
+                    Object.entries(ratings).forEach(([gameId, rating]) => {
+                        this.userRatings.set(gameId, rating);
+                    });
+                    console.log(`💩 Loaded ${this.userRatings.size} user ratings`);
+                }
+            }
+        } catch (error) {
+            console.warn('💩 Failed to load user ratings:', error);
+        }
+    }
+
+    async saveUserRatings() {
+        try {
+            if (window.firebaseAuth?.currentUser && window.persistenceManager) {
+                const ratingsObj = Object.fromEntries(this.userRatings);
+                await window.persistenceManager.save('userRatings', ratingsObj, { 
+                    userSpecific: true,
+                    silent: true 
+                });
+            }
+        } catch (error) {
+            console.warn('💩 Failed to save user ratings:', error);
+        }
+    }
+
+    setupRatingStyles() {
+        // Inject CSS for turd ratings if not already present
+        if (!document.getElementById('turd-rating-styles')) {
+            const style = document.createElement('style');
+            style.id = 'turd-rating-styles';
+            style.textContent = `
+                .turd-rating-container {
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    margin: 0;
+                    max-width: none;
+                }
+
+                .turd-rating-stars {
+                    display: flex;
+                    gap: 1px;
+                    align-items: center;
+                }
+
+                .turd-star {
+                    font-size: 12px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    user-select: none;
+                    filter: grayscale(100%);
+                    opacity: 0.3;
+                }
+
+                .turd-star:hover {
+                    transform: scale(1.2);
+                    filter: grayscale(0%);
+                    opacity: 1;
+                }
+
+                .turd-star.active {
+                    filter: grayscale(0%);
+                    opacity: 1;
+                    animation: turd-glow 2s infinite alternate;
+                }
+
+                .turd-star.user-rated {
+                    /* No special styling - just keep it clean */
+                }
+
+                @keyframes turd-glow {
+                    0% { text-shadow: 0 0 5px #8B4513; }
+                    100% { text-shadow: 0 0 15px #D2691E, 0 0 25px #8B4513; }
+                }
+
+                .turd-rating-info {
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    font-size: 9px;
+                    color: var(--primary-color);
+                    font-family: 'Courier New', monospace;
+                    line-height: 1;
+                }
+
+                .turd-average {
+                    font-weight: bold;
+                    color: #FFD700;
+                    text-shadow: 0 0 3px rgba(255, 215, 0, 0.5);
+                    font-size: 9px;
+                }
+
+                .turd-label {
+                    font-size: 8px;
+                    color: #aaa;
+                    font-style: italic;
+                    white-space: nowrap;
+                }
+
+                .turd-count {
+                    display: none;
+                }
+
+                .game-card .turd-rating-container {
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    background: var(--primary-alpha-2);
+                    padding: 2px 6px;
+                    border-radius: 3px;
+                    border: 1px solid var(--primary-alpha-3);
+                    margin: 4px 0;
+                    width: fit-content;
+                }
+
+                .game-card:hover .turd-rating-container {
+                    background: rgba(0, 0, 0, 0.9);
+                    border-color: var(--primary-alpha-5);
+                }
+
+                .rating-modal {
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: var(--bg-darker);
+                    border: 2px solid var(--primary-color);
+                    border-radius: 12px;
+                    padding: 20px;
+                    z-index: 10000;
+                    box-shadow: 0 0 30px var(--primary-alpha-4);
+                    max-width: 400px;
+                    text-align: center;
+                }
+
+                .rating-modal h4 {
+                    color: var(--primary-color);
+                    margin-bottom: 15px;
+                    font-size: 14px;
+                }
+
+                .rating-modal .turd-star {
+                    font-size: 24px;
+                    margin: 0 4px;
+                }
+
+                .rating-feedback {
+                    margin: 10px 0;
+                    font-size: 12px;
+                    color: var(--secondary-color);
+                    font-family: 'Courier New', monospace;
+                }
+
+                .rating-buttons {
+                    display: flex;
+                    gap: 10px;
+                    justify-content: center;
+                    margin-top: 15px;
+                }
+
+                .rating-btn {
+                    background: var(--primary-alpha-3);
+                    color: var(--primary-color);
+                    border: 1px solid var(--primary-color);
+                    padding: 8px 16px;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-family: 'Press Start 2P', cursive;
+                    font-size: 8px;
+                    transition: all 0.3s ease;
+                }
+
+                .rating-btn:hover {
+                    background: var(--primary-alpha-5);
+                    transform: translateY(-2px);
+                }
+
+                .rating-btn.cancel {
+                    background: rgba(255, 0, 0, 0.2);
+                    border-color: #ff6666;
+                    color: #ff6666;
+                }
+
+                .rating-btn.cancel:hover {
+                    background: rgba(255, 0, 0, 0.4);
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+
+    getTurdLabel(rating) {
+        const labels = {
+            1: 'SHIT',
+            2: 'MEH', 
+            3: 'OK',
+            4: 'GOOD',
+            5: 'HOLY!'
+        };
+        return labels[Math.round(rating)] || 'NEW';
+    }
+
+    getFullTurdLabel(rating) {
+        const labels = {
+            1: 'ABSOLUTE SHIT',
+            2: 'PRETTY SHITTY', 
+            3: 'DECENT TURD',
+            4: 'GOOD SHIT',
+            5: 'HOLY SHIT!'
+        };
+        return labels[Math.round(rating)] || 'UNRATED SHIT';
+    }
+
+    createTurdRating(game, interactive = true) {
+        const container = document.createElement('div');
+        container.className = 'turd-rating-container';
+        container.dataset.gameId = game.id;
+
+        const starsContainer = document.createElement('div');
+        starsContainer.className = 'turd-rating-stars';
+
+        const userRating = this.userRatings.get(game.id) || 0;
+        const averageRating = game.rating || 0;
+        const ratingCount = game.ratingCount || 0;
+
+        // Create 5 turd stars
+        for (let i = 1; i <= 5; i++) {
+            const star = document.createElement('span');
+            star.className = 'turd-star';
+            star.textContent = '💩';
+            star.dataset.rating = i;
+            star.dataset.gameId = game.id;
+
+            // Show user's rating with special styling
+            if (userRating >= i) {
+                star.classList.add('active', 'user-rated');
+            }
+            // Show average rating for non-user-rated stars
+            else if (averageRating >= i) {
+                star.classList.add('active');
+                star.style.opacity = '0.6';
+            }
+
+            if (interactive) {
+                star.addEventListener('click', (e) => this.handleTurdClick(e));
+                star.addEventListener('mouseenter', (e) => this.handleTurdHover(e));
+                star.addEventListener('mouseleave', (e) => this.handleTurdLeave(e));
+            }
+
+            starsContainer.appendChild(star);
+        }
+
+        const infoContainer = document.createElement('div');
+        infoContainer.className = 'turd-rating-info';
+
+        if (averageRating > 0) {
+            const avgDisplay = document.createElement('div');
+            avgDisplay.className = 'turd-average';
+            avgDisplay.textContent = `${averageRating.toFixed(1)} 💩`;
+            infoContainer.appendChild(avgDisplay);
+
+            const labelDisplay = document.createElement('div');
+            labelDisplay.className = 'turd-label';
+            labelDisplay.textContent = this.getTurdLabel(averageRating);
+            infoContainer.appendChild(labelDisplay);
+
+            if (ratingCount > 0) {
+                const countDisplay = document.createElement('div');
+                countDisplay.className = 'turd-count';
+                countDisplay.textContent = `${ratingCount} rating${ratingCount !== 1 ? 's' : ''}`;
+                infoContainer.appendChild(countDisplay);
+            }
+        } else {
+            const noRating = document.createElement('div');
+            noRating.className = 'turd-label';
+            noRating.textContent = 'NO RATINGS YET';
+            infoContainer.appendChild(noRating);
+        }
+
+        container.appendChild(starsContainer);
+        container.appendChild(infoContainer);
+
+        return container;
+    }
+
+    handleTurdHover(e) {
+        if (!window.firebaseAuth?.currentUser) return;
+
+        const star = e.target;
+        const rating = parseInt(star.dataset.rating);
+        const gameId = star.dataset.gameId;
+        const container = star.closest('.turd-rating-stars');
+        
+        // Highlight stars up to hovered one
+        container.querySelectorAll('.turd-star').forEach((s, index) => {
+            if (index < rating) {
+                s.style.opacity = '1';
+                s.style.filter = 'grayscale(0%)';
+                s.style.transform = 'scale(1.1)';
+            } else {
+                s.style.opacity = '0.3';
+                s.style.filter = 'grayscale(100%)';
+                s.style.transform = 'scale(1)';
+            }
+        });
+
+        // Show rating preview with full labels
+        const fullLabels = {
+            1: 'ABSOLUTE SHIT',
+            2: 'PRETTY SHITTY', 
+            3: 'DECENT TURD',
+            4: 'GOOD SHIT',
+            5: 'HOLY SHIT!'
+        };
+        star.title = `Rate this ${fullLabels[rating]} (${rating} turd${rating !== 1 ? 's' : ''})`;
+    }
+
+    handleTurdLeave(e) {
+        const star = e.target;
+        const gameId = star.dataset.gameId;
+        const container = star.closest('.turd-rating-stars');
+        const userRating = this.userRatings.get(gameId) || 0;
+        
+        // Reset to user's actual rating or average
+        this.updateTurdDisplay(container, gameId, userRating);
+    }
+
+    handleTurdClick(e) {
+        if (!window.firebaseAuth?.currentUser) {
+            this.showLoginPrompt();
+            return;
+        }
+
+        const star = e.target;
+        const rating = parseInt(star.dataset.rating);
+        const gameId = star.dataset.gameId;
+        
+        this.showRatingModal(gameId, rating);
+    }
+
+    showLoginPrompt() {
+        if (window.dumbassGame?.notificationManager) {
+            window.dumbassGame.notificationManager.showWarning('💩 Login required to rate games! Create an account to share your shitty opinions.');
+        }
+        
+        setTimeout(() => {
+            if (window.showAuthModal) {
+                window.showAuthModal();
+            }
+        }, 1000);
+    }
+
+    showRatingModal(gameId, proposedRating) {
+        const game = window.enhancedGameManager?.games.find(g => g.id === gameId);
+        if (!game) return;
+
+        const modal = document.createElement('div');
+        modal.className = 'rating-modal';
+        modal.innerHTML = `
+            <h4>💩 RATE "${game.title.toUpperCase()}"</h4>
+            <div class="turd-rating-stars" id="modalStars">
+                ${Array.from({length: 5}, (_, i) => 
+                    `<span class="turd-star ${i < proposedRating ? 'active' : ''}" 
+                           data-rating="${i + 1}">💩</span>`
+                ).join('')}
+            </div>
+            <div class="rating-feedback" id="ratingFeedback">
+                ${this.getFullTurdLabel(proposedRating)} (${proposedRating} turd${proposedRating !== 1 ? 's' : ''})
+            </div>
+            <div class="rating-buttons">
+                <button class="rating-btn" onclick="window.turdRatingManager.submitRating('${gameId}', ${proposedRating}); this.closest('.rating-modal').remove();">
+                    💩 SUBMIT RATING
+                </button>
+                <button class="rating-btn cancel" onclick="this.closest('.rating-modal').remove();">
+                    ❌ CANCEL
+                </button>
+            </div>
+        `;
+
+        // Add click handlers for modal stars
+        modal.querySelectorAll('.turd-star').forEach(star => {
+            star.addEventListener('click', (e) => {
+                const newRating = parseInt(e.target.dataset.rating);
+                
+                // Update modal display
+                modal.querySelectorAll('.turd-star').forEach((s, index) => {
+                    s.classList.toggle('active', index < newRating);
+                });
+                
+                modal.querySelector('#ratingFeedback').textContent = 
+                    `${this.getFullTurdLabel(newRating)} (${newRating} turd${newRating !== 1 ? 's' : ''})`;
+                
+                // Update submit button
+                const submitBtn = modal.querySelector('.rating-btn:not(.cancel)');
+                submitBtn.onclick = () => {
+                    this.submitRating(gameId, newRating);
+                    modal.remove();
+                };
+            });
+        });
+
+        document.body.appendChild(modal);
+
+        // Play sound effect
+        if (window.dumbassGame?.soundSystem) {
+            window.dumbassGame.soundSystem.playClick();
+        }
+    }
+
+    async submitRating(gameId, rating) {
+        try {
+            const previousRating = this.userRatings.get(gameId);
+            
+            // Store user's rating
+            this.userRatings.set(gameId, rating);
+            await this.saveUserRatings();
+
+            // Update game's average rating
+            await this.updateGameRating(gameId, rating, previousRating);
+
+            // Update UI
+            this.updateAllRatingDisplays(gameId);
+
+            // Show success message
+            if (window.dumbassGame?.notificationManager) {
+                window.dumbassGame.notificationManager.showSuccess(
+                    `💩 Rated "${this.getGameTitle(gameId)}" as ${this.getFullTurdLabel(rating)}!`
+                );
+            }
+
+            // Play success sound
+            if (window.dumbassGame?.soundSystem) {
+                window.dumbassGame.soundSystem.playSuccess();
+            }
+
+        } catch (error) {
+            console.error('💩 Failed to submit rating:', error);
+            if (window.dumbassGame?.notificationManager) {
+                window.dumbassGame.notificationManager.showError('💩 Failed to save rating. Try again!');
+            }
+        }
+    }
+
+    async updateGameRating(gameId, newRating, previousRating = null) {
+        try {
+            // Get current game data
+            const game = window.enhancedGameManager?.games.find(g => g.id === gameId);
+            if (!game) return;
+
+            let currentTotal = (game.rating || 0) * (game.ratingCount || 0);
+            let currentCount = game.ratingCount || 0;
+
+            // Remove previous rating if it exists
+            if (previousRating !== null && previousRating !== undefined) {
+                currentTotal -= previousRating;
+                currentCount = Math.max(0, currentCount - 1);
+            }
+
+            // Add new rating
+            currentTotal += newRating;
+            currentCount += 1;
+
+            // Calculate new average
+            const newAverage = currentCount > 0 ? currentTotal / currentCount : 0;
+
+            // Update game object
+            game.rating = newAverage;
+            game.ratingCount = currentCount;
+
+            // Save to Firebase if available
+            if (window.dataManager?.isInitialized) {
+                await window.dataManager.updateGame(gameId, {
+                    rating: newAverage,
+                    ratingCount: currentCount
+                });
+            }
+
+        } catch (error) {
+            console.error('💩 Failed to update game rating:', error);
+            throw error;
+        }
+    }
+
+    updateTurdDisplay(container, gameId, userRating) {
+        const game = window.enhancedGameManager?.games.find(g => g.id === gameId);
+        if (!game) return;
+
+        const averageRating = game.rating || 0;
+
+        container.querySelectorAll('.turd-star').forEach((star, index) => {
+            const starRating = index + 1;
+            
+            star.classList.remove('active', 'user-rated');
+            star.style.opacity = '0.3';
+            star.style.filter = 'grayscale(100%)';
+            star.style.transform = 'scale(1)';
+
+            if (userRating >= starRating) {
+                star.classList.add('active', 'user-rated');
+                star.style.opacity = '1';
+                star.style.filter = 'grayscale(0%)';
+            } else if (averageRating >= starRating) {
+                star.classList.add('active');
+                star.style.opacity = '0.6';
+                star.style.filter = 'grayscale(0%)';
+            }
+        });
+    }
+
+    updateAllRatingDisplays(gameId) {
+        // Update all rating displays for this game
+        document.querySelectorAll(`[data-game-id="${gameId}"]`).forEach(container => {
+            if (container.classList.contains('turd-rating-container')) {
+                const userRating = this.userRatings.get(gameId) || 0;
+                const starsContainer = container.querySelector('.turd-rating-stars');
+                if (starsContainer) {
+                    this.updateTurdDisplay(starsContainer, gameId, userRating);
+                }
+
+                // Update info display
+                const infoContainer = container.querySelector('.turd-rating-info');
+                if (infoContainer) {
+                    const game = window.enhancedGameManager?.games.find(g => g.id === gameId);
+                    if (game) {
+                        infoContainer.innerHTML = '';
+                        
+                        if (game.rating > 0) {
+                            const avgDisplay = document.createElement('div');
+                            avgDisplay.className = 'turd-average';
+                            avgDisplay.textContent = `${game.rating.toFixed(1)} 💩`;
+                            infoContainer.appendChild(avgDisplay);
+
+                            const labelDisplay = document.createElement('div');
+                            labelDisplay.className = 'turd-label';
+                            labelDisplay.textContent = this.getTurdLabel(game.rating);
+                            infoContainer.appendChild(labelDisplay);
+
+                            if (game.ratingCount > 0) {
+                                const countDisplay = document.createElement('div');
+                                countDisplay.className = 'turd-count';
+                                countDisplay.textContent = `${game.ratingCount} rating${game.ratingCount !== 1 ? 's' : ''}`;
+                                infoContainer.appendChild(countDisplay);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Trigger re-render if needed
+        if (window.enhancedGameManager) {
+            window.enhancedGameManager.renderGames();
+        }
+    }
+
+    getGameTitle(gameId) {
+        const game = window.enhancedGameManager?.games.find(g => g.id === gameId);
+        return game ? game.title : 'Unknown Game';
+    }
+
+    // Add rating to existing game cards
+    addRatingToGameCard(gameCard, game) {
+        // Remove existing rating if present
+        const existingRating = gameCard.querySelector('.turd-rating-container');
+        if (existingRating) {
+            existingRating.remove();
+        }
+
+        const ratingComponent = this.createTurdRating(game, true);
+        
+        // Find the game-info section and add rating there
+        const gameInfo = gameCard.querySelector('.game-info') || 
+                        gameCard.querySelector('.game-title')?.parentElement ||
+                        gameCard.querySelector('.game-description')?.parentElement;
+        
+        if (gameInfo) {
+            // Insert after game title but before description
+            const gameTitle = gameInfo.querySelector('.game-title');
+            const gameDescription = gameInfo.querySelector('.game-description');
+            
+            if (gameTitle && gameDescription) {
+                gameInfo.insertBefore(ratingComponent, gameDescription);
+            } else {
+                gameInfo.appendChild(ratingComponent);
+            }
+        } else {
+            // Fallback: append to the card
+            gameCard.appendChild(ratingComponent);
+        }
+    }
+
+    // Bulk update all game cards with ratings
+    updateAllGameCards() {
+        if (!window.enhancedGameManager?.games) return;
+
+        window.enhancedGameManager.games.forEach(game => {
+            const gameCard = document.querySelector(`[data-id="${game.id}"]`);
+            if (gameCard) {
+                this.addRatingToGameCard(gameCard, game);
+            }
+        });
+    }
+}
+
+// Initialize the turd rating manager
+window.turdRatingManager = new TurdRatingManager();
+
 // Integrate with existing form submission
 document.addEventListener('DOMContentLoaded', () => {
     const addGameForm = document.getElementById('addGameForm');
@@ -7267,4 +9560,255 @@ document.addEventListener('DOMContentLoaded', () => {
             return true;
         };
     }
+    
+    // Initialize turd rating manager after everything is ready
+    if (window.turdRatingManager) {
+        setTimeout(() => {
+            window.turdRatingManager.updateAllGameCards();
+        }, 500);
+    }
 });
+
+// =============================
+//    UPGRADE SYSTEM FUNCTIONS
+// =============================
+
+// Global tier debugging functions (available immediately)
+window.checkTier = function() {
+    const userProfile = window.userProfileManager?.userProfile;
+    if (!userProfile) {
+        console.log('❌ No user profile found - please sign in');
+        return 'No user profile';
+    }
+    
+    console.group('💎 TIER STATUS');
+    console.log('Email:', userProfile.email);
+    console.log('Tier:', userProfile.tier || 'NOT SET');
+    console.log('Submission Count:', userProfile.submissionCount);
+    console.log('Needs Migration:', !userProfile.tier || !userProfile.submissionCount);
+    console.groupEnd();
+    
+    return userProfile.tier || 'NOT SET';
+};
+
+window.forceMigration = function() {
+    const userProfileManager = window.userProfileManager;
+    if (!userProfileManager?.userProfile) {
+        console.log('❌ No user profile found');
+        return 'No user profile';
+    }
+    
+    console.log('🔄 Forcing tier migration...');
+    userProfileManager.loadUserProfile().then(() => {
+        userProfileManager.updateTierDisplay();
+        console.log('✅ Migration complete');
+    });
+    
+    return 'Migration started';
+};
+
+window.forceUpgradeButton = function() {
+    const tierUpgrade = document.getElementById('tierUpgrade');
+    if (tierUpgrade) {
+        tierUpgrade.style.display = 'block';
+        console.log('✅ Forced upgrade button to show');
+        return 'Button shown';
+    } else {
+        console.log('❌ Upgrade button element not found');
+        return 'Element not found';
+    }
+};
+
+function showUpgradeModal() {
+    const modal = document.getElementById('upgradeModal');
+    if (modal) {
+        modal.style.display = 'block';
+        console.log('💎 Upgrade modal opened');
+    }
+}
+
+function hideUpgradeModal() {
+    const modal = document.getElementById('upgradeModal');
+    if (modal) {
+        modal.style.display = 'none';
+        console.log('💎 Upgrade modal closed');
+    }
+}
+
+async function initiateUpgrade(tier, priceInDollars) {
+    if (!window.userProfileManager?.paymentManager) {
+        console.error('❌ Payment manager not initialized');
+        return;
+    }
+    
+    await window.userProfileManager.paymentManager.initiateUpgrade(tier, priceInDollars);
+}
+
+async function cancelSubscription() {
+    if (!window.userProfileManager?.paymentManager) {
+        console.error('❌ Payment manager not initialized');
+        return;
+    }
+    
+    const confirmed = confirm('Are you sure you want to cancel your subscription? You\'ll keep your current tier until the end of your billing period.');
+    if (confirmed) {
+        const success = await window.userProfileManager.paymentManager.cancelSubscription();
+        if (success) {
+            // Refresh profile display
+            if (window.userProfileManager) {
+                await window.userProfileManager.loadUserData();
+                window.userProfileManager.updateProfileUI();
+            }
+        }
+    }
+}
+
+// Modal click-outside-to-close for upgrade modal
+document.addEventListener('DOMContentLoaded', function() {
+    const upgradeModal = document.getElementById('upgradeModal');
+    if (upgradeModal) {
+        upgradeModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideUpgradeModal();
+            }
+        });
+    }
+});
+
+// Test functions for upgrade prompts (for debugging)
+function testSubmissionLimit() {
+    console.log('🧪 Testing submission limit modal...');
+    if (window.dumbassGame) {
+        const mockLimitCheck = {
+            allowed: false,
+            reason: 'Monthly limit reached (2). Next submission: January 1, 2025'
+        };
+        
+        const currentTier = { name: 'FREE', displayName: 'Free Player', badge: '🕹️' };
+        const recommendedTier = { name: 'PRO', displayName: 'Pro Gamer', badge: '⭐', price: 5, limits: { submissionsPerMonth: 8, favorites: 100 } };
+        
+        window.dumbassGame.showSubmissionLimitModal(currentTier, recommendedTier, mockLimitCheck);
+    }
+}
+
+function testFavoritesLimit() {
+    console.log('🧪 Testing favorites limit modal...');
+    if (window.userProfileManager) {
+        const mockLimitCheck = {
+            allowed: false,
+            reason: 'Favorites limit reached (15). Upgrade to add more!',
+            limit: 15
+        };
+        
+        window.userProfileManager.showFavoritesLimitModal(mockLimitCheck);
+    }
+}
+
+// Add global test functions
+window.testSubmissionLimit = testSubmissionLimit;
+window.testFavoritesLimit = testFavoritesLimit;
+
+// Debug functions for checking tier submission state
+function debugTierSubmissions() {
+    console.log('🔍 DEBUGGING TIER SUBMISSIONS');
+    
+    const userProfile = window.userProfileManager?.userProfile;
+    if (!userProfile) {
+        console.log('❌ No user profile found');
+        return;
+    }
+    
+    console.log('👤 User Profile:', {
+        email: userProfile.email,
+        tier: userProfile.tier,
+        submissionCount: userProfile.submissionCount,
+        lastSubmission: userProfile.lastSubmission
+    });
+    
+    // Check submissions
+    const userSubmissions = window.userProfileManager?.userSubmissions || [];
+    console.log('📊 User Submissions:', userSubmissions.length, 'games');
+    userSubmissions.forEach((game, index) => {
+        console.log(`  ${index + 1}. ${game.title} (${game.dateAdded})`);
+    });
+    
+    // Check tier limits
+    const tierManager = window.userProfileManager?.tierManager;
+    if (tierManager) {
+        const tierInfo = tierManager.getTierInfo(userProfile.tier);
+        console.log('🎯 Current Tier Limits:', tierInfo.limits);
+        
+        // Test submission limit check
+        tierManager.checkSubmissionLimits(userProfile).then(result => {
+            console.log('⏰ Submission Limit Check:', result);
+        });
+    }
+}
+
+async function fixSubmissionCounting() {
+    console.log('🔧 FIXING SUBMISSION COUNTING');
+    
+    const userProfile = window.userProfileManager?.userProfile;
+    if (!userProfile) {
+        console.log('❌ No user profile found');
+        return;
+    }
+    
+    // Count actual submissions by this user
+    const userSubmissions = window.userProfileManager?.userSubmissions || [];
+    const submissionsThisMonth = userSubmissions.filter(game => {
+        const gameDate = new Date(game.dateAdded);
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        return gameDate >= monthStart;
+    });
+    
+    console.log(`📊 Found ${submissionsThisMonth.length} submissions this month`);
+    
+    // Fix the submission count in profile
+    if (!userProfile.submissionCount) {
+        userProfile.submissionCount = { daily: 0, weekly: 0, monthly: 0 };
+    }
+    
+    // Set the monthly count to actual submissions this month
+    userProfile.submissionCount.monthly = submissionsThisMonth.length;
+    userProfile.lastSubmission = submissionsThisMonth.length > 0 ? 
+        submissionsThisMonth[submissionsThisMonth.length - 1].dateAdded : null;
+    
+    // Save the fixed profile
+    if (window.persistenceManager) {
+        await window.persistenceManager.saveUserProfile(userProfile);
+        console.log('✅ Fixed profile saved');
+        console.log('📊 Updated submission count:', userProfile.submissionCount);
+    }
+    
+    // Test the limit check now
+    const tierManager = window.userProfileManager?.tierManager;
+    if (tierManager) {
+        const limitCheck = await tierManager.checkSubmissionLimits(userProfile);
+        console.log('⏰ New Limit Check Result:', limitCheck);
+        
+        if (!limitCheck.allowed) {
+            console.log('🚫 Limit would be enforced - testing modal...');
+            const currentTier = tierManager.getTierInfo(userProfile.tier);
+            const recommendedTier = tierManager.getTierInfo('PRO');
+            window.dumbassGame?.showSubmissionLimitModal(currentTier, recommendedTier, limitCheck);
+        } else {
+            console.log('✅ Still within limits');
+        }
+    }
+}
+
+// Quick fix function
+function quickFixTiers() {
+    console.log('⚡ QUICK TIER FIX');
+    debugTierSubmissions();
+    setTimeout(() => {
+        fixSubmissionCounting();
+    }, 1000);
+}
+
+// Global access for browser console
+window.debugTierSubmissions = debugTierSubmissions;
+window.fixSubmissionCounting = fixSubmissionCounting;
+window.quickFixTiers = quickFixTiers;

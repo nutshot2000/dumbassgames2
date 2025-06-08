@@ -1,0 +1,332 @@
+/* =============== ENHANCED HEADER CONTROLS STYLING =============== */
+
+/* New horizontal controls row between title and subtitle */
+.header-controls-row {
+    display: flex !important;
+    justify-content: space-evenly !important;
+    align-items: center !important;
+    gap: 12px !important;
+    padding: 20px 0 15px 0 !important;
+    max-width: 100% !important;
+    flex-wrap: wrap !important;
+}
+
+/* Override existing button styling with better, larger design */
+.control-btn.compact {
+    padding: 10px 16px !important;
+    font-size: 0.6rem !important;
+    background: rgba(0, 0, 0, 0.9) !important;
+    border: 2px solid var(--primary-color) !important;
+    color: var(--primary-color) !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+    position: relative !important;
+    overflow: hidden !important;
+    font-family: 'Press Start 2P', cursive !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    min-width: 85px !important;
+    justify-content: center !important;
+    text-shadow: 0 0 5px currentColor !important;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.2) !important;
+    flex: 1 !important;
+    max-width: 140px !important;
+}
+
+/* Enhanced sweep animation */
+.control-btn.compact::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0, 255, 0, 0.2), transparent);
+    transition: left 0.6s;
+    z-index: 0;
+}
+
+.control-btn.compact:hover::before {
+    left: 100%;
+}
+
+/* Button text appears on hover */
+.control-btn.compact span {
+    position: relative;
+    z-index: 1;
+}
+
+.control-btn.compact.primary {
+    background: rgba(0, 255, 255, 0.1) !important;
+    border-color: var(--secondary-color) !important;
+    color: var(--secondary-color) !important;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+    font-weight: bold !important;
+}
+
+.control-btn.compact:hover {
+    transform: translateY(-3px) !important;
+    box-shadow: 
+        0 6px 20px var(--primary-alpha-4),
+        0 0 20px var(--primary-color) !important;
+    background: rgba(0, 255, 0, 0.1) !important;
+    border-color: #00ff88 !important;
+    color: #00ff88 !important;
+    animation: button-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes button-pulse {
+    0%, 100% { 
+        box-shadow: 
+            0 6px 20px var(--primary-alpha-4),
+            0 0 20px var(--primary-color);
+    }
+    50% { 
+        box-shadow: 
+            0 8px 25px var(--primary-alpha-5),
+            0 0 25px var(--primary-color),
+            0 0 35px rgba(0, 255, 136, 0.3);
+    }
+}
+
+.control-btn.compact.primary:hover {
+    box-shadow: 
+        0 6px 25px var(--secondary-alpha-4),
+        0 0 25px var(--secondary-color) !important;
+    background: rgba(0, 255, 255, 0.2) !important;
+    border-color: #00ffff !important;
+    color: #00ffff !important;
+    animation: button-pulse-cyan 1.5s ease-in-out infinite;
+}
+
+@keyframes button-pulse-cyan {
+    0%, 100% { 
+        box-shadow: 
+            0 6px 25px var(--secondary-alpha-4),
+            0 0 25px var(--secondary-color);
+    }
+    50% { 
+        box-shadow: 
+            0 8px 30px var(--secondary-alpha-5),
+            0 0 30px var(--secondary-color),
+            0 0 40px rgba(0, 255, 255, 0.4);
+    }
+}
+
+/* Icon styling for buttons */
+.control-btn.compact .btn-icon {
+    font-size: 0.8rem !important;
+    filter: drop-shadow(0 0 3px currentColor) !important;
+    margin-right: 4px;
+}
+
+/* Button text labels */
+#searchToggle::after {
+    content: ' SEARCH';
+    font-size: 0.5rem;
+}
+
+#soundToggle::after {
+    content: ' SOUND';
+    font-size: 0.5rem;
+}
+
+#effectsToggle::after {
+    content: ' FX';
+    font-size: 0.5rem;
+}
+
+#themeToggle::after {
+    content: ' THEME';
+    font-size: 0.5rem;
+}
+
+/* Simplified header layout */
+.header-top {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 15px 0 10px 0 !important;
+}
+
+.power-indicator {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-shrink: 0 !important;
+}
+
+.title {
+    text-align: center !important;
+    flex: 1 !important;
+}
+
+/* Remove old header-controls since we moved to header-controls-row */
+.header-controls {
+    display: none !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+    .header-controls-row {
+        gap: 8px !important;
+        padding: 15px 0 10px 0 !important;
+    }
+    
+    .control-btn.compact {
+        padding: 8px 12px !important;
+        font-size: 0.5rem !important;
+        min-width: 70px !important;
+        max-width: 120px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .header-top {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+    
+    .title {
+        font-size: 1.5rem !important;
+        order: 1 !important;
+    }
+    
+    .power-indicator {
+        order: 3 !important;
+    }
+    
+    .header-controls-row {
+        order: 2 !important;
+        gap: 6px !important;
+        padding: 10px 0 !important;
+        justify-content: center !important;
+    }
+    
+    .control-btn.compact {
+        padding: 6px 10px !important;
+        font-size: 0.45rem !important;
+        min-width: 60px !important;
+        max-width: 100px !important;
+        gap: 4px !important;
+        flex: 0 1 auto !important;
+    }
+    
+    .control-btn.compact .btn-icon {
+        font-size: 0.7rem !important;
+    }
+    
+    /* Hide text on smallest screens, keep icons */
+    #searchToggle::after,
+    #soundToggle::after,
+    #effectsToggle::after,
+    #themeToggle::after {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-controls-row {
+        gap: 4px !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+    }
+    
+    .control-btn.compact {
+        padding: 5px 8px !important;
+        font-size: 0.4rem !important;
+        min-width: 45px !important;
+        max-width: 80px !important;
+    }
+}
+
+/* Special styling for login button when logged in */
+#loginBtn.logged-in {
+    background: rgba(0, 255, 0, 0.2) !important;
+    border-color: var(--primary-color) !important;
+    color: var(--primary-color) !important;
+}
+
+#loginBtn.logged-in:hover {
+    background: rgba(0, 255, 0, 0.3) !important;
+}
+
+/* =============== PROFILE MODE STYLING =============== */
+
+/* Profile mode styling for the auth button */
+.control-btn.compact.profile-mode {
+    background: rgba(0, 255, 255, 0.1) !important;
+    border-color: var(--secondary-color) !important;
+    color: var(--secondary-color) !important;
+    box-shadow: 0 0 12px rgba(0, 255, 255, 0.25) !important;
+}
+
+.control-btn.compact.profile-mode:hover {
+    background: rgba(0, 255, 255, 0.2) !important;
+    border-color: #00ffff !important;
+    color: #ffffff !important;
+    box-shadow: 
+        0 6px 25px rgba(0, 255, 255, 0.4),
+        0 0 25px #00ffff !important;
+    transform: translateY(-3px) !important;
+}
+
+.control-btn.compact.profile-mode::before {
+    background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.2), transparent);
+}
+
+/* User Indicator in Header */
+.user-indicator {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: var(--primary-color);
+    background: var(--primary-alpha-2);
+    border: 1px solid var(--primary-alpha-5);
+    border-radius: 4px;
+    padding: 6px 10px;
+    backdrop-filter: blur(5px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    z-index: 100;
+    /* Smooth transitions for show/hide */
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: none;
+}
+
+/* Show state with smooth animation */
+.user-indicator.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.user-indicator:hover {
+    background: var(--primary-alpha-3);
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 15px rgba(0, 255, 0, 0.3);
+    transform: translateY(-2px);
+}
+
+.user-text {
+    font-weight: normal;
+    letter-spacing: 0.5px;
+}
+
+/* Responsive user indicator */
+@media (max-width: 768px) {
+    .user-indicator {
+        position: relative;
+        top: auto;
+        right: auto;
+        order: 4;
+        margin-top: 10px;
+        font-size: 10px;
+        padding: 4px 8px;
+    }
+} 
