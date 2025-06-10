@@ -27,7 +27,7 @@
     display: flex !important;
     align-items: center !important;
     gap: 6px !important;
-    min-width: 85px !important;
+    min-width: 120px !important;
     justify-content: center !important;
     text-shadow: 0 0 5px currentColor !important;
     box-shadow: 0 0 10px rgba(0, 255, 0, 0.2) !important;
@@ -71,9 +71,9 @@
     box-shadow: 
         0 6px 20px var(--primary-alpha-4),
         0 0 20px var(--primary-color) !important;
-    background: rgba(0, 255, 0, 0.1) !important;
-    border-color: #00ff88 !important;
-    color: #00ff88 !important;
+    background: var(--primary-alpha-2) !important;
+    border-color: var(--primary-color) !important;
+    color: var(--primary-color) !important;
     animation: button-pulse 1.5s ease-in-out infinite;
 }
 
@@ -87,7 +87,7 @@
         box-shadow: 
             0 8px 25px var(--primary-alpha-5),
             0 0 25px var(--primary-color),
-            0 0 35px rgba(0, 255, 136, 0.3);
+            0 0 35px var(--primary-alpha-3);
     }
 }
 
@@ -95,9 +95,9 @@
     box-shadow: 
         0 6px 25px var(--secondary-alpha-4),
         0 0 25px var(--secondary-color) !important;
-    background: rgba(0, 255, 255, 0.2) !important;
-    border-color: #00ffff !important;
-    color: #00ffff !important;
+    background: var(--secondary-alpha-3) !important;
+    border-color: var(--secondary-color) !important;
+    color: var(--secondary-color) !important;
     animation: button-pulse-cyan 1.5s ease-in-out infinite;
 }
 
@@ -111,7 +111,7 @@
         box-shadow: 
             0 8px 30px var(--secondary-alpha-5),
             0 0 30px var(--secondary-color),
-            0 0 40px rgba(0, 255, 255, 0.4);
+            0 0 40px var(--secondary-alpha-4);
     }
 }
 
@@ -242,6 +242,164 @@
     }
 }
 
+/* User Avatar Button Styling */
+.user-avatar-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px;
+    background: var(--primary-alpha-2);
+    border: 2px solid var(--primary-color);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 8px;
+    color: var(--primary-color);
+    min-width: fit-content;
+    max-width: 200px;
+}
+
+.user-avatar-button:hover {
+    background: var(--primary-alpha-4);
+    box-shadow: 0 0 15px var(--primary-alpha-4);
+    transform: translateY(-1px);
+}
+
+.avatar-container {
+    position: relative;
+    width: 32px;
+    height: 32px;
+}
+
+.user-avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--primary-color);
+    background: var(--bg-color);
+}
+
+.avatar-ring {
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color), var(--primary-color));
+    background-size: 200% 200%;
+    animation: avatarPulse 3s ease-in-out infinite;
+    z-index: -1;
+}
+
+.avatar-glow {
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--primary-alpha-3) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: -2;
+}
+
+.user-avatar-button:hover .avatar-glow {
+    opacity: 1;
+    animation: avatarGlow 2s ease-in-out infinite;
+}
+
+.user-display-name {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+@keyframes avatarPulse {
+    0%, 100% { transform: scale(1); opacity: 0.7; }
+    50% { transform: scale(1.05); opacity: 1; }
+}
+
+@keyframes avatarGlow {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.8; }
+}
+
+/* Default placeholder avatar when no image is set */
+.user-avatar-img[src=""], .user-avatar-img:not([src]) {
+    background: linear-gradient(135deg, var(--primary-alpha-3), var(--secondary-alpha-3));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-avatar-img[src=""]:before, .user-avatar-img:not([src]):before {
+    content: "👤";
+    font-size: 16px;
+    color: var(--primary-color);
+}
+
+/* Dynamic Auth Button States */
+.control-btn.signup-state {
+    background: linear-gradient(135deg, var(--primary-color), #00cc00);
+    border-color: var(--primary-color);
+    animation: signupPulse 2s ease-in-out infinite;
+}
+
+.control-btn.login-state {
+    background: linear-gradient(135deg, var(--secondary-color), #0099cc);
+    border-color: var(--secondary-color);
+}
+
+.control-btn.signup-state:hover {
+    background: linear-gradient(135deg, #00cc00, var(--primary-color));
+    box-shadow: 0 0 20px var(--primary-alpha-4);
+    transform: translateY(-2px);
+}
+
+.control-btn.login-state:hover {
+    background: linear-gradient(135deg, #0099cc, var(--secondary-color));
+    box-shadow: 0 0 20px var(--secondary-alpha-4);
+    transform: translateY(-2px);
+}
+
+@keyframes signupPulse {
+    0%, 100% { 
+        box-shadow: 0 0 10px var(--primary-alpha-3);
+        transform: scale(1);
+    }
+    50% { 
+        box-shadow: 0 0 20px var(--primary-alpha-5);
+        transform: scale(1.02);
+    }
+}
+
+/* Force hide login button when user is logged in */
+body.user-logged-in #authBtn {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+}
+
+body.user-logged-in #userAvatarBtn {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Backup force-hidden class */
+.force-hidden {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+}
+
 /* Special styling for login button when logged in */
 #loginBtn.logged-in {
     background: rgba(0, 255, 0, 0.2) !important;
@@ -277,56 +435,34 @@
     background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.2), transparent);
 }
 
-/* User Indicator in Header */
-.user-indicator {
-    position: absolute;
-    top: 10px;
-    right: 20px;
-    font-family: 'Courier New', monospace;
-    font-size: 11px;
-    color: var(--primary-color);
-    background: var(--primary-alpha-2);
-    border: 1px solid var(--primary-alpha-5);
-    border-radius: 4px;
-    padding: 6px 10px;
-    backdrop-filter: blur(5px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-    z-index: 100;
-    /* Smooth transitions for show/hide */
-    opacity: 0;
-    transform: translateY(-10px);
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    pointer-events: none;
-}
+/* User Indicator removed - replaced by avatar button */
 
-/* Show state with smooth animation */
-.user-indicator.show {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
-}
-
-.user-indicator:hover {
-    background: var(--primary-alpha-3);
-    border-color: var(--primary-color);
-    box-shadow: 0 4px 15px rgba(0, 255, 0, 0.3);
-    transform: translateY(-2px);
-}
-
-.user-text {
-    font-weight: normal;
-    letter-spacing: 0.5px;
-}
-
-/* Responsive user indicator */
+/* Responsive avatar button */
 @media (max-width: 768px) {
-    .user-indicator {
-        position: relative;
-        top: auto;
-        right: auto;
-        order: 4;
-        margin-top: 10px;
-        font-size: 10px;
-        padding: 4px 8px;
+    
+    .user-avatar-button {
+        max-width: 150px;
+        font-size: 7px;
+    }
+    
+    .user-display-name {
+        max-width: 100px;
+    }
+}
+
+@media (max-width: 480px) {
+    .user-avatar-button {
+        max-width: 120px;
+        font-size: 6px;
+        padding: 3px 8px;
+    }
+    
+    .user-display-name {
+        max-width: 70px;
+    }
+    
+    .avatar-container {
+        width: 28px;
+        height: 28px;
     }
 } 

@@ -198,6 +198,29 @@
             list-style-type: none;
         }
 
+        /* Mobile Gaming Disclaimer */
+        .mobile-disclaimer {
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(255, 165, 0, 0.1);
+            border: 1px solid #ff6600;
+            border-radius: 6px;
+            border-left: 4px solid #ff6600;
+        }
+
+        .mobile-disclaimer p {
+            margin: 0;
+            font-size: 10px;
+            line-height: 1.4;
+            color: #ffaa44;
+            font-family: 'Courier New', monospace;
+        }
+
+        .mobile-disclaimer strong {
+            color: #ff6600;
+            text-shadow: 0 0 3px rgba(255, 102, 0, 0.5);
+        }
+
         .terms-content li {
             margin: 8px 0;
             position: relative;
@@ -234,9 +257,7 @@
                 
                 <h1 class="title glitch" data-text="DUMBASSGAMES">DUMBASSGAMES</h1>
                 
-                <div class="user-indicator" id="userIndicator" style="display: none;">
-                    <span class="user-text">👤 <span id="headerUsername">-</span></span>
-                </div>
+                <!-- User indicator removed - replaced by avatar button -->
             </div>
             
             <div class="header-controls-row">
@@ -252,11 +273,22 @@
                 <button id="themeToggle" class="control-btn compact" onclick="toggleThemePicker()">
                     <span class="btn-icon">🎨</span>
                 </button>
-                <button class="control-btn compact primary" onclick="showAddGameForm()">+ ADD</button>
-                <button class="control-btn compact primary" onclick="showUserProfile()">💛 FAVORITES</button>
+                <button class="control-btn compact" onclick="showAddGameForm()">+ ADD GAME</button>
+                <button class="control-btn compact" onclick="showUserProfile()">💛 FAVORITES</button>
+                <!-- Dynamic Auth Button - changes based on user state -->
                 <button id="authBtn" class="control-btn compact primary" onclick="handleAuthClick()">
-                    <span class="btn-icon">👤</span><span id="authBtnText">LOGIN</span>
+                    <span class="btn-icon">👤</span><span id="authBtnText">SIGN UP</span>
                 </button>
+                
+                <!-- User Profile Avatar Button (hidden by default) -->
+                <div id="userAvatarBtn" class="user-avatar-button" onclick="showUserProfile()" style="display: none;">
+                    <div class="avatar-container">
+                        <img id="userAvatarImg" class="user-avatar-img" src="" alt="Profile">
+                        <div class="avatar-ring"></div>
+                        <div class="avatar-glow"></div>
+                    </div>
+                    <span id="userDisplayName" class="user-display-name">-</span>
+                </div>
             </div>
             
             <div class="header-bottom">
@@ -267,7 +299,7 @@
             <div class="retro-music-player" id="musicPlayer">
                 <!-- Progress Bar at Top -->
                 <div class="track-progress-container">
-                    <input type="range" class="track-progress-bar" id="progressBar" min="0" max="100" value="0" oninput="window.musicPlayer?.seekTo(this.value)">
+                    <input type="range" class="track-progress-bar" id="progressBar" min="0" max="100" value="0">
                 </div>
                 
                 <!-- Main Player Layout -->
@@ -332,8 +364,8 @@
                         <span class="btn-label">SHUFFLE</span>
                     </button>
                     <button class="retro-btn manage-btn" onclick="window.musicPlayer?.openMusicManager()">
-                        <span class="btn-icon">🎵</span>
-                        <span class="btn-label">ADD MUSIC</span>
+                        <span class="btn-icon">📁</span>
+                        <span class="btn-label">MUSIC FOLDER</span>
                     </button>
                 </div>
             </div>
@@ -521,6 +553,11 @@
                         <span class="checkmark"></span>
                         I agree to the <a href="#" onclick="showTermsModal(event)" class="terms-link">Terms of Service</a> and will not submit inappropriate, illegal, or harmful content
                     </label>
+                    
+                    <!-- Mobile Gaming Disclaimer -->
+                    <div class="mobile-disclaimer">
+                        <p><strong>📱 MOBILE NOTICE:</strong> User-submitted games may not be optimized for mobile devices. While our platform works on mobile, individual games are created by third parties and mobile compatibility cannot be guaranteed. Best experience on desktop/laptop.</p>
+                    </div>
                 </div>
                 
                 <button type="submit" id="authSubmitBtn">🚀 LOGIN</button>
@@ -621,6 +658,41 @@
                     <div class="settings-section">
                         <h4>👤 Profile Settings</h4>
                         <form id="profileSettingsForm">
+                            <!-- Avatar Upload Section -->
+                            <div class="form-group avatar-upload-group">
+                                <label>Profile Avatar</label>
+                                <div class="avatar-upload-container">
+                                    <div class="current-avatar-display">
+                                        <div class="avatar-preview-container">
+                                            <img id="currentAvatarPreview" class="avatar-preview-img" src="" alt="Current Avatar">
+                                            <div class="avatar-preview-placeholder" id="avatarPlaceholder">👤</div>
+                                        </div>
+                                        <div class="avatar-info">
+                                            <span id="avatarStatus">No avatar set</span>
+                                            <button type="button" class="btn-secondary small" id="removeAvatarBtn" onclick="removeAvatar()" style="display: none;">🗑️ Remove</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="avatar-upload-dropzone" id="avatarDropzone">
+                                        <div class="dropzone-content">
+                                            <div class="dropzone-icon">📸</div>
+                                            <div class="dropzone-text">
+                                                <strong>Drop avatar here</strong><br>
+                                                or <span class="browse-link">click to upload</span><br>
+                                                <small>Auto-compresses large images</small>
+                                            </div>
+                                            <input type="file" id="avatarFileInput" accept="image/*" style="display: none;">
+                                        </div>
+                                        <div class="upload-progress" id="avatarUploadProgress" style="display: none;">
+                                            <div class="progress-bar">
+                                                <div class="progress-fill" id="avatarProgressFill"></div>
+                                            </div>
+                                            <div class="progress-text" id="avatarProgressText">Processing...</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <div class="form-group">
                                 <label for="userBio">Bio</label>
                                 <textarea id="userBio" placeholder="Tell us about yourself..." maxlength="200" rows="3"></textarea>
@@ -710,7 +782,7 @@
                         <button type="button" class="upload-toggle" onclick="switchUploadMethod('url')">🔗 USE URL</button>
                     </div>
                     
-                    <!-- File Upload Method -->
+                    <!-- File Upload Method (Default) -->
                     <div id="fileUploadMethod" class="upload-method">
                         <div class="file-upload-dropzone" id="imageDropzone">
                             <div class="dropzone-content">
@@ -718,7 +790,7 @@
                                 <div class="dropzone-text">
                                     <strong>Drag & drop an image here</strong><br>
                                     or <span class="browse-link">click to browse</span><br>
-                                    <small>PNG, JPG, GIF up to 5MB</small>
+                                    <small>Converts to Base64 (max 2MB)</small>
                                 </div>
                                 <input type="file" id="imageFileInput" accept="image/*" style="display: none;">
                             </div>
@@ -740,7 +812,10 @@
                     
                     <!-- URL Upload Method -->
                     <div id="urlUploadMethod" class="upload-method" style="display: none;">
-                        <input type="url" name="gameImage" id="gameImageUrl" placeholder="IMAGE URL (optional but recommended)">
+                        <input type="url" name="gameImage" id="gameImageUrl" placeholder="🔗 IMAGE URL (paste a link to your image)">
+                        <div class="upload-help">
+                            <small>💡 Use image hosting like Imgur, Dropbox, or GitHub for best results</small>
+                        </div>
                         <div class="url-preview" id="urlPreview" style="display: none;">
                             <img id="urlPreviewImage" src="" alt="URL Preview">
                         </div>
@@ -1024,7 +1099,7 @@
         // Import the functions you need from the SDKs you need
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js';
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
-        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, setDoc, getDoc, query, orderBy, where } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, setDoc, getDoc, query, orderBy, where, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
         import { getStorage, ref, uploadBytes, getDownloadURL, uploadBytesResumable } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-storage.js';
         import { getAnalytics, logEvent } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js';
 
@@ -1076,6 +1151,7 @@
         window.firebaseQuery = query;
         window.firebaseOrderBy = orderBy;
         window.firebaseWhere = where;
+        window.firebaseServerTimestamp = serverTimestamp;
         window.firebaseStorageRef = ref;
         window.firebaseUploadBytes = uploadBytes;
         window.firebaseGetDownloadURL = getDownloadURL;

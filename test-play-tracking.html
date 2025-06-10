@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Play Count Tracking Test</title>
+</head>
+<body>
+    <h1>Play Count Tracking Test</h1>
+    <p>Open console and run these commands after the main page loads Firebase:</p>
+    
+    <h2>Test Commands:</h2>
+    <pre>
+// 1. Check if Firebase is ready
+console.log('Firebase ready:', !!window.dataManager && window.dataManager.isInitialized);
+
+// 2. Get current games and their play counts
+window.dataManager.getGames().then(games => {
+    console.log('📊 Current games with play counts:');
+    games.forEach(game => {
+        console.log(`${game.title}: ${game.plays || 0} plays`);
+    });
+});
+
+// 3. Test the tracking function directly (replace with actual title/URL)
+window.dumbassGame.trackGamePlay('ASTEROIDS', 'https://your-game-url-here');
+
+// 4. Check if the count increased
+setTimeout(() => {
+    window.dataManager.getGames().then(games => {
+        console.log('📊 Play counts after test:');
+        games.forEach(game => {
+            console.log(`${game.title}: ${game.plays || 0} plays`);
+        });
+    });
+}, 2000);
+    </pre>
+
+    <h2>What should happen:</h2>
+    <ul>
+        <li>✅ Each time you click a game's play button, the play count should increase by 1</li>
+        <li>✅ You should see console logs showing: "📈 Play count updated for [title]: X → Y"</li>
+        <li>✅ The Firebase database should show the updated play count</li>
+        <li>✅ Page refresh should persist the new play count</li>
+    </ul>
+
+    <p><strong>Go back to your main site and try playing a game!</strong></p>
+</body>
+</html> 

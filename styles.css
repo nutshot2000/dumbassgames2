@@ -510,37 +510,37 @@ body::before {
     border-radius: 5px;
     outline: none;
     cursor: pointer;
-    box-shadow: 0 0 8px rgba(0, 255, 0, 0.3);
+    box-shadow: 0 0 8px var(--primary-alpha-3);
     transition: all 0.3s ease;
     -webkit-appearance: none;
     appearance: none;
 }
 
 .volume-control-slider:hover {
-    box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+    box-shadow: 0 0 15px var(--primary-alpha-5);
     transform: scale(1.05);
 }
 
 .volume-control-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 22px;
-    height: 22px;
+    width: 32px;
+    height: 32px;
     background: var(--primary-color);
     border-radius: 50%;
     cursor: grab;
     box-shadow: 
-        0 0 12px rgba(0, 255, 0, 0.8),
+        0 0 12px var(--primary-alpha-8),
         0 2px 4px rgba(0, 0, 0, 0.3);
-    border: 2px solid rgba(0, 0, 0, 0.8);
+    border: 3px solid rgba(0, 0, 0, 0.8);
     transition: all 0.3s ease;
 }
 
 .volume-control-slider::-webkit-slider-thumb:hover {
-    width: 26px;
-    height: 26px;
+    width: 36px;
+    height: 36px;
     box-shadow: 
-        0 0 20px rgba(0, 255, 0, 1),
+        0 0 20px var(--primary-color),
         0 4px 8px rgba(0, 0, 0, 0.4);
     transform: scale(1.1);
 }
@@ -551,21 +551,21 @@ body::before {
 }
 
 .volume-control-slider::-moz-range-thumb {
-    width: 22px;
-    height: 22px;
+    width: 32px;
+    height: 32px;
     background: var(--primary-color);
     border-radius: 50%;
     cursor: grab;
-    border: 2px solid rgba(0, 0, 0, 0.8);
+    border: 3px solid rgba(0, 0, 0, 0.8);
     box-shadow: 
-        0 0 12px rgba(0, 255, 0, 0.8),
+        0 0 12px var(--primary-alpha-8),
         0 2px 4px rgba(0, 0, 0, 0.3);
     transition: all 0.3s ease;
 }
 
 .volume-control-slider::-moz-range-thumb:hover {
     box-shadow: 
-        0 0 20px rgba(0, 255, 0, 1),
+        0 0 20px var(--primary-color),
         0 4px 8px rgba(0, 0, 0, 0.4);
     transform: scale(1.1);
 }
@@ -1782,7 +1782,7 @@ body::before {
 
 .game-image {
     width: 100%;
-    height: 120px;
+    height: 160px;
     background: linear-gradient(135deg, #001100, #003300);
     border-radius: 8px;
     margin-bottom: 15px;
@@ -1797,9 +1797,13 @@ body::before {
 .game-image img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: scale-down;
+    object-position: center;
     border-radius: 8px;
     transition: transform 0.3s ease;
+    image-rendering: auto;
+    image-rendering: crisp-edges;
+    image-rendering: -webkit-optimize-contrast;
 }
 
 .game-card:hover .game-image img {
@@ -2557,6 +2561,142 @@ html {
 /* =============================
    PHASE 3: ADVANCED FEATURES
    ============================= */
+
+/* Avatar Upload Styles */
+.avatar-upload-group {
+    margin-bottom: 25px !important;
+}
+
+.avatar-upload-container {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    padding: 15px;
+    background: var(--primary-alpha-1);
+    border: 2px solid var(--primary-color);
+    border-radius: 12px;
+}
+
+.current-avatar-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    min-width: 120px;
+}
+
+.avatar-preview-container {
+    position: relative;
+    width: 80px;
+    height: 80px;
+}
+
+.avatar-preview-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--primary-color);
+    background: var(--bg-color);
+    display: none;
+}
+
+.avatar-preview-img.loaded {
+    display: block;
+}
+
+.avatar-preview-placeholder {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-alpha-2), var(--secondary-alpha-2));
+    border: 3px solid var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    color: var(--primary-color);
+}
+
+.avatar-preview-img.loaded + .avatar-preview-placeholder {
+    display: none;
+}
+
+.avatar-info {
+    text-align: center;
+}
+
+.avatar-info span {
+    font-size: 10px;
+    color: var(--primary-color);
+    display: block;
+    margin-bottom: 8px;
+}
+
+.avatar-upload-dropzone {
+    flex: 1;
+    min-height: 120px;
+    border: 2px dashed var(--primary-color);
+    border-radius: 8px;
+    background: var(--primary-alpha-1);
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.avatar-upload-dropzone:hover {
+    background: var(--primary-alpha-2);
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 10px var(--primary-alpha-3);
+}
+
+.avatar-upload-dropzone.drag-over {
+    background: var(--primary-alpha-3);
+    border-color: var(--secondary-color);
+    transform: scale(1.02);
+}
+
+.avatar-upload-dropzone .dropzone-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+}
+
+.avatar-upload-dropzone .dropzone-icon {
+    font-size: 24px;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.avatar-upload-dropzone .dropzone-text {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: var(--primary-color);
+    line-height: 1.4;
+}
+
+.avatar-upload-dropzone .browse-link {
+    color: var(--secondary-color);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.avatar-upload-dropzone .upload-progress {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+}
+
+.btn-secondary.small {
+    padding: 4px 8px;
+    font-size: 8px;
+    margin-top: 5px;
+}
 
 /* User Profile Modal */
 .modal-content.large {

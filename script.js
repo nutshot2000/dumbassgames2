@@ -74,6 +74,13 @@ class ThemeCustomizer {
             document.documentElement.style.setProperty('--secondary-alpha-8', `rgba(${secondaryRGB.r}, ${secondaryRGB.g}, ${secondaryRGB.b}, 0.8)`);
             document.documentElement.style.setProperty('--secondary-alpha-9', `rgba(${secondaryRGB.r}, ${secondaryRGB.g}, ${secondaryRGB.b}, 0.9)`);
         }
+        
+        // Update volume slider appearance with new colors
+        setTimeout(() => {
+            if (typeof updateVolumeSliderAppearance === 'function') {
+                updateVolumeSliderAppearance();
+            }
+        }, 50);
     }
 
     hexToRgb(hex) {
@@ -135,11 +142,25 @@ function updateThemeColor(type, color) {
     
     themeCustomizer.applyColors(primary, secondary);
     
+    // Update volume slider appearance
+    updateVolumeSliderAppearance();
+    
     // Auto-save the theme changes
     themeCustomizer.saveTheme();
 }
 
-
+function updateVolumeSliderAppearance() {
+    const volumeSlider = document.getElementById('volumeSlider');
+    if (volumeSlider) {
+        // Get current volume and force update appearance
+        const currentVolume = volumeSlider.value || 50;
+        const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
+        console.log('🎨 Updating volume slider appearance:', { currentVolume, primaryColor });
+        volumeSlider.style.background = `linear-gradient(to right, ${primaryColor} 0%, ${primaryColor} ${currentVolume}%, rgba(0,0,0,0.8) ${currentVolume}%, rgba(0,0,0,0.8) 100%)`;
+    } else {
+        console.log('⚠️ Volume slider not found for appearance update');
+    }
+}
 
 function showNotification(message) {
     // Simple notification for now
@@ -176,6 +197,20 @@ class DumbassGameEnhanced {
         this.renderGames();
         this.setupKeyboardShortcuts();
         this.preloadAssets();
+        
+        // Initialize dynamic auth button system
+        this.updateAuthButton();
+        this.initializeAvatarUpload();
+        
+        // Set up Firebase auth state listener to fix button issues
+        setTimeout(() => {
+            if (window.firebaseAuth) {
+                window.firebaseAuth.onAuthStateChanged((user) => {
+                    console.log('🔥 Firebase auth state changed:', user ? user.email : 'No user');
+                    setTimeout(() => this.updateAuthButton(), 100);
+                });
+            }
+        }, 1000);
         
         // Professional loading sequence
         this.showLoadingSequence();
@@ -342,7 +377,7 @@ class DumbassGameEnhanced {
     playGame(url, title) {
         this.soundSystem.playClick();
         
-        // Track game launch analytics
+        // Track game launch analytics and update play count
         this.trackGamePlay(title, url);
         
         // Professional loading overlay
@@ -437,7 +472,7 @@ class DumbassGameEnhanced {
         }, 10000);
     }
 
-    trackGamePlay(title, url) {
+    async trackGamePlay(title, url) {
         try {
             // Google Analytics tracking
             if (window.gtag) {
@@ -458,9 +493,67 @@ class DumbassGameEnhanced {
                 });
             }
 
-            console.log('📊 Analytics tracked for game play:', title);
+            // CRITICAL: Update play count in Firebase database
+            await this.updateGamePlayCount(title, url);
+
+            console.log('📊 Analytics tracked and play count updated for:', title);
         } catch (error) {
-            console.warn('Analytics tracking failed:', error);
+            console.warn('Game play tracking failed:', error);
+        }
+    }
+
+    async updateGamePlayCount(title, url) {
+        try {
+            if (!window.dataManager || !window.dataManager.isInitialized) {
+                console.warn('📊 Firebase not available for play count tracking');
+                return;
+            }
+
+            // Find the game by title or URL
+            const games = await window.dataManager.getGames();
+            const game = games.find(g => 
+                g.title.toLowerCase() === title.toLowerCase() || 
+                g.url === url
+            );
+
+            if (game) {
+                const currentPlays = parseInt(game.plays) || 0;
+                const newPlayCount = currentPlays + 1;
+                
+                // Update the play count in Firebase
+                const success = await window.dataManager.updateGame(game.id, {
+                    plays: newPlayCount,
+                    lastPlayed: new Date().toISOString()
+                });
+
+                if (success) {
+                    console.log(`📈 Play count updated for "${title}": ${currentPlays} → ${newPlayCount}`);
+                    
+                    // Update local games array if available
+                    if (this.games) {
+                        const localGame = this.games.find(g => g.id === game.id);
+                        if (localGame) {
+                            localGame.plays = newPlayCount;
+                            localGame.lastPlayed = new Date().toISOString();
+                        }
+                    }
+                    
+                    // Update enhanced game manager if available
+                    if (window.enhancedGameManager && window.enhancedGameManager.games) {
+                        const enhancedGame = window.enhancedGameManager.games.find(g => g.id === game.id);
+                        if (enhancedGame) {
+                            enhancedGame.plays = newPlayCount;
+                            enhancedGame.lastPlayed = new Date().toISOString();
+                        }
+                    }
+                } else {
+                    console.warn('📊 Failed to update play count in Firebase');
+                }
+            } else {
+                console.warn('📊 Game not found for play count update:', title);
+            }
+        } catch (error) {
+            console.error('❌ Error updating play count:', error);
         }
     }
 
@@ -562,14 +655,12 @@ class DumbassGameEnhanced {
             this.soundSystem.playSuccess();
             this.notificationManager.showSuccess(`🎉 "${newGame.title}" added successfully!`);
             
-            // Record submission for tier tracking (logged in users only)
-            if (window.userProfileManager?.currentUser && window.userProfileManager?.userProfile) {
-                try {
-                    await window.userProfileManager.tierManager.recordSubmission(window.userProfileManager.userProfile);
-                    console.log('✅ Recorded submission for tier tracking');
-                } catch (error) {
-                    console.warn('⚠️ Failed to record submission for tier tracking:', error);
-                }
+            // CRITICAL: Record submission for tier tracking 
+            try {
+                await this.recordGameSubmission();
+                console.log('✅ Game submission recorded for tier tracking');
+            } catch (error) {
+                console.warn('⚠️ Failed to record submission for tier tracking:', error);
             }
             
             // Refresh user submissions in profile
@@ -582,7 +673,20 @@ class DumbassGameEnhanced {
         } catch (error) {
             console.error('❌ Error adding game:', error);
             this.soundSystem.playError();
-            this.notificationManager.showError('❌ Failed to add game. Please try again.');
+            
+            // Check if this is a specific error with a user-friendly message
+            if (error.message && (
+                error.message.includes('Image size exceeds Firebase limits') ||
+                error.message.includes('Permission denied') ||
+                error.message.includes('Failed to save to Firebase')
+            )) {
+                // The detailed error message was already shown by the Firebase handler
+                // Don't show a generic message on top of it
+                return;
+            } else {
+                // For other unknown errors, show generic message
+                this.notificationManager.showError('❌ Failed to add game. Please try again.');
+            }
         }
     }
 
@@ -686,6 +790,26 @@ class DumbassGameEnhanced {
             return;
         }
 
+        // Check if user was trying to upload an image but it failed
+        const imageUploadManager = window.imageUploadManager;
+        const uploadMethodFile = document.querySelector('input[name="uploadMethod"]:checked')?.value === 'file';
+        
+        if (uploadMethodFile && imageUploadManager) {
+            // User selected file upload but image field is empty = upload failed
+            if (!gameData.image || gameData.image.trim() === '') {
+                this.soundSystem.playError();
+                this.notificationManager.showError('❌ Image upload failed or incomplete! Please try a smaller image (under 600KB) or use the URL method instead.');
+                return;
+            }
+            
+            // Double-check the image isn't just the placeholder
+            if (gameData.image === 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&h=250&fit=crop') {
+                this.soundSystem.playError();
+                this.notificationManager.showError('❌ Please upload your own image or provide an image URL!');
+                return;
+            }
+        }
+
         if (gameData.url && !this.isValidUrl(gameData.url)) {
             this.soundSystem.playError();
             this.notificationManager.showError('❌ Please enter a valid URL or file path!');
@@ -771,71 +895,408 @@ class DumbassGameEnhanced {
     }
 
     async checkRateLimit() {
-        // Use new tier-based rate limiting system
-        const userId = window.firebaseAuth?.currentUser?.uid || 'anonymous';
+        console.log('🔍 Starting rate limit check...');
         
-        if (userId === 'anonymous') {
-            // Anonymous users - basic rate limiting using old system
-            const currentTime = Date.now();
-            const ONE_DAY = 24 * 60 * 60 * 1000;
-            
-            let submissionHistory = JSON.parse(localStorage.getItem(`submissionHistory_anonymous`) || '[]');
-            submissionHistory = submissionHistory.filter(timestamp => currentTime - timestamp < ONE_DAY);
-            
-            if (submissionHistory.length >= 1) {
-                const nextAllowedTime = new Date(Math.min(...submissionHistory) + ONE_DAY);
-                return {
-                    valid: false,
-                    showUpgrade: true,
-                    isAnonymous: true,
-                    message: `🚫 Anonymous limit exceeded! You can submit 1 game per day. Next submission: ${nextAllowedTime.toLocaleString()}`,
-                    upgradeMessage: 'Sign up to increase your submission limits!'
-                };
-            }
-            
-            submissionHistory.push(currentTime);
-            localStorage.setItem(`submissionHistory_anonymous`, JSON.stringify(submissionHistory));
-            return { valid: true };
+        const currentUser = window.firebaseAuth?.currentUser;
+        const isSignedIn = !!currentUser;
+        
+        console.log(`👤 User status: ${isSignedIn ? 'Signed In' : 'Anonymous'}`);
+        
+        if (!isSignedIn) {
+            // Anonymous users get FREE tier limits (2 per month)
+            console.log('📝 Checking anonymous user limits...');
+            return await this.checkAnonymousLimits();
         }
 
-        // Logged in users - tier-based rate limiting
+        // Signed-in users - check Firebase profile
         try {
-            const userProfile = window.userProfileManager?.userProfile;
-            if (!userProfile) {
-                console.warn('No user profile found for rate limiting');
-                return { valid: true }; // Allow if can't check
-            }
-
-            const tierManager = window.userProfileManager?.tierManager;
-            if (!tierManager) {
-                console.warn('No tier manager found');
-                return { valid: true };
-            }
-
-            const limitCheck = await tierManager.checkSubmissionLimits(userProfile);
-            if (!limitCheck.allowed) {
-                // Get current tier info and recommended upgrade
-                const currentTier = tierManager.getTierInfo(userProfile.tier);
-                const recommendedTier = userProfile.tier === 'FREE' ? 'PRO' : 'DEV';
-                const recommendedTierInfo = tierManager.getTierInfo(recommendedTier);
-
-                return {
-                    valid: false,
-                    showUpgrade: true,
-                    isAnonymous: false,
-                    currentTier: currentTier,
-                    recommendedTier: recommendedTierInfo,
-                    message: `⏰ ${limitCheck.reason}`,
-                    upgradeMessage: `Upgrade to ${recommendedTierInfo.displayName} for ${recommendedTierInfo.limits.submissionsPerMonth === -1 ? 'unlimited' : recommendedTierInfo.limits.submissionsPerMonth} submissions per month!`,
-                    upgradeAction: () => this.showSubmissionLimitModal(currentTier, recommendedTierInfo, limitCheck)
-                };
-            }
+            console.log('🔄 Fetching fresh profile data from Firebase...');
             
-            return { valid: true };
+            let userProfile;
+            try {
+                const userDoc = await window.firebaseGetDoc(
+                    window.firebaseDoc(window.firebaseDb, 'userProfiles', currentUser.uid)
+                );
+                userProfile = userDoc.exists() ? userDoc.data() : null;
+                console.log('✅ Profile loaded:', { tier: userProfile?.tier, submissionCount: userProfile?.submissionCount });
+            } catch (error) {
+                console.warn('⚠️ Firebase fetch failed, using cached data:', error);
+                userProfile = window.userProfileManager?.userProfile;
+            }
+
+            if (!userProfile) {
+                console.log('⚠️ No profile found - applying FREE tier limits');
+                // No profile = FREE tier limits
+                return await this.checkSignedInLimits({ tier: 'FREE', submissionCount: { monthly: 0 } });
+            }
+
+            return await this.checkSignedInLimits(userProfile);
             
         } catch (error) {
-            console.warn('Error checking tier-based rate limits:', error);
-            return { valid: true }; // Allow submission if check fails
+            console.error('❌ Error checking signed-in limits:', error);
+            // On error, apply FREE tier limits as safety measure
+            return await this.checkSignedInLimits({ tier: 'FREE', submissionCount: { monthly: 0 } });
+        }
+    }
+
+    async checkAnonymousLimits() {
+        // Anonymous users: 2 submissions per month (same as FREE tier)
+        const currentTime = Date.now();
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+        const monthKey = `${currentYear}-${currentMonth}`;
+        
+        let submissionHistory = JSON.parse(localStorage.getItem('submissionHistory_anonymous') || '{}');
+        const monthlyCount = submissionHistory[monthKey] || 0;
+        
+        console.log(`📊 Anonymous limits - Month: ${monthKey}, Used: ${monthlyCount}/2`);
+        
+        if (monthlyCount >= 2) {
+            const nextMonth = new Date(currentYear, currentMonth + 1, 1);
+            return {
+                valid: false,
+                showUpgrade: true,
+                isAnonymous: true,
+                message: `🚫 Monthly limit reached! Anonymous users can submit 2 games per month. Next submission: ${nextMonth.toLocaleDateString()}`,
+                upgradeMessage: 'Sign up for FREE to track your submissions properly, or upgrade for more limits!'
+            };
+        }
+        
+        return { valid: true };
+    }
+
+    async checkSignedInLimits(userProfile) {
+        const tier = userProfile.tier || 'FREE';
+        const monthlyCount = userProfile.submissionCount?.monthly || 0;
+        
+        let monthlyLimit;
+        if (tier === 'FREE') {
+            monthlyLimit = 2;
+        } else if (tier === 'PRO') {
+            monthlyLimit = 8;
+        } else if (tier === 'DEV') {
+            monthlyLimit = -1; // unlimited
+        } else {
+            monthlyLimit = 2; // default to FREE
+        }
+        
+        console.log(`📊 Signed-in limits - Tier: ${tier}, Used: ${monthlyCount}/${monthlyLimit === -1 ? '∞' : monthlyLimit}`);
+        
+        if (monthlyLimit > 0 && monthlyCount >= monthlyLimit) {
+            const nextMonth = new Date();
+            nextMonth.setMonth(nextMonth.getMonth() + 1, 1);
+            return {
+                valid: false,
+                showUpgrade: true,
+                isAnonymous: false,
+                tier: tier,
+                message: `🚫 ${tier} tier limit reached (${monthlyLimit} per month). Next submission: ${nextMonth.toLocaleDateString()}`,
+                upgradeAction: () => showUpgradeModal()
+            };
+        }
+        
+        return { valid: true, tier: tier, count: monthlyCount, limit: monthlyLimit };
+    }
+
+    // Dynamic Auth Button Management
+    updateAuthButton() {
+        const authBtn = document.getElementById('authBtn');
+        const userAvatarBtn = document.getElementById('userAvatarBtn');
+        const authBtnText = document.getElementById('authBtnText');
+        
+        if (!authBtn || !userAvatarBtn || !authBtnText) {
+            console.warn('⚠️ Auth button elements not found');
+            return;
+        }
+        
+        const currentUser = window.firebaseAuth?.currentUser;
+        const hasAccount = localStorage.getItem('dumbassGames_hasAccount') === 'true';
+        
+        // Auth button state logging removed for cleaner console
+        
+        if (currentUser) {
+            // User is logged in - ONLY show avatar button, HIDE login button
+            
+            // Add CSS class to body for styling
+            document.body.classList.add('user-logged-in');
+            
+            // Force hide login button with multiple methods
+            authBtn.style.display = 'none';
+            authBtn.style.visibility = 'hidden';
+            authBtn.style.opacity = '0';
+            authBtn.classList.add('force-hidden');
+            
+            // Force show avatar button
+            userAvatarBtn.style.display = 'flex';
+            userAvatarBtn.style.visibility = 'visible';
+            userAvatarBtn.style.opacity = '1';
+            userAvatarBtn.classList.remove('force-hidden');
+            
+            this.updateAvatarButton();
+        } else if (hasAccount) {
+            // User has account but not logged in - show LOGIN
+            
+            // Remove logged-in class
+            document.body.classList.remove('user-logged-in');
+            
+            authBtn.style.display = 'flex';
+            authBtn.style.visibility = 'visible';
+            authBtn.style.opacity = '1';
+            authBtn.classList.remove('force-hidden');
+            
+            userAvatarBtn.style.display = 'none';
+            authBtnText.textContent = 'LOGIN';
+            authBtn.className = 'control-btn compact login-state';
+        } else {
+            // First-time visitor - show SIGN UP
+            
+            // Remove logged-in class
+            document.body.classList.remove('user-logged-in');
+            
+            authBtn.style.display = 'flex';
+            authBtn.style.visibility = 'visible';
+            authBtn.style.opacity = '1';
+            authBtn.classList.remove('force-hidden');
+            
+            userAvatarBtn.style.display = 'none';
+            authBtnText.textContent = 'SIGN UP';
+            authBtn.className = 'control-btn compact primary signup-state';
+        }
+
+    }
+    
+    updateAvatarButton() {
+        const userProfile = window.userProfileManager?.userProfile;
+        const userAvatarImg = document.getElementById('userAvatarImg');
+        const userDisplayName = document.getElementById('userDisplayName');
+        
+        if (!userProfile || !userAvatarImg || !userDisplayName) return;
+        
+        // Update avatar image
+        if (userProfile.avatar) {
+            userAvatarImg.src = userProfile.avatar;
+            userAvatarImg.style.display = 'block';
+        } else {
+            userAvatarImg.src = '';
+            userAvatarImg.style.display = 'none';
+        }
+        
+        // Update display name
+        const displayName = userProfile.displayName || 
+                           userProfile.email?.split('@')[0] || 
+                           'User';
+        userDisplayName.textContent = displayName.length > 15 ? 
+                                     displayName.substring(0, 15) + '...' : 
+                                     displayName;
+    }
+    
+    markUserHasAccount() {
+        localStorage.setItem('dumbassGames_hasAccount', 'true');
+        this.updateAuthButton();
+    }
+    
+    // Avatar Upload System
+    initializeAvatarUpload() {
+        const avatarDropzone = document.getElementById('avatarDropzone');
+        const avatarFileInput = document.getElementById('avatarFileInput');
+        
+        if (!avatarDropzone || !avatarFileInput) return;
+        
+        // Click to upload
+        avatarDropzone.addEventListener('click', () => {
+            avatarFileInput.click();
+        });
+        
+        // File input change
+        avatarFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                this.processAvatarUpload(file);
+            }
+        });
+        
+        // Drag and drop
+        avatarDropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            avatarDropzone.classList.add('drag-over');
+        });
+        
+        avatarDropzone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            avatarDropzone.classList.remove('drag-over');
+        });
+        
+        avatarDropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            avatarDropzone.classList.remove('drag-over');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                this.processAvatarUpload(files[0]);
+            }
+        });
+    }
+    
+    async processAvatarUpload(file) {
+        try {
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                this.showAvatarError('Please select an image file');
+                return;
+            }
+            
+            this.showAvatarProgress(0, 'Validating image...');
+            
+            // Use existing image compression system
+            const compressedBase64 = await window.imageUploadManager.compressImageForAvatar(file);
+            
+            this.showAvatarProgress(90, 'Saving avatar...');
+            
+            // Save to profile
+            await this.saveAvatarToProfile(compressedBase64);
+            
+            this.showAvatarProgress(100, 'Avatar updated!');
+            setTimeout(() => this.hideAvatarProgress(), 1500);
+            
+        } catch (error) {
+            console.error('Error processing avatar:', error);
+            this.showAvatarError(error.message || 'Failed to process avatar');
+        }
+    }
+    
+    async saveAvatarToProfile(avatarData) {
+        const userProfile = window.userProfileManager?.userProfile;
+        if (!userProfile) throw new Error('No user profile found');
+        
+        console.log('💾 Saving avatar to profile...');
+        
+        // Update profile with avatar
+        userProfile.avatar = avatarData;
+        
+        // Force save to both Firebase and localStorage
+        try {
+            await window.userProfileManager.saveProfile();
+            console.log('✅ Avatar saved to Firebase');
+            
+            // Double-check: also save directly to persistence manager
+            if (window.persistenceManager) {
+                await window.persistenceManager.saveUserProfile(userProfile);
+                console.log('✅ Avatar double-saved to persistence');
+            }
+            
+        } catch (error) {
+            console.error('❌ Failed to save avatar:', error);
+            throw new Error('Failed to save avatar: ' + error.message);
+        }
+        
+        // Update UI
+        this.updateAvatarPreview(avatarData);
+        this.updateAvatarButton();
+        
+        console.log('✅ Avatar saved successfully');
+    }
+    
+    updateAvatarPreview(avatarData) {
+        const avatarPreview = document.getElementById('currentAvatarPreview');
+        const avatarPlaceholder = document.getElementById('avatarPlaceholder');
+        const avatarStatus = document.getElementById('avatarStatus');
+        const removeBtn = document.getElementById('removeAvatarBtn');
+        
+        if (avatarData && avatarPreview) {
+            avatarPreview.src = avatarData;
+            avatarPreview.classList.add('loaded');
+            if (avatarStatus) avatarStatus.textContent = 'Avatar set';
+            if (removeBtn) removeBtn.style.display = 'inline-block';
+        } else {
+            if (avatarPreview) {
+                avatarPreview.src = '';
+                avatarPreview.classList.remove('loaded');
+            }
+            if (avatarStatus) avatarStatus.textContent = 'No avatar set';
+            if (removeBtn) removeBtn.style.display = 'none';
+        }
+    }
+    
+    showAvatarProgress(percent, message) {
+        const progressContainer = document.getElementById('avatarUploadProgress');
+        const progressFill = document.getElementById('avatarProgressFill');
+        const progressText = document.getElementById('avatarProgressText');
+        
+        if (progressContainer) progressContainer.style.display = 'block';
+        if (progressFill) progressFill.style.width = percent + '%';
+        if (progressText) progressText.textContent = message;
+    }
+    
+    hideAvatarProgress() {
+        const progressContainer = document.getElementById('avatarUploadProgress');
+        if (progressContainer) progressContainer.style.display = 'none';
+    }
+    
+    showAvatarError(message) {
+        this.hideAvatarProgress();
+        if (window.dumbassGame?.notificationManager) {
+            window.dumbassGame.notificationManager.showError('🚫 ' + message);
+        }
+        console.error('Avatar upload error:', message);
+    }
+
+    async recordGameSubmission() {
+        const currentUser = window.firebaseAuth?.currentUser;
+        const isSignedIn = !!currentUser;
+        
+        if (!isSignedIn) {
+            // Record anonymous submission
+            await this.recordAnonymousSubmission();
+        } else {
+            // Record signed-in user submission
+            await this.recordSignedInSubmission(currentUser);
+        }
+    }
+
+    async recordAnonymousSubmission() {
+        const currentTime = Date.now();
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+        const monthKey = `${currentYear}-${currentMonth}`;
+        
+        let submissionHistory = JSON.parse(localStorage.getItem('submissionHistory_anonymous') || '{}');
+        submissionHistory[monthKey] = (submissionHistory[monthKey] || 0) + 1;
+        
+        localStorage.setItem('submissionHistory_anonymous', JSON.stringify(submissionHistory));
+        
+        console.log(`📊 Anonymous submission recorded: ${submissionHistory[monthKey]}/2 for ${monthKey}`);
+    }
+
+    async recordSignedInSubmission(currentUser) {
+        try {
+            // Update submission count in Firebase
+            const userProfileRef = window.firebaseDoc(window.firebaseDb, 'userProfiles', currentUser.uid);
+            
+            // Get current profile
+            const userDoc = await window.firebaseGetDoc(userProfileRef);
+            const userProfile = userDoc.exists() ? userDoc.data() : { tier: 'FREE', submissionCount: { monthly: 0 } };
+            
+            // Increment monthly count
+            const currentCount = userProfile.submissionCount?.monthly || 0;
+            const newCount = currentCount + 1;
+            
+            // Update in Firebase
+            await window.firebaseUpdateDoc(userProfileRef, {
+                'submissionCount.monthly': newCount,
+                'submissionCount.lastSubmission': new Date().toISOString()
+            });
+            
+            console.log(`📊 Signed-in submission recorded: ${newCount}/${userProfile.tier === 'FREE' ? '2' : userProfile.tier === 'PRO' ? '8' : '∞'} for ${userProfile.tier} tier`);
+            
+            // Force refresh cached profile data
+            if (window.userProfileManager) {
+                await window.userProfileManager.loadUserProfile();
+                window.userProfileManager.updateProfileUI();
+            }
+            
+        } catch (error) {
+            console.error('❌ Error recording signed-in submission:', error);
+            throw error;
         }
     }
 
@@ -1529,7 +1990,7 @@ class DataPersistenceManager {
             // Always save to localStorage as backup/fallback
             try {
                 await this.saveToLocalStorage(key, data);
-                console.log(`💾 Saved ${dataType} to localStorage (${success ? 'backup' : 'primary'})`);
+                // Saved to localStorage
                 success = true;
             } catch (localError) {
                 console.error(`❌ localStorage save failed for ${dataType}:`, localError);
@@ -1649,9 +2110,7 @@ class DataPersistenceManager {
             
             localStorage.setItem(key, serialized);
             
-            if (!silent) {
-                console.log(`💾 Saved to localStorage: ${key}`);
-            }
+                    // Save operation completed silently
         } catch (error) {
             if (error.name === 'QuotaExceededError') {
                 this.clearOldData();
@@ -2368,7 +2827,7 @@ function toggleEffects() {
 class RetroMusicPlayer {
     constructor() {
         this.audio = new Audio();
-        this.currentTrack = 0;
+        this.currentTrack = -1; // Will be set to random in initializePlayer()
         this.isPlaying = false;
         this.isShuffling = false;
         this.hasShownRescanNotification = false;
@@ -2569,10 +3028,7 @@ class RetroMusicPlayer {
         this.checkForSessionTracks();
         
         // Debug playlist loading
-        console.log(`🎵 Initialized with ${this.playlist.length} tracks:`);
-        this.playlist.forEach((track, index) => {
-            console.log(`  ${index + 1}. ${track.title} (${track.duration})`);
-        });
+        console.log(`🎵 Initialized with ${this.playlist.length} tracks`);
         
         // Setup real-time audio analysis
         this.setupAudioAnalysis();
@@ -2854,6 +3310,12 @@ class RetroMusicPlayer {
             console.warn('⚠️ Error saving music to storage:', error);
         }
     }
+
+    initializeDefaultTracks() {
+        // Reinitialize music library with all default tracks
+        this.musicLibrary = [...this.defaultPlaylist];
+        console.log('🎵 Reinitialized with', this.defaultPlaylist.length, 'default tracks');
+    }
     
     initializePlayer() {
         this.audio.volume = 0.7;
@@ -2862,9 +3324,21 @@ class RetroMusicPlayer {
         // Set initial volume slider appearance
         this.setVolume(70);
         
+        // Update volume slider to match current theme
+        setTimeout(() => updateVolumeSliderAppearance(), 100);
+        
         // Set initial track (check if playlist exists and has content)
         if (this.playlist && this.playlist.length > 0) {
-            this.loadTrack(0);
+            // Start with a random track to keep things fresh!
+            const randomTrack = Math.floor(Math.random() * this.playlist.length);
+            console.log(`🎲 RANDOM TRACK SELECTION: ${randomTrack} out of ${this.playlist.length} tracks`);
+            console.log(`🎵 Selected song: "${this.playlist[randomTrack]?.title}"`);
+            
+            // Force the random track to stick by clearing any cached selection
+            this.currentTrack = randomTrack;
+            this.loadTrack(randomTrack);
+            
+            console.log(`✅ Music player initialized with random track: "${this.playlist[this.currentTrack]?.title}"`);
         }
     }
     
@@ -2890,6 +3364,69 @@ class RetroMusicPlayer {
             // Skip broken tracks, but with a safety limit
             this.handleTrackError();
         });
+
+        // Setup click-to-seek on progress bar with a slight delay to ensure DOM is ready
+        setTimeout(() => {
+            this.setupProgressBarClick();
+        }, 100);
+    }
+
+    setupProgressBarClick() {
+        const progressBar = document.getElementById('progressBar');
+        if (progressBar) {
+            console.log('🎵 Setting up progress bar events');
+            
+            // Handle dragging the slider thumb
+            progressBar.addEventListener('input', (e) => {
+                const percentage = parseFloat(e.target.value);
+                console.log(`🎵 Progress bar dragged to ${percentage.toFixed(1)}%`);
+                this.seekTo(percentage);
+            });
+            
+            // Handle clicking anywhere on the progress bar
+            progressBar.addEventListener('click', (e) => {
+                // For range inputs, click events automatically update the value
+                // So we just need to seek to the new value
+                const percentage = parseFloat(progressBar.value);
+                console.log(`🎵 Progress bar clicked, seeking to ${percentage.toFixed(1)}%`);
+                this.seekTo(percentage);
+            });
+            
+            console.log('🎵 Progress bar events set up successfully');
+        } else {
+            console.warn('⚠️ Progress bar element not found, will retry...');
+            
+            // Retry after a longer delay if element wasn't found
+            setTimeout(() => {
+                const retryProgressBar = document.getElementById('progressBar');
+                if (retryProgressBar) {
+                    console.log('🎵 Progress bar found on retry, setting up events');
+                    this.setupProgressBarEvents(retryProgressBar);
+                } else {
+                    console.error('❌ Progress bar element still not found after retry');
+                }
+            }, 1000);
+        }
+    }
+    
+    setupProgressBarEvents(progressBar) {
+        // Handle dragging the slider thumb
+        progressBar.addEventListener('input', (e) => {
+            const percentage = parseFloat(e.target.value);
+            console.log(`🎵 Progress bar dragged to ${percentage.toFixed(1)}%`);
+            this.seekTo(percentage);
+        });
+        
+        // Handle clicking anywhere on the progress bar
+        progressBar.addEventListener('click', (e) => {
+            // For range inputs, click events automatically update the value
+            // So we just need to seek to the new value
+            const percentage = parseFloat(progressBar.value);
+            console.log(`🎵 Progress bar clicked, seeking to ${percentage.toFixed(1)}%`);
+            this.seekTo(percentage);
+        });
+        
+        console.log('🎵 Progress bar events set up successfully');
     }
     
     loadTrack(index) {
@@ -3033,7 +3570,15 @@ class RetroMusicPlayer {
     nextTrack() {
         let nextIndex;
         if (this.isShuffling) {
-            nextIndex = Math.floor(Math.random() * this.playlist.length);
+            // Prevent same song twice in a row (with safety check for single track)
+            if (this.playlist.length > 1) {
+                do {
+                    nextIndex = Math.floor(Math.random() * this.playlist.length);
+                } while (nextIndex === this.currentTrack);
+                console.log(`🔀 Shuffle: Avoided repeat, selected track ${nextIndex}`);
+            } else {
+                nextIndex = 0; // Only one track available
+            }
         } else {
             nextIndex = (this.currentTrack + 1) % this.playlist.length;
         }
@@ -3125,17 +3670,37 @@ class RetroMusicPlayer {
         
         // Visual feedback on the slider itself
         if (volumeSlider) {
-            volumeSlider.style.background = `linear-gradient(to right, #00ff00 0%, #00ff00 ${value}%, rgba(0,0,0,0.8) ${value}%, rgba(0,0,0,0.8) 100%)`;
+            const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
+            volumeSlider.style.background = `linear-gradient(to right, ${primaryColor} 0%, ${primaryColor} ${value}%, rgba(0,0,0,0.8) ${value}%, rgba(0,0,0,0.8) 100%)`;
         }
     }
     
     seekTo(percentage) {
+        console.log('🎵 seekTo called with percentage:', percentage);
         if (this.audio.duration) {
-            this.audio.currentTime = (percentage / 100) * this.audio.duration;
+            const newTime = (percentage / 100) * this.audio.duration;
+            const clampedTime = Math.max(0, Math.min(newTime, this.audio.duration));
+            this.audio.currentTime = clampedTime;
+            console.log(`🎵 Seeked to ${this.formatTime(clampedTime)} (${percentage}%)`);
+        } else {
+            console.warn('⚠️ Cannot seek - no audio duration');
         }
     }
     
+    setupSeekComplete() {
+        // Much shorter blocking period - just 100ms to prevent immediate conflicts
+        setTimeout(() => {
+            this.isUserSeeking = false;
+            console.log('🎵 Re-enabling automatic updates after seek');
+        }, 100);
+    }
+    
     updateProgress() {
+        // Don't update progress bar if user is actively seeking
+        if (this.isUserSeeking) {
+            return;
+        }
+        
         if (this.audio.duration) {
             const progress = (this.audio.currentTime / this.audio.duration) * 100;
             
@@ -3378,6 +3943,10 @@ class RetroMusicPlayer {
                                 padding: 8px 12px; background: rgba(0, 255, 0, 0.1); border: 1px solid #00ff00;
                                 color: #00ff00; border-radius: 6px; cursor: pointer; font-size: 0.6rem; font-family: inherit;
                             ">🔀 SHUFFLE</button>
+                            <button onclick="window.musicPlayer.resetToDefaults()" style="
+                                padding: 8px 12px; background: rgba(0, 255, 255, 0.1); border: 1px solid #00ffff;
+                                color: #00ffff; border-radius: 6px; cursor: pointer; font-size: 0.6rem; font-family: inherit;
+                            ">🔄 RESET TO DEFAULTS</button>
                             <span style="margin-left: auto; color: #00ff00; font-size: 0.6rem;">Tracks: <span id="trackCount">${this.playlist.length}</span></span>
                         </div>
                         <div id="currentPlaylistTracks" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
@@ -3458,51 +4027,20 @@ class RetroMusicPlayer {
         // Check folder API support
         this.checkFolderAPISupport();
         
-        // Show browser-specific welcome message for unsupported browsers
-        if (!('showDirectoryPicker' in window)) {
-            setTimeout(() => {
-                // Switch to Add tab automatically for better UX
-                this.switchMusicTab('add');
-                
-                // Show friendly welcome message
-                const welcomeMessage = document.createElement('div');
-                welcomeMessage.style.cssText = `
-                    position: fixed; top: 120px; left: 50%; transform: translateX(-50%);
-                    background: rgba(0, 0, 0, 0.95); border: 2px solid #00ffff;
-                    border-radius: 12px; padding: 20px; max-width: 400px; text-align: center;
-                    color: #00ffff; font-size: 0.7rem; z-index: 10001;
-                    box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
-                `;
-                welcomeMessage.innerHTML = `
-                    <div style="font-size: 2rem; margin-bottom: 10px;">🎵</div>
-                    <div style="font-weight: bold; margin-bottom: 10px;">Welcome to DumbassGames Music!</div>
-                    <div style="margin-bottom: 15px; line-height: 1.4;">
-                        Your browser doesn't support bulk folder import, but you can still add music using:
-                    </div>
-                    <div style="text-align: left; margin-bottom: 15px;">
-                        ✅ Drag & drop multiple files<br>
-                        ✅ Browse and select files<br>
-                        ✅ Add streaming URLs
-                    </div>
-                    <button onclick="this.parentElement.remove()" style="
-                        padding: 8px 16px; background: rgba(0, 255, 255, 0.2);
-                        border: 1px solid #00ffff; color: #00ffff; border-radius: 6px;
-                        cursor: pointer; font-family: inherit; font-size: 0.6rem;
-                    ">Got it! 🚀</button>
-                `;
-                document.body.appendChild(welcomeMessage);
-                
-                // Auto-remove after 10 seconds
-                setTimeout(() => {
-                    if (welcomeMessage.parentElement) {
-                        welcomeMessage.remove();
-                    }
-                }, 10000);
-            }, 500);
-        }
+        // Load current playlist content immediately (starts on playlist tab)
+        setTimeout(() => {
+            this.loadCurrentPlaylistInManager();
+            console.log('📋 Loaded current playlist tab with', this.playlist.length, 'tracks');
+        }, 100);
+        
+        // Browser compatibility check stored for later use in tab switching
+        this.browserSupportsFolder = 'showDirectoryPicker' in window;
         
         // Setup URL input
         this.setupUrlInputInManager();
+        
+        // Setup search functionality
+        this.setupSearchInManager();
         
         // Load the playlist and library content
         this.loadCurrentPlaylistInManager();
@@ -3636,6 +4174,47 @@ class RetroMusicPlayer {
         if (tabName === 'library') {
             this.loadMusicLibraryInManager();
         }
+        
+        // Show browser-specific welcome message when switching to Add Music tab
+        if (tabName === 'add' && !this.browserSupportsFolder && !this.addMusicWelcomeShown) {
+            this.addMusicWelcomeShown = true; // Show only once per session
+            setTimeout(() => {
+                // Show friendly welcome message for Add Music tab
+                const welcomeMessage = document.createElement('div');
+                welcomeMessage.style.cssText = `
+                    position: fixed; top: 120px; left: 50%; transform: translateX(-50%);
+                    background: rgba(0, 0, 0, 0.95); border: 2px solid #00ffff;
+                    border-radius: 12px; padding: 20px; max-width: 400px; text-align: center;
+                    color: #00ffff; font-size: 0.7rem; z-index: 10001;
+                    box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+                `;
+                welcomeMessage.innerHTML = `
+                    <div style="font-size: 2rem; margin-bottom: 10px;">🎵</div>
+                    <div style="font-weight: bold; margin-bottom: 10px;">Welcome to DumbassGames Music!</div>
+                    <div style="margin-bottom: 15px; line-height: 1.4;">
+                        Your browser doesn't support bulk folder import, but you can still add music using:
+                    </div>
+                    <div style="text-align: left; margin-bottom: 15px;">
+                        ✅ Drag & drop multiple files<br>
+                        ✅ Browse and select files<br>
+                        ✅ Add streaming URLs
+                    </div>
+                    <button onclick="this.parentElement.remove()" style="
+                        padding: 8px 16px; background: rgba(0, 255, 255, 0.2);
+                        border: 1px solid #00ffff; color: #00ffff; border-radius: 6px;
+                        cursor: pointer; font-family: inherit; font-size: 0.6rem;
+                    ">Got it! 🚀</button>
+                `;
+                document.body.appendChild(welcomeMessage);
+                
+                // Auto-remove after 10 seconds
+                setTimeout(() => {
+                    if (welcomeMessage.parentElement) {
+                        welcomeMessage.remove();
+                    }
+                }, 10000);
+            }, 300);
+        }
     }
     
     loadCurrentPlaylistInManager() {
@@ -3653,6 +4232,22 @@ class RetroMusicPlayer {
         
         if (countElement) {
             countElement.textContent = this.playlist.length;
+        }
+    }
+    
+    updateTrackCountInManager() {
+        const countElement = document.getElementById('trackCount');
+        if (countElement) {
+            countElement.textContent = this.playlist.length;
+        }
+    }
+
+    playTrackInManager(index) {
+        if (index >= 0 && index < this.playlist.length) {
+            this.loadTrack(index);
+            this.play();
+            this.loadCurrentPlaylistInManager(); // Refresh to highlight current track
+            console.log(`🎵 Playing track: ${this.playlist[index]?.title}`);
         }
     }
     
@@ -3691,7 +4286,7 @@ class RetroMusicPlayer {
             <div style="font-size: 0.6rem; color: #666; margin-bottom: 10px;">Duration: ${track.duration}</div>
             <div style="display: flex; gap: 8px;">
                 ${isInPlaylist ? 
-                    `<button onclick="window.musicPlayer.playTrack(${index})" style="
+                    `                    <button onclick="window.musicPlayer.playTrackInManager(${index})" style="
                         padding: 6px 10px; background: rgba(0, 255, 0, 0.1); border: 1px solid #00ff00;
                         color: #00ff00; border-radius: 4px; cursor: pointer; font-size: 0.6rem; font-family: inherit;
                     ">▶️ PLAY</button>
@@ -4026,6 +4621,47 @@ All tracks from "${dirHandle.name}" are now ready to play!
             }
         });
     }
+
+    setupSearchInManager() {
+        const searchInput = document.getElementById('librarySearch');
+        if (!searchInput) return;
+        
+        // Add real-time search as user types
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.trim();
+            
+            if (query === '') {
+                // Show all tracks when search is empty
+                this.loadMusicLibraryInManager();
+            } else {
+                // Filter tracks based on search query
+                this.searchLibrary(query);
+            }
+        });
+        
+        // Add visual feedback on focus/blur
+        searchInput.addEventListener('focus', () => {
+            searchInput.style.borderColor = '#00ffff';
+            searchInput.style.boxShadow = '0 0 10px rgba(0, 255, 255, 0.3)';
+        });
+        
+        searchInput.addEventListener('blur', () => {
+            searchInput.style.borderColor = '#00ff00';
+            searchInput.style.boxShadow = 'none';
+        });
+        
+        // Add Enter key support (for potential future features)
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const query = e.target.value.trim();
+                if (query) {
+                    this.searchLibrary(query);
+                }
+            }
+        });
+        
+        console.log('🔍 Music search functionality initialized');
+    }
     
     addFromUrlInManager() {
         const urlInput = document.getElementById('musicUrlInput');
@@ -4206,6 +4842,9 @@ All tracks from "${dirHandle.name}" are now ready to play!
         this.currentTrack = 0;
         this.renderCurrentPlaylist();
         this.renderMusicLibrary();
+        // Also update Music Manager if it's open
+        this.loadCurrentPlaylistInManager();
+        this.updateTrackCountInManager();
         console.log('🗑️ Playlist cleared');
     }
     
@@ -4216,14 +4855,47 @@ All tracks from "${dirHandle.name}" are now ready to play!
         localStorage.removeItem('dumbassMusic_fileRefs');
         localStorage.removeItem('dumbassMusic_lastFolder');
         
-        // Reload the page to reinitialize with fresh defaults
         console.log('🔄 Resetting to default embedded playlist...');
-        setTimeout(() => {
-            window.location.reload();
-        }, 500);
+        
+        // Reset to defaults without page reload - stay in Music Manager
+        this.playlist = [];
+        this.musicLibrary = [];
+        this.currentTrack = 0;
+        this.pause();
+        
+        // Reinitialize with default tracks
+        this.initializeDefaultTracks();
+        
+        // Copy all tracks to playlist by default
+        this.playlist = [...this.musicLibrary];
+        
+        // Save the reset state
+        this.saveToStorage();
+        
+        // Update displays
+        this.loadCurrentPlaylistInManager();
+        this.loadMusicLibraryInManager();
+        this.updateTrackCountInManager();
+        
+        // Load first track
+        if (this.playlist.length > 0) {
+            this.loadTrack(0);
+        }
+        
+        console.log('✅ Reset complete! All 28 default tracks restored.');
+        
+        // Play success sound
+        if (window.dumbassGame?.soundSystem) {
+            window.dumbassGame.soundSystem.playSuccess();
+        }
     }
     
     shufflePlaylist() {
+        if (this.playlist.length === 0) {
+            console.log('🔀 Cannot shuffle empty playlist');
+            return;
+        }
+        
         // Fisher-Yates shuffle algorithm
         for (let i = this.playlist.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -4233,14 +4905,16 @@ All tracks from "${dirHandle.name}" are now ready to play!
         this.currentTrack = 0;
         this.loadTrack(0);
         this.renderCurrentPlaylist();
+        // Also update Music Manager if it's open
+        this.loadCurrentPlaylistInManager();
         console.log('🔀 Playlist shuffled');
     }
     
     searchLibrary(query) {
-        const libraryGrid = document.getElementById('musicLibraryGrid');
-        if (!libraryGrid) return;
+        const libraryContainer = document.getElementById('musicLibraryTracks');
+        if (!libraryContainer) return;
         
-        libraryGrid.innerHTML = '';
+        libraryContainer.innerHTML = '';
         
         const filteredTracks = this.musicLibrary.filter(track => 
             track.title.toLowerCase().includes(query.toLowerCase())
@@ -4249,9 +4923,21 @@ All tracks from "${dirHandle.name}" are now ready to play!
         filteredTracks.forEach((track, index) => {
             // Find original index in musicLibrary for proper action handling
             const originalIndex = this.musicLibrary.findIndex(t => t.url === track.url);
-            const trackCard = this.createTrackCard(track, originalIndex, false);
-            libraryGrid.appendChild(trackCard);
+            const trackCard = this.createTrackCardInManager(track, originalIndex, false);
+            libraryContainer.appendChild(trackCard);
         });
+        
+        // Show "No results" message if no tracks found
+        if (filteredTracks.length === 0 && query.length > 0) {
+            libraryContainer.innerHTML = `
+                <div style="
+                    grid-column: 1 / -1; text-align: center; padding: 40px;
+                    color: #666; font-size: 0.8rem;
+                ">
+                    🔍 No tracks found matching "${query}"
+                </div>
+            `;
+        }
     }
     
     setupFileDropZone() {
@@ -4502,17 +5188,40 @@ class FirebaseDataManager {
         }
 
         try {
+            const currentUser = window.firebaseAuth.currentUser;
             const docRef = await window.firebaseAddDoc(this.collection, {
                 ...gameData,
                 createdAt: new Date().toISOString(),
-                createdBy: window.firebaseAuth.currentUser?.uid || 'anonymous',
+                createdBy: currentUser?.uid || 'anonymous',
+                submittedAt: window.firebaseServerTimestamp(),
+                submittedBy: currentUser?.uid || 'anonymous',
                 status: 'active'
             });
             console.log('🎮 Game added to Firebase:', docRef.id);
             return docRef.id;
         } catch (error) {
             console.error('❌ Error adding game to Firebase:', error);
-            return false;
+            
+            // Check for specific Firebase errors and provide user-friendly messages
+            if (error.message && error.message.includes('longer than 1048487 bytes')) {
+                // Image too large error
+                if (window.dumbassGame?.notificationManager) {
+                    window.dumbassGame.notificationManager.showError('🚫 Image too large for Firebase! The image after conversion is over 1MB. Please: 1) Use a smaller image 2) Compress your image 3) Use "🔗 USE URL" method instead');
+                }
+                throw new Error('Image size exceeds Firebase limits. Please use a smaller image or URL method.');
+            } else if (error.message && error.message.includes('PERMISSION_DENIED')) {
+                // Permission error
+                if (window.dumbassGame?.notificationManager) {
+                    window.dumbassGame.notificationManager.showError('🚫 Permission denied. Please sign in and try again.');
+                }
+                throw new Error('Permission denied - please sign in');
+            } else {
+                // Generic Firebase error
+                if (window.dumbassGame?.notificationManager) {
+                    window.dumbassGame.notificationManager.showError('❌ Failed to save game to database. Please try again or contact support.');
+                }
+                throw new Error('Failed to save to Firebase');
+            }
         }
     }
 
@@ -4775,19 +5484,9 @@ class FirebaseAuthManager {
     }
 
     updateAuthUI(user) {
-        const authBtn = document.getElementById('authBtn');
-        const authBtnText = document.getElementById('authBtnText');
-        
         if (user) {
-            // User is signed in - show profile button
-            if (authBtnText) {
-                authBtnText.textContent = 'PROFILE';
-            }
-            if (authBtn) {
-                authBtn.title = `Logged in as ${user.email}`;
-                authBtn.classList.remove('primary');
-                authBtn.classList.add('profile-mode');
-            }
+            // User is signed in - mark has account and update dynamic auth button
+            window.dumbassGame?.markUserHasAccount();
             
             // Update user info in modal - use display name if available
             this.updateWelcomeMessage(user);
@@ -4801,15 +5500,8 @@ class FirebaseAuthManager {
                 document.querySelector('.auth-tabs').style.display = 'none';
             }
         } else {
-            // User is signed out - show login button
-            if (authBtnText) {
-                authBtnText.textContent = 'LOGIN';
-            }
-            if (authBtn) {
-                authBtn.title = 'Sign in to your account';
-                authBtn.classList.add('primary');
-                authBtn.classList.remove('profile-mode');
-            }
+            // User is signed out - update dynamic auth button
+            window.dumbassGame?.updateAuthButton();
             
             // Reset modal to form view
             if (document.getElementById('userInfo')) {
@@ -4825,15 +5517,31 @@ class FirebaseAuthManager {
 
         // Notify user profile manager of auth state change
         if (window.userProfileManager) {
-            window.userProfileManager.loadUserData();
+            window.userProfileManager.loadUserData().then(() => {
+                // Update dynamic auth button after profile loads
+                window.dumbassGame?.updateAuthButton();
+                // Force update profile UI to refresh avatar
+                window.userProfileManager.updateProfileUI();
+            }).catch(error => {
+                console.warn('⚠️ Failed to load user data on auth change:', error);
+            });
+            
             // Try to update header username immediately
             setTimeout(() => window.userProfileManager.updateHeaderUsername(), 100);
-            // Reload favorites after sign-in with a small delay to ensure Firebase is ready
+            
+            // Reload everything after sign-in with a small delay to ensure Firebase is ready
             setTimeout(async () => {
-                await window.userProfileManager.loadUserFavorites();
-                window.userProfileManager.updateHeartIcons();
-                // Update header username after everything is loaded
-                window.userProfileManager.updateHeaderUsername();
+                try {
+                    await window.userProfileManager.loadUserFavorites();
+                    await window.userProfileManager.loadUserProfile(); // Ensure profile is loaded
+                    window.userProfileManager.updateHeartIcons();
+                    window.userProfileManager.updateHeaderUsername();
+                    window.userProfileManager.updateProfileUI(); // This will update avatar
+                    window.dumbassGame?.updateAuthButton(); // Final auth button update
+                    console.log('✅ Full profile reload completed on auth change');
+                } catch (error) {
+                    console.warn('⚠️ Error during full profile reload:', error);
+                }
             }, 1000);
         }
     }
@@ -4901,48 +5609,201 @@ class FirebaseAuthManager {
                 throw new Error('Firebase not initialized');
             }
             
+            console.log('🚀 Starting signup process for:', email);
             const userCredential = await window.createUserWithEmailAndPassword(window.firebaseAuth, email, password);
+            const user = userCredential.user;
+            console.log('✅ Firebase user created:', user.uid);
             
-            // Save terms agreement and initial user profile to Firebase
-            try {
-                const newUserProfile = {
-                    email: email,
-                    displayName: '',
-                    bio: '',
-                    joinDate: new Date().toISOString(),
-                    termsAccepted: true,
-                    termsAcceptedDate: new Date().toISOString(),
-                    version: '1.0',
-                    // Tier system
-                    tier: 'FREE',
-                    tierExpiry: null,
-                    submissionCount: { daily: 0, weekly: 0, monthly: 0 },
-                    lastSubmission: null,
-                    favoritesCount: 0,
-                    // Play tracking for analytics
-                    gamesPlayed: 0,
-                    lastActive: new Date().toISOString()
-                };
-                
-                if (window.persistenceManager) {
-                    await window.persistenceManager.saveUserProfile(newUserProfile);
-                    console.log('✅ Saved initial user profile with terms agreement to Firebase');
+            // BULLETPROOF: Create user profile immediately and directly in Firebase
+            const newUserProfile = {
+                email: email,
+                displayName: email.split('@')[0], // Use email prefix as display name
+                bio: 'Welcome to DUMBASSGAMES! Add your bio here...',
+                joinDate: new Date().toISOString(),
+                termsAccepted: true,
+                termsAcceptedDate: new Date().toISOString(),
+                version: '1.1',
+                // Tier system - start with FREE
+                tier: 'FREE',
+                tierExpiry: null,
+                submissionCount: { daily: 0, weekly: 0, monthly: 0 },
+                lastSubmission: null,
+                favoritesCount: 0,
+                // Play tracking for analytics
+                gamesPlayed: 0,
+                lastActive: new Date().toISOString(),
+                // Preferences
+                preferences: { sound: true, effects: true }
+            };
+            
+            // Save directly to Firebase with retry logic
+            let profileSaved = false;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    console.log(`💾 Saving profile to Firebase (attempt ${attempt})...`);
+                    await window.firebaseSetDoc(
+                        window.firebaseDoc(window.firebaseDb, 'userProfiles', user.uid),
+                        newUserProfile
+                    );
+                    console.log(`✅ Profile saved to Firebase successfully (attempt ${attempt})`);
+                    profileSaved = true;
+                    break;
+                } catch (profileError) {
+                    console.warn(`⚠️ Profile save failed (attempt ${attempt}):`, profileError);
+                    if (attempt === 3) {
+                        throw new Error(`Failed to create user profile after 3 attempts: ${profileError.message}`);
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
                 }
-            } catch (profileError) {
-                console.warn('⚠️ Could not save initial user profile:', profileError);
-                // Don't fail the signup if profile saving fails
             }
+            
+            if (!profileSaved) {
+                throw new Error('Failed to create user profile in Firebase');
+            }
+            
+            // Wait a moment for Firebase to sync
+            await new Promise(resolve => setTimeout(resolve, 500));
             
             this.hideAuthError();
             this.hideAuthModal();
-            if (window.dumbassGame && window.dumbassGame.notificationManager) {
-                window.dumbassGame.notificationManager.showSuccess(`Account created successfully! Welcome to DUMBASSGAMES! 🎮`);
-            }
-            return userCredential.user;
+            
+            // Show special welcome popup for new users
+            setTimeout(() => {
+                this.showWelcomeToArcadePopup();
+            }, 1000);
+            
+            console.log('🎉 Signup completed successfully for:', email);
+            return user;
         } catch (error) {
+            console.error('❌ Signup failed:', error);
             this.showAuthError(this.getErrorMessage(error));
             throw error;
         }
+    }
+
+    showWelcomeToArcadePopup() {
+        // Create the retro arcade welcome popup
+        const popup = document.createElement('div');
+        popup.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            font-family: 'Press Start 2P', monospace;
+            animation: fadeIn 0.5s ease-in;
+        `;
+        
+        popup.innerHTML = `
+            <div style="
+                background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+                border: 3px solid #00ffff;
+                border-radius: 15px;
+                padding: 40px;
+                max-width: 500px;
+                text-align: center;
+                position: relative;
+                box-shadow: 
+                    0 0 50px rgba(0, 255, 255, 0.5),
+                    inset 0 0 20px rgba(0, 255, 255, 0.1);
+                animation: glow 2s ease-in-out infinite alternate;
+            ">
+                <div style="
+                    color: #00ffff;
+                    font-size: 1.2rem;
+                    margin-bottom: 20px;
+                    text-shadow: 0 0 10px #00ffff;
+                ">🎮 WELCOME TO THE ARCADE! 🎮</div>
+                
+                <div style="
+                    color: #00ff00;
+                    font-size: 0.6rem;
+                    line-height: 1.6;
+                    margin: 20px 0;
+                    border-top: 1px solid #00ff00;
+                    border-bottom: 1px solid #00ff00;
+                    padding: 20px 0;
+                ">
+                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━<br/>
+                    <span style="color: #ffff00;">⚡ SYSTEM OPTIMIZED FOR DESKTOP ⚡</span><br/>
+                    Best experienced on desktop/laptop<br/>
+                    Some games may not work on mobile<br/>
+                    <br/>
+                    <span style="color: #ff6600;">🎵 Music system, retro vibes, and coding showcase</span><br/>
+                    Ready to explore some dumbass games?<br/>
+                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                </div>
+                
+                <button onclick="this.closest('div').parentElement.remove()" style="
+                    background: linear-gradient(135deg, #00ff00, #00cc00);
+                    border: 2px solid #00ff00;
+                    color: #000;
+                    padding: 15px 30px;
+                    font-family: 'Press Start 2P', monospace;
+                    font-size: 0.6rem;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+                    transition: all 0.3s ease;
+                    text-transform: uppercase;
+                    font-weight: bold;
+                " 
+                onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 0 30px rgba(0, 255, 0, 0.8)';"
+                onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 0 20px rgba(0, 255, 0, 0.5)';">
+                    🚀 LET'S GO!
+                </button>
+                
+                <div style="
+                    position: absolute;
+                    top: -10px;
+                    right: -10px;
+                    width: 20px;
+                    height: 20px;
+                    background: #ff0066;
+                    border-radius: 50%;
+                    animation: pulse 1.5s ease-in-out infinite;
+                "></div>
+            </div>
+        `;
+        
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; transform: scale(0.8); }
+                to { opacity: 1; transform: scale(1); }
+            }
+            @keyframes glow {
+                from { box-shadow: 0 0 50px rgba(0, 255, 255, 0.5), inset 0 0 20px rgba(0, 255, 255, 0.1); }
+                to { box-shadow: 0 0 80px rgba(0, 255, 255, 0.8), inset 0 0 30px rgba(0, 255, 255, 0.2); }
+            }
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); opacity: 1; }
+                50% { transform: scale(1.2); opacity: 0.7; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        document.body.appendChild(popup);
+        
+        // Play success sound if available
+        if (window.dumbassGame?.soundSystem) {
+            window.dumbassGame.soundSystem.playSuccess();
+        }
+        
+        // Auto-close after 15 seconds if user doesn't click
+        setTimeout(() => {
+            if (popup.parentElement) {
+                popup.remove();
+            }
+        }, 15000);
+        
+        console.log('🎮 Welcome to the Arcade popup displayed');
     }
 
     async signOut() {
@@ -5188,7 +6049,7 @@ window.addEventListener('load', function() {
 //    PHASE 3: ADVANCED FEATURES
 // =============================
 
-// Tier Management System
+// Fixed Tier Management System
 class TierManager {
     constructor() {
         this.tiers = {
@@ -5198,9 +6059,9 @@ class TierManager {
                 price: 0,
                 limits: {
                     favorites: 15,
-                    submissionsPerMonth: 2,
-                    submissionsPerWeek: 1,
-                    submissionsPerDay: 1
+                    submissionsPerMonth: 2,  // FREE tier gets 2 per month
+                    submissionsPerWeek: -1,  // No weekly limit for FREE
+                    submissionsPerDay: -1    // No daily limit for FREE
                 },
                 features: ['Browse & play all games', 'Basic profile'],
                 badge: '🕹️',
@@ -5213,8 +6074,8 @@ class TierManager {
                 limits: {
                     favorites: 100,
                     submissionsPerMonth: 8,
-                    submissionsPerWeek: 2,
-                    submissionsPerDay: 2
+                    submissionsPerWeek: -1,
+                    submissionsPerDay: -1
                 },
                 features: ['Everything in FREE', 'PRO badge', 'Basic stats'],
                 badge: '⭐',
@@ -5242,68 +6103,96 @@ class TierManager {
     }
 
     async checkSubmissionLimits(userProfile) {
-        if (!userProfile) return { allowed: false, reason: 'No user profile found' };
+        console.log('🔍 Checking submission limits for:', userProfile?.email, 'Tier:', userProfile?.tier);
+        
+        if (!userProfile) {
+            console.log('❌ No user profile found');
+            return { allowed: false, reason: 'No user profile found' };
+        }
 
-        const tier = this.getTierInfo(userProfile.tier);
+        const tier = this.getTierInfo(userProfile.tier || 'FREE');
+        console.log('🎯 Using tier limits:', tier.limits);
+        
         const now = new Date();
-        const today = now.toDateString();
         
         // Initialize submission counts if missing
         if (!userProfile.submissionCount) {
             userProfile.submissionCount = { daily: 0, weekly: 0, monthly: 0 };
+            console.log('🔧 Initialized submission counts');
         }
 
-        // Reset counts if needed
+        // Reset monthly count if it's a new month
         const lastSubmission = userProfile.lastSubmission ? new Date(userProfile.lastSubmission) : null;
-        if (!lastSubmission || lastSubmission.toDateString() !== today) {
-            userProfile.submissionCount.daily = 0;
-        }
-
-        const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
-        if (!lastSubmission || lastSubmission < weekStart) {
-            userProfile.submissionCount.weekly = 0;
-        }
-
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        
         if (!lastSubmission || lastSubmission < monthStart) {
+            console.log('🗓️ New month detected, resetting monthly count');
             userProfile.submissionCount.monthly = 0;
         }
 
-        // Check limits
         const counts = userProfile.submissionCount;
+        console.log('📊 Current submission counts:', counts);
 
-        if (tier.limits.submissionsPerDay > 0 && counts.daily >= tier.limits.submissionsPerDay) {
-            const tomorrow = new Date(now);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            tomorrow.setHours(0, 0, 0, 0);
-            return { 
-                allowed: false, 
-                reason: `Daily limit reached (${tier.limits.submissionsPerDay}). Next submission: ${tomorrow.toLocaleDateString()}`,
-                nextAllowed: tomorrow
-            };
+        // For FREE tier, only check monthly limit (2 per month)
+        if (tier.name === 'FREE') {
+            if (counts.monthly >= tier.limits.submissionsPerMonth) {
+                const nextMonth = new Date(monthStart);
+                nextMonth.setMonth(nextMonth.getMonth() + 1);
+                console.log('🚫 Monthly limit reached for FREE tier');
+                return { 
+                    allowed: false, 
+                    reason: `Monthly limit reached (${tier.limits.submissionsPerMonth}). Next submission: ${nextMonth.toLocaleDateString()}`,
+                    nextAllowed: nextMonth,
+                    limitType: 'monthly'
+                };
+            }
         }
 
-        if (tier.limits.submissionsPerWeek > 0 && counts.weekly >= tier.limits.submissionsPerWeek) {
-            const nextWeek = new Date(weekStart);
-            nextWeek.setDate(nextWeek.getDate() + 7);
-            return { 
-                allowed: false, 
-                reason: `Weekly limit reached (${tier.limits.submissionsPerWeek}). Next submission: ${nextWeek.toLocaleDateString()}`,
-                nextAllowed: nextWeek
-            };
-        }
-
+        // For other tiers, check their specific limits
         if (tier.limits.submissionsPerMonth > 0 && counts.monthly >= tier.limits.submissionsPerMonth) {
             const nextMonth = new Date(monthStart);
             nextMonth.setMonth(nextMonth.getMonth() + 1);
+            console.log('🚫 Monthly limit reached');
             return { 
                 allowed: false, 
                 reason: `Monthly limit reached (${tier.limits.submissionsPerMonth}). Next submission: ${nextMonth.toLocaleDateString()}`,
-                nextAllowed: nextMonth
+                nextAllowed: nextMonth,
+                limitType: 'monthly'
             };
         }
 
+        console.log('✅ Submission allowed');
         return { allowed: true };
+    }
+
+    // New function to check if user can submit a game
+    async canSubmitGame(userProfile) {
+        console.log('🎮 Checking if user can submit game...');
+        
+        if (!userProfile) {
+            console.log('❌ No user profile - showing upgrade');
+            return { 
+                canSubmit: false, 
+                reason: 'Please sign in to submit games',
+                showUpgrade: true 
+            };
+        }
+
+        const limitCheck = await this.checkSubmissionLimits(userProfile);
+        
+        if (!limitCheck.allowed) {
+            console.log('🚫 Submission not allowed:', limitCheck.reason);
+            return {
+                canSubmit: false,
+                reason: limitCheck.reason,
+                showUpgrade: true,
+                limitType: limitCheck.limitType,
+                nextAllowed: limitCheck.nextAllowed
+            };
+        }
+
+        console.log('✅ User can submit game');
+        return { canSubmit: true };
     }
 
     async recordSubmission(userProfile) {
@@ -5401,7 +6290,7 @@ class PaymentManager {
         return new Promise((resolve, reject) => {
             const script = document.createElement('script');
             // Simplified PayPal SDK loading for better compatibility
-            script.src = `https://www.paypal.com/sdk/js?client-id=${this.paypalClientId}&currency=USD&intent=capture&commit=true&disable-funding=paylater,card`;
+            script.src = `https://www.paypal.com/sdk/js?client-id=${this.paypalClientId}&currency=USD&intent=capture&commit=true&disable-funding=paylater`;
             script.onload = () => {
                 console.log('💰 PayPal SDK loaded');
                 this.paypalSDKLoaded = true;
@@ -5682,17 +6571,25 @@ Thank you!`);
 
 
     async upgradeUser(tier) {
-        if (!window.userProfileManager?.currentUser) return false;
+        if (!window.userProfileManager?.currentUser) {
+            console.error('❌ No current user for upgrade');
+            return false;
+        }
 
         try {
-            const userProfile = window.userProfileManager.userProfile;
-            const currentTime = new Date().toISOString();
+            console.log(`🚀 Starting upgrade to ${tier}...`);
             
-            // Calculate expiry date (1 month from now)
+            // Get current profile from Firebase (not cache)
+            const userDoc = await window.firebaseGetDoc(
+                window.firebaseDoc(window.firebaseDb, 'userProfiles', window.userProfileManager.currentUser.uid)
+            );
+            const userProfile = userDoc.exists() ? userDoc.data() : {};
+            
+            const currentTime = new Date().toISOString();
             const expiryDate = new Date();
             expiryDate.setMonth(expiryDate.getMonth() + 1);
             
-            // Update user profile with new tier
+            // Create updated profile
             const updatedProfile = {
                 ...userProfile,
                 tier: tier,
@@ -5701,19 +6598,58 @@ Thank you!`);
                 version: '1.1'
             };
             
-            // Save to Firebase
-            await window.firebaseSetDoc(
-                window.firebaseDoc(window.firebaseDb, 'userProfiles', window.userProfileManager.currentUser.uid),
-                updatedProfile
-            );
+            console.log(`💾 Saving upgrade to Firebase: ${userProfile.tier || 'FREE'} → ${tier}`);
             
-            // Update local profile
-            window.userProfileManager.userProfile = updatedProfile;
+            // Save to Firebase with retry logic
+            let saveSuccess = false;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    await window.firebaseSetDoc(
+                        window.firebaseDoc(window.firebaseDb, 'userProfiles', window.userProfileManager.currentUser.uid),
+                        updatedProfile
+                    );
+                    saveSuccess = true;
+                    console.log(`✅ Firebase save successful (attempt ${attempt})`);
+                    break;
+                } catch (error) {
+                    console.warn(`⚠️ Firebase save failed (attempt ${attempt}):`, error);
+                    if (attempt === 3) throw error;
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+                }
+            }
             
-            console.log(`✅ User upgraded to ${tier} successfully`);
+            if (!saveSuccess) {
+                throw new Error('Failed to save to Firebase after 3 attempts');
+            }
+            
+            // Clear ALL cached data
+            window.userProfileManager.userProfile = null;
+            console.log('🧹 Cleared all cached profile data');
+            
+            // Force reload fresh data
+            await window.userProfileManager.loadUserProfile();
+            console.log('🔄 Reloaded fresh profile from Firebase');
+            
+            // Update UI
+            window.userProfileManager.updateTierDisplay();
+            window.userProfileManager.updateProfileUI();
+            window.userProfileManager.updateHeaderUsername();
+            
+            // Show success notification
+            window.notificationManager?.showSuccess(`🎉 Upgraded to ${tier}! You can now submit more games.`);
+            
+            // Close upgrade modal
+            const upgradeModal = document.querySelector('.submission-limit-modal, .upgrade-modal');
+            if (upgradeModal) {
+                upgradeModal.remove();
+            }
+            
+            console.log(`✅ Upgrade to ${tier} completed successfully`);
             return true;
+            
         } catch (error) {
-            console.error('❌ Error upgrading user:', error);
+            console.error('❌ Upgrade failed:', error);
+            window.notificationManager?.showError(`❌ Upgrade failed: ${error.message}`);
             return false;
         }
     }
@@ -5851,7 +6787,7 @@ class UserProfileManager {
                     };
                     
                     profileSettingsForm.addEventListener('submit', this.handleProfileSubmit);
-                    console.log('✅ Profile form submit listener attached');
+                    // Profile form submit listener attached
                 } else {
                     console.log('✅ Profile form handler already exists, skipping');
                 }
@@ -5867,7 +6803,7 @@ class UserProfileManager {
                         this.hideProfile();
                     }
                 });
-                console.log('✅ Profile modal click handler attached');
+                // Profile modal click handler attached
             }
         };
 
@@ -6058,6 +6994,15 @@ class UserProfileManager {
         if (displayNameField && !displayNameField.matches(':focus')) {
             displayNameField.value = this.userProfile.displayName || '';
         }
+        
+        // Update avatar preview and auth button with profile data
+        console.log('🔄 Updating avatar from profile:', this.userProfile.avatar ? 'has avatar' : 'no avatar');
+        if (this.userProfile.avatar) {
+            window.dumbassGame?.updateAvatarPreview(this.userProfile.avatar);
+        } else {
+            window.dumbassGame?.updateAvatarPreview(null);
+        }
+        window.dumbassGame?.updateAvatarButton();
 
         // Update toggle buttons
         this.updateToggleButtons();
@@ -6168,8 +7113,37 @@ class UserProfileManager {
         if (!this.userProfile) return;
 
         try {
+            // For logged-in users, save directly to Firebase first
+            if (this.currentUser) {
+                console.log('💾 Saving profile to Firebase for user:', this.currentUser.email);
+                
+                // Save to Firebase with retry logic
+                let attempts = 0;
+                const maxAttempts = 3;
+                
+                while (attempts < maxAttempts) {
+                    try {
+                        await window.firebaseSetDoc(
+                            window.firebaseDoc(window.firebaseDb, 'userProfiles', this.currentUser.uid),
+                            this.userProfile
+                        );
+                        console.log('✅ Profile saved to Firebase successfully');
+                        break;
+                    } catch (firebaseError) {
+                        attempts++;
+                        console.warn(`⚠️ Firebase save attempt ${attempts} failed:`, firebaseError);
+                        if (attempts >= maxAttempts) {
+                            throw firebaseError;
+                        }
+                        // Wait 1 second before retry
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+            }
+            
+            // Also save to persistence manager as backup
             await window.persistenceManager.saveUserProfile(this.userProfile);
-            console.log('✅ Profile saved successfully');
+            console.log('✅ Profile saved successfully (both Firebase and local)');
         } catch (error) {
             console.error('❌ Error saving profile:', error);
             throw error;
@@ -6181,6 +7155,9 @@ class UserProfileManager {
         const displayName = document.getElementById('displayName').value;
 
         try {
+            console.log('💾 Saving profile settings...');
+            console.log('📸 Current avatar in profile:', this.userProfile?.avatar ? 'has avatar' : 'no avatar');
+            
             // Preserve existing tier system data and update user-editable fields
             this.userProfile = {
                 ...this.userProfile,
@@ -6198,6 +7175,8 @@ class UserProfileManager {
                 submissionCount: this.userProfile?.submissionCount || { daily: 0, weekly: 0, monthly: 0 },
                 lastSubmission: this.userProfile?.lastSubmission || null,
                 favoritesCount: this.userProfile?.favoritesCount || 0,
+                // CRITICAL: Preserve avatar data
+                avatar: this.userProfile?.avatar || null,
                 gamesPlayed: this.userProfile?.gamesPlayed || 0,
                 lastActive: new Date().toISOString()
             };
@@ -6709,6 +7688,14 @@ class UserProfileManager {
             await this.loadUserFavorites();
             
             this.updateProfileUI();
+            
+            // Update avatar preview in settings
+            if (this.userProfile?.avatar) {
+                window.dumbassGame?.updateAvatarPreview(this.userProfile.avatar);
+            } else {
+                window.dumbassGame?.updateAvatarPreview(null);
+            }
+            
             console.log('✅ Loaded profile for modal');
         } catch (error) {
             console.error('Error loading profile for modal:', error);
@@ -6832,7 +7819,7 @@ class EnhancedGameManager {
             this.syncWithFirebase();
         } else {
             // Wait for Firebase to initialize
-            console.log('🔄 Waiting for Firebase to initialize...');
+            // Waiting for Firebase initialization
             if (!this.loadAttempts) this.loadAttempts = 0;
             this.loadAttempts++;
             
@@ -6926,11 +7913,24 @@ class EnhancedGameManager {
             
         } catch (error) {
             console.error('❌ Error adding game:', error);
-            if (window.dumbassGame?.notificationManager) {
-                window.dumbassGame.notificationManager.showError('❌ Failed to submit game. Please try again.');
-            }
             if (window.dumbassGame?.soundSystem) {
                 window.dumbassGame.soundSystem.playError();
+            }
+            
+            // Check if this is a specific error with a user-friendly message
+            if (error.message && (
+                error.message.includes('Image size exceeds Firebase limits') ||
+                error.message.includes('Permission denied') ||
+                error.message.includes('Failed to save to Firebase')
+            )) {
+                // The detailed error message was already shown by the Firebase handler
+                // Don't show a generic message on top of it
+                return;
+            } else {
+                // For other unknown errors, show generic message
+                if (window.dumbassGame?.notificationManager) {
+                    window.dumbassGame.notificationManager.showError('❌ Failed to submit game. Please try again.');
+                }
             }
         }
     }
@@ -8158,6 +9158,16 @@ window.dumbassGameAdmin = new DumbassGameAdmin(window.dumbassGame);
 
 console.log('✅ All systems initialized successfully!');
 
+// Update volume slider appearance after everything is loaded
+setTimeout(() => {
+    updateVolumeSliderAppearance();
+}, 500);
+
+// Setup progress bar click functionality after everything is loaded
+setTimeout(() => {
+    setupGlobalProgressBarEvents();
+}, 1000);
+
 // Debug function to check game data from console
 window.debugSpinner = function() {
     console.log('🔍 SPINNER DEBUG REPORT:');
@@ -8619,13 +9629,15 @@ class ImageUploadManager {
     validateFile(file) {
         // Check file type
         if (!this.allowedTypes.includes(file.type)) {
-            this.showError('Invalid file type. Please use PNG, JPG, GIF, or WebP.');
+            this.showError('🚫 Invalid file type. Please use PNG, JPG, GIF, or WebP images only.');
             return false;
         }
 
-        // Check file size
-        if (file.size > this.maxFileSize) {
-            this.showError('File too large. Maximum size is 5MB.');
+        // Check file size (reasonable limit - we auto-compress but want to avoid huge files)
+        const maxSizeMB = 20; // 20MB reasonable limit for auto-compression
+        if (file.size > maxSizeMB * 1024 * 1024) {
+            const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
+            this.showError(`🚫 Image too large! Your image is ${fileSizeMB}MB. Please choose an image under ${maxSizeMB}MB - we'll automatically optimize it for you! 📸`);
             return false;
         }
 
@@ -8633,101 +9645,151 @@ class ImageUploadManager {
     }
 
     async uploadToFirebaseStorage(file) {
-        // Check if Firebase Storage is available
-        if (!window.firebaseStorage || !window.firebaseStorageRef || !window.firebaseUploadBytesResumable) {
-            throw new Error('Firebase Storage not available');
+        // Simple Base64 conversion (like it was before)
+        console.log('📦 Converting image to Base64:', file.name);
+        
+        // Check file size for base64 (reasonable limit)
+        if (file.size > 2000000) { // 2MB limit 
+            this.hideUploadProgress();
+            this.showError('Image too large (>2MB). Please choose a smaller image.');
+            throw new Error('Image too large for Base64 storage');
         }
-
-        // Check if user is authenticated (required for Firebase Storage upload)
-        if (!window.firebaseAuth?.currentUser) {
-            throw new Error('User not authenticated for Firebase Storage');
+        
+        try {
+            this.showUploadProgress();
+            this.updateUploadProgress(25);
+            
+            const base64 = await this.convertToBase64(file);
+            
+            this.updateUploadProgress(100);
+            this.hideUploadProgress();
+            this.showUploadSuccess(file.name, base64);
+            this.updateFormWithImageUrl(base64);
+            
+            console.log('✅ Image converted to Base64 successfully');
+            return base64;
+        } catch (error) {
+            console.error('❌ Base64 conversion failed:', error);
+            this.hideUploadProgress();
+            this.showError('Failed to process image. Please try again or use a direct URL.');
+            throw error;
         }
-
-        return new Promise((resolve, reject) => {
-            try {
-                // Create unique filename
-                const timestamp = Date.now();
-                const randomId = Math.random().toString(36).substring(2);
-                const extension = file.name.split('.').pop();
-                const filename = `game-images/${timestamp}-${randomId}.${extension}`;
-                
-                console.log(`📤 Attempting Firebase upload: ${filename}`);
-                
-                // Create storage reference
-                const storageRef = window.firebaseStorageRef(window.firebaseStorage, filename);
-                
-                // Upload file with progress monitoring
-                const uploadTask = window.firebaseUploadBytesResumable(storageRef, file);
-                
-                // Set a timeout to catch CORS issues that don't trigger error events
-                const timeoutId = setTimeout(() => {
-                    console.warn('🕐 Upload timeout - likely CORS issue');
-                    reject(new Error('Upload timeout - CORS policy may be blocking the request'));
-                }, 10000); // 10 second timeout
-                
-                uploadTask.on('state_changed', 
-                    (snapshot) => {
-                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                        this.updateUploadProgress(progress);
-                        console.log(`📈 Firebase upload progress: ${Math.round(progress)}%`);
-                        
-                        // Clear timeout on first progress update
-                        if (progress > 0) {
-                            clearTimeout(timeoutId);
-                        }
-                    },
-                    (error) => {
-                        clearTimeout(timeoutId);
-                        console.error('📤 Firebase upload error:', error);
-                        reject(new Error(`Firebase upload failed: ${error.message}`));
-                    },
-                    async () => {
-                        clearTimeout(timeoutId);
-                        try {
-                            // Upload completed successfully
-                            const downloadURL = await window.firebaseGetDownloadURL(uploadTask.snapshot.ref);
-                            console.log('🖼️ Image uploaded to Firebase Storage:', downloadURL);
-                            resolve(downloadURL);
-                        } catch (error) {
-                            console.error('📥 Download URL error:', error);
-                            reject(new Error(`Failed to get download URL: ${error.message}`));
-                        }
-                    }
-                );
-                
-            } catch (error) {
-                console.error('🔥 Firebase Storage setup failed:', error);
-                reject(new Error(`Firebase Storage setup failed: ${error.message}`));
-            }
-        });
     }
 
     async convertToBase64(file) {
-        console.log('📦 Converting to base64...');
+        console.log('📦 Converting and optimizing image...');
         this.updateUploadProgress(10);
         
         return new Promise((resolve, reject) => {
-            const reader = new FileReader();
+            const img = new Image();
             
-            reader.onprogress = (e) => {
-                if (e.lengthComputable) {
-                    const progress = 10 + (e.loaded / e.total) * 80; // 10% start + 80% for reading
-                    this.updateUploadProgress(progress);
+            img.onload = () => {
+                try {
+                    this.updateUploadProgress(30);
+                    
+                    // Create canvas for image processing
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Calculate optimal dimensions for game cards (landscape format preferred)
+                    let { width, height } = img;
+                    const targetAspectRatio = 16 / 9; // Perfect for game cards
+                    const maxWidth = 800;
+                    const maxHeight = 450;
+                    
+                    // Resize to fit within max dimensions while maintaining aspect ratio
+                    if (width > maxWidth || height > maxHeight) {
+                        const scale = Math.min(maxWidth / width, maxHeight / height);
+                        width = Math.round(width * scale);
+                        height = Math.round(height * scale);
+                    }
+                    
+                    // Only adjust aspect ratio for extreme cases to avoid cropping content
+                    const currentRatio = width / height;
+                    if (Math.abs(currentRatio - targetAspectRatio) > 1.0) {
+                        // Only adjust for very extreme aspect ratios
+                        if (currentRatio > targetAspectRatio * 2.5) {
+                            // Extremely wide - gentle crop
+                            height = Math.round(width / (targetAspectRatio * 1.2));
+                        } else if (currentRatio < targetAspectRatio / 2.5) {
+                            // Extremely tall - gentle crop  
+                            width = Math.round(height * (targetAspectRatio * 0.8));
+                        }
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    this.updateUploadProgress(50);
+                    
+                    // Draw and compress image
+                    ctx.fillStyle = '#ffffff'; // White background for transparency
+                    ctx.fillRect(0, 0, width, height);
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    this.updateUploadProgress(70);
+                    
+                    // Try different quality levels until we get under Firebase limit
+                    const targetSize = 850000; // 850KB target (safe margin for Firebase)
+                    let quality = 0.9;
+                    let base64Result;
+                    let attempts = 0;
+                    
+                    do {
+                        base64Result = canvas.toDataURL('image/jpeg', quality);
+                        
+                        if (base64Result.length <= targetSize) {
+                            break; // Success!
+                        }
+                        
+                        quality -= 0.1;
+                        attempts++;
+                        
+                        if (attempts >= 8) {
+                            // If still too large after 8 attempts, try smaller dimensions
+                            width *= 0.8;
+                            height *= 0.8;
+                            canvas.width = width;
+                            canvas.height = height;
+                            ctx.fillStyle = '#ffffff';
+                            ctx.fillRect(0, 0, width, height);
+                            ctx.drawImage(img, 0, 0, width, height);
+                            quality = 0.9;
+                            attempts = 0;
+                        }
+                        
+                    } while (attempts < 8 && base64Result.length > targetSize);
+                    
+                    this.updateUploadProgress(90);
+                    
+                    const finalSizeMB = (base64Result.length / (1024 * 1024)).toFixed(2);
+                    const originalSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                    
+                    console.log(`✅ Image optimized: ${originalSizeMB}MB → ${finalSizeMB}MB (${Math.round((1 - base64Result.length / (file.size * 1.33)) * 100)}% smaller)`);
+                    
+                    this.updateUploadProgress(100);
+                    this.showSuccess(`📸 Image optimized! ${originalSizeMB}MB → ${finalSizeMB}MB`);
+                    
+                    resolve(base64Result);
+                    
+                } catch (error) {
+                    console.error('❌ Image processing failed:', error);
+                    this.hideUploadProgress();
+                    this.showError('❌ Failed to process image. Please try a different image.');
+                    reject(error);
                 }
             };
             
-            reader.onload = () => {
-                this.updateUploadProgress(100);
-                console.log('✅ Base64 conversion complete');
-                resolve(reader.result);
+            img.onerror = () => {
+                console.error('❌ Failed to load image');
+                this.hideUploadProgress();
+                this.showError('❌ Invalid image file. Please choose a valid image (PNG, JPG, GIF, WebP).');
+                reject(new Error('Failed to load image'));
             };
             
-            reader.onerror = () => {
-                console.error('❌ Base64 conversion failed');
-                reject(new Error('Failed to convert image to base64'));
-            };
-            
-            reader.readAsDataURL(file);
+            // Load the image
+            this.updateUploadProgress(20);
+            img.src = URL.createObjectURL(file);
         });
     }
 
@@ -8852,6 +9914,89 @@ class ImageUploadManager {
         return this.currentUploadedImageUrl || (urlInput ? urlInput.value : '');
     }
 
+    // Avatar-specific compression (optimized for profile pictures)
+    async compressImageForAvatar(file) {
+        console.log('📸 Processing avatar image...');
+        
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => {
+                try {
+                    // Create canvas for avatar processing
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Avatar-specific dimensions (square, optimized for circles)
+                    const targetSize = 200; // 200x200 perfect for avatars
+                    canvas.width = targetSize;
+                    canvas.height = targetSize;
+                    
+                    // Calculate crop dimensions for square aspect ratio
+                    const { width, height } = img;
+                    const minDimension = Math.min(width, height);
+                    const startX = (width - minDimension) / 2;
+                    const startY = (height - minDimension) / 2;
+                    
+                    // Draw square cropped image
+                    ctx.drawImage(
+                        img, 
+                        startX, startY, minDimension, minDimension,  // Source crop
+                        0, 0, targetSize, targetSize                 // Destination
+                    );
+                    
+                    // Compress with quality optimization for avatars
+                    let quality = 0.9;
+                    let base64Result;
+                    let attempts = 0;
+                    const maxAttempts = 5;
+                    const maxSize = 900000; // 900KB for avatars (Firebase safe)
+                    
+                    do {
+                        base64Result = canvas.toDataURL('image/jpeg', quality);
+                        
+                        if (base64Result.length <= maxSize) {
+                            console.log(`✅ Avatar compressed: ${(file.size / 1024).toFixed(1)}KB → ${(base64Result.length / 1024).toFixed(1)}KB`);
+                            resolve(base64Result);
+                            return;
+                        }
+                        
+                        quality -= 0.1;
+                        attempts++;
+                        
+                    } while (attempts < maxAttempts && quality > 0.3);
+                    
+                    // If still too large, reduce dimensions
+                    if (base64Result.length > maxSize) {
+                        const smallerSize = 150;
+                        canvas.width = smallerSize;
+                        canvas.height = smallerSize;
+                        
+                        ctx.clearRect(0, 0, smallerSize, smallerSize);
+                        ctx.drawImage(
+                            img,
+                            startX, startY, minDimension, minDimension,
+                            0, 0, smallerSize, smallerSize
+                        );
+                        
+                        base64Result = canvas.toDataURL('image/jpeg', 0.8);
+                        console.log(`✅ Avatar compressed (reduced size): ${(base64Result.length / 1024).toFixed(1)}KB`);
+                    }
+                    
+                    resolve(base64Result);
+                    
+                } catch (error) {
+                    reject(new Error('Failed to process avatar image: ' + error.message));
+                }
+            };
+            
+            img.onerror = () => {
+                reject(new Error('Failed to load avatar image'));
+            };
+            
+            img.src = URL.createObjectURL(file);
+        });
+    }
+
     reset() {
         // Reset all upload states
         this.currentUploadedImageUrl = null;
@@ -8884,6 +10029,11 @@ function switchUploadMethod(method) {
         if (urlMethod) urlMethod.style.display = 'none';
         if (fileToggle) fileToggle.classList.add('active');
         if (urlToggle) urlToggle.classList.remove('active');
+        
+        // Show warning about file limitations
+        if (window.dumbassGame?.notificationManager) {
+            window.dumbassGame.notificationManager.showWarning('⚠️ File uploads are limited to small images (<500KB). Direct URLs work much better!');
+        }
     } else {
         if (fileMethod) fileMethod.style.display = 'none';
         if (urlMethod) urlMethod.style.display = 'block';
@@ -9801,14 +10951,227 @@ async function fixSubmissionCounting() {
 
 // Quick fix function
 function quickFixTiers() {
-    console.log('⚡ QUICK TIER FIX');
-    debugTierSubmissions();
-    setTimeout(() => {
-        fixSubmissionCounting();
-    }, 1000);
+    console.log('⚡ QUICK FIX: Resetting submission counts for testing');
+    
+    const userProfile = window.userProfileManager?.userProfile;
+    if (!userProfile) {
+        console.log('❌ No user profile found');
+        return;
+    }
+    
+    // Reset submission counts
+    userProfile.submissionCount = { daily: 0, weekly: 0, monthly: 0 };
+    userProfile.lastSubmission = null;
+    
+    console.log('🔧 Reset submission counts to:', userProfile.submissionCount);
+    
+    // Save the updated profile
+    if (window.persistenceManager) {
+        window.persistenceManager.saveUserProfile(userProfile).then(() => {
+            console.log('💾 Profile saved with reset counts');
+            console.log('✅ You should now be able to submit games!');
+            console.log('🎮 Try clicking ADD GAME button now!');
+        });
+    }
 }
 
-// Global access for browser console
-window.debugTierSubmissions = debugTierSubmissions;
-window.fixSubmissionCounting = fixSubmissionCounting;
-window.quickFixTiers = quickFixTiers;
+// Add a function to test the new submission system
+async function testNewSubmissionSystem() {
+    console.log('🧪 TESTING NEW SUBMISSION SYSTEM');
+    
+    const userProfile = window.userProfileManager?.userProfile;
+    const tierManager = window.userProfileManager?.tierManager;
+    
+    if (!userProfile || !tierManager) {
+        console.log('❌ User profile or tier manager not found');
+        return;
+    }
+    
+    console.log('👤 User Profile:', {
+        email: userProfile.email,
+        tier: userProfile.tier,
+        submissionCount: userProfile.submissionCount,
+        lastSubmission: userProfile.lastSubmission
+    });
+    
+    // Test the new canSubmitGame function
+    const canSubmit = await tierManager.canSubmitGame(userProfile);
+    console.log('🎯 Can Submit Result:', canSubmit);
+    
+    if (canSubmit.canSubmit) {
+        console.log('✅ User CAN submit games!');
+    } else {
+        console.log('🚫 User CANNOT submit games:', canSubmit.reason);
+    }
+    
+    // Show tier info
+    const tierInfo = tierManager.getTierInfo(userProfile.tier);
+    console.log('📊 Tier Info:', tierInfo);
+    
+    return canSubmit;
+}
+
+// Test image upload system
+function testImageUpload() {
+    console.log('🖼️ Testing image upload system...');
+    
+    if (window.imageUploadManager) {
+        console.log('✅ ImageUploadManager found');
+        console.log('🔧 Image upload system ready for Base64 conversion');
+        console.log('📝 Try uploading an image through the ADD GAME form');
+    } else {
+        console.log('❌ ImageUploadManager not found');
+    }
+}
+
+// Simple reset function for testing
+function resetSubmissions() {
+    const userProfile = window.userProfileManager?.userProfile;
+    if (userProfile) {
+        userProfile.submissionCount = { daily: 0, weekly: 0, monthly: 0 };
+        window.persistenceManager?.saveUserProfile(userProfile);
+        console.log('✅ Submission count reset');
+    }
+}
+
+// Global access for browser console  
+window.resetSubmissions = resetSubmissions;
+window.fixAuthButton = fixAuthButton;
+window.debugProfile = debugProfile;
+window.quickFix = quickFix;
+
+// Avatar management functions
+function removeAvatar() {
+    const userProfile = window.userProfileManager?.userProfile;
+    if (!userProfile) return;
+    
+    userProfile.avatar = null;
+    window.userProfileManager.saveProfile();
+    
+    // Update UI
+    window.dumbassGame?.updateAvatarPreview(null);
+    window.dumbassGame?.updateAvatarButton();
+    
+    console.log('✅ Avatar removed');
+}
+
+// Debug profile persistence
+function debugProfile() {
+    const profile = window.userProfileManager?.userProfile;
+    console.log('🔍 Current profile:', profile);
+    console.log('📸 Avatar data:', profile?.avatar ? 'Present (' + (profile.avatar.length || 0) + ' chars)' : 'None');
+    console.log('👤 User state:', window.firebaseAuth?.currentUser ? 'Logged in' : 'Anonymous');
+    return profile;
+}
+
+// Debug and fix auth button state
+function fixAuthButton() {
+    console.log('🔧 Manually fixing auth button state...');
+    const currentUser = window.firebaseAuth?.currentUser;
+    console.log('👤 Firebase user:', currentUser ? currentUser.email : 'None');
+    
+    if (currentUser) {
+        // Nuclear option - force everything
+        const authBtn = document.getElementById('authBtn');
+        const userAvatarBtn = document.getElementById('userAvatarBtn');
+        
+        // Add body class
+        document.body.classList.add('user-logged-in');
+        
+        if (authBtn) {
+            authBtn.style.display = 'none';
+            authBtn.style.visibility = 'hidden';
+            authBtn.style.opacity = '0';
+            authBtn.classList.add('force-hidden');
+            console.log('✅ FORCE Hidden login button');
+        }
+        
+        if (userAvatarBtn) {
+            userAvatarBtn.style.display = 'flex';
+            userAvatarBtn.style.visibility = 'visible';
+            userAvatarBtn.style.opacity = '1';
+            userAvatarBtn.classList.remove('force-hidden');
+            console.log('✅ FORCE Shown avatar button');
+        }
+        
+        window.dumbassGame?.updateAvatarButton();
+        console.log('✅ Updated avatar button content');
+    }
+    
+    console.log('🏁 NUCLEAR auth button fix complete');
+}
+
+// Immediate fix - run this in console
+function quickFix() {
+    const authBtn = document.getElementById('authBtn');
+    const userAvatarBtn = document.getElementById('userAvatarBtn');
+    
+    document.body.classList.add('user-logged-in');
+    
+    if (authBtn) authBtn.style.display = 'none';
+    if (userAvatarBtn) userAvatarBtn.style.display = 'flex';
+    
+    console.log('⚡ QUICK FIX APPLIED');
+}
+
+// Global function to setup progress bar click events
+function setupGlobalProgressBarEvents() {
+    console.log('🎵 Setting up global progress bar events...');
+    
+    const progressBar = document.getElementById('progressBar');
+    if (!progressBar) {
+        console.warn('⚠️ Progress bar element not found in global setup');
+        return;
+    }
+    
+    // Remove any existing event listeners by cloning the element
+    const newProgressBar = progressBar.cloneNode(true);
+    progressBar.parentNode.replaceChild(newProgressBar, progressBar);
+    
+    console.log('🎵 Found progress bar element, adding events...');
+    
+    // Handle dragging the slider
+    newProgressBar.addEventListener('input', (e) => {
+        const percentage = parseFloat(e.target.value);
+        console.log(`🎵 Progress bar dragged to ${percentage.toFixed(1)}%`);
+        
+        if (window.musicPlayer && window.musicPlayer.seekTo) {
+            // Immediately update the visual position
+            e.target.value = percentage;
+            
+            // Briefly block automatic updates
+            window.musicPlayer.isUserSeeking = true;
+            window.musicPlayer.seekTo(percentage);
+            window.musicPlayer.setupSeekComplete();
+        }
+    });
+    
+    // Handle clicking anywhere on the progress bar
+    newProgressBar.addEventListener('click', (e) => {
+        // Calculate click position manually
+        const rect = newProgressBar.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const percentage = (clickX / rect.width) * 100;
+        const clampedPercentage = Math.max(0, Math.min(100, percentage));
+        
+        console.log(`🎵 Progress bar clicked at ${clampedPercentage.toFixed(1)}%`);
+        
+        if (window.musicPlayer && window.musicPlayer.seekTo) {
+            // Immediately update the visual position
+            newProgressBar.value = clampedPercentage;
+            
+            // Briefly block automatic updates
+            window.musicPlayer.isUserSeeking = true;
+            window.musicPlayer.seekTo(clampedPercentage);
+            window.musicPlayer.setupSeekComplete();
+        }
+    });
+    
+    console.log('🎵 Global progress bar events set up successfully!');
+}
+
+// Manual function you can call from console to test
+window.fixProgressBar = function() {
+    console.log('🔧 Manually fixing progress bar...');
+    setupGlobalProgressBarEvents();
+};
