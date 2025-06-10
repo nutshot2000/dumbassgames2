@@ -2,7 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    
+    <!-- Security Headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    
+    <!-- Performance Hints -->
+    <meta http-equiv="Cache-Control" content="public, max-age=31536000">
+    <meta name="color-scheme" content="dark light">
     
     <!-- Primary SEO Tags -->
     <title>DUMBASSGAMES - Retro Indie Game Discovery Platform</title>
@@ -37,12 +47,27 @@
     <link rel="canonical" href="https://dumbassgames.xyz">
     <meta name="format-detection" content="telephone=no">
     
-    <!-- Preconnect for Performance -->
+    <!-- Performance Optimization -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://www.gstatic.com">
+    
+    <!-- Resource Hints for Better Loading -->
+    <link rel="preload" href="app.min.css" as="style">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="app.min.css">
+    
+    <!-- Enhanced Favicon & App Icons -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎮</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 180 180%22><rect width=%22180%22 height=%22180%22 fill=%22%230a0a0a%22/><text x=%2290%22 y=%22130%22 text-anchor=%22middle%22 font-size=%22120%22>🎮</text></svg>">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="DUMBASSGAMES">
+    
+    <!-- PWA Manifest Hints -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="DUMBASSGAMES">
     
     <!-- Structured Data (JSON-LD) -->
     <script type="application/ld+json">
