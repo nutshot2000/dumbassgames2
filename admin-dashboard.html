@@ -1185,7 +1185,8 @@
             output.innerHTML += `<div style="color: #00ffff; margin-top: 10px;">🎮 Generating New Game Alert</div>`;
             
             try {
-                const gamesSnapshot = await window.firebaseGetDocs(window.firebaseCollection);
+                const gamesCollection = window.firebaseCollection(window.firebaseDb, 'games');
+                const gamesSnapshot = await window.firebaseGetDocs(gamesCollection);
                 const games = gamesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
                 // Get most recent game
@@ -1224,7 +1225,8 @@
             output.innerHTML += `<div style="color: #00ffff; margin-top: 10px;">⭐ Generating Game Spotlight</div>`;
             
             try {
-                const gamesSnapshot = await window.firebaseGetDocs(window.firebaseCollection);
+                const gamesCollection = window.firebaseCollection(window.firebaseDb, 'games');
+                const gamesSnapshot = await window.firebaseGetDocs(gamesCollection);
                 const games = gamesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
                 if (games.length === 0) {
@@ -1256,7 +1258,8 @@
             output.innerHTML += `<div style="color: #00ffff; margin-top: 10px;">📅 Generating Weekly Summary</div>`;
             
             try {
-                const gamesSnapshot = await window.firebaseGetDocs(window.firebaseCollection);
+                const gamesCollection = window.firebaseCollection(window.firebaseDb, 'games');
+                const gamesSnapshot = await window.firebaseGetDocs(gamesCollection);
                 const games = gamesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
                 // Calculate weekly stats
@@ -1293,7 +1296,8 @@
             output.innerHTML += `<div style="color: #00ffff; margin-top: 10px;">🎲 Generating Random Pick</div>`;
             
             try {
-                const gamesSnapshot = await window.firebaseGetDocs(window.firebaseCollection);
+                const gamesCollection = window.firebaseCollection(window.firebaseDb, 'games');
+                const gamesSnapshot = await window.firebaseGetDocs(gamesCollection);
                 const games = gamesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
                 if (games.length === 0) {
@@ -1326,7 +1330,8 @@
             output.innerHTML += `<div style="color: #00ffff; margin-top: 10px;">🏆 Generating Milestone Tweet</div>`;
             
             try {
-                const gamesSnapshot = await window.firebaseGetDocs(window.firebaseCollection);
+                const gamesCollection = window.firebaseCollection(window.firebaseDb, 'games');
+                const gamesSnapshot = await window.firebaseGetDocs(gamesCollection);
                 const totalGames = gamesSnapshot.size;
                 
                 // Determine milestone
@@ -1371,7 +1376,8 @@
             
             try {
                 // Get current game count for dynamic messaging
-                const gamesSnapshot = await window.firebaseGetDocs(window.firebaseCollection);
+                const gamesCollection = window.firebaseCollection(window.firebaseDb, 'games');
+                const gamesSnapshot = await window.firebaseGetDocs(gamesCollection);
                 const totalGames = gamesSnapshot.size;
                 
                 // Array of different promotional tweets to rotate through
