@@ -1,0 +1,100 @@
+// Updated Firestore Security Rules for DUMBASSGAMES
+// Add these rules to your Firebase Console -> Firestore Database -> Rules
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // =============================
+    // USER PROFILES - STRICT ACCESS
+    // =============================
+    match /userProfiles/{userId} {
+      // Users can only read/write their own profile
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // =============================
+    // USERS COLLECTION - FOR PERSISTENCE MANAGER
+    // =============================
+    match /users/{userId} {
+      // Users can only read/write their own data
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // =============================
+    // GAMES - PUBLIC READ, CONTROLLED WRITE
+    // =============================
+    match /games/{gameId} {
+      // Anyone can read games (public browsing)
+      allow read: if true;
+      
+      // Only authenticated users can submit games
+      allow create: if request.auth != null 
+        && validateGameSubmission(request.resource.data)
+        && request.resource.data.submittedBy == request.auth.uid;
+      
+      // Users can only update their own games (and only specific fields)
+      allow update: if request.auth != null 
+        && resource.data.submittedBy == request.auth.uid
+        && validateGameUpdate(resource.data, request.resource.data);
+      
+      // Only game owners or admins can delete
+      allow delete: if request.auth != null 
+        && (resource.data.submittedBy == request.auth.uid 
+            || isAdmin(request.auth.uid));
+    }
+    
+    // =============================
+    // BUG REPORTS - PUBLIC CREATE, ADMIN READ
+    // =============================
+    match /bugs/{bugId} {
+      // Anyone can create bug reports (including anonymous users)
+      allow create: if true;
+      
+      // Only admins can read and modify bug reports
+      allow read, update, delete: if request.auth != null && isAdmin(request.auth.uid);
+    }
+    
+    // =============================
+    // ADMIN COLLECTION - ADMIN ONLY
+    // =============================
+    match /admin/{document=**} {
+      allow read, write: if request.auth != null && isAdmin(request.auth.uid);
+    }
+    
+    // =============================
+    // TIER PAYMENTS - USER SPECIFIC
+    // =============================
+    match /payments/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // =============================
+    // ANALYTICS - READ ONLY FOR USERS
+    // =============================
+    match /analytics/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if false; // Only server can write analytics
+    }
+    
+    // =============================
+    // HELPER FUNCTIONS
+    // =============================
+    function isAdmin(uid) {
+      return uid == 'FIMoIezOXMRmkg9bl3ArJGCkuf93'; // dumbassgames@proton.me
+    }
+    
+    function validateGameSubmission(data) {
+      return data.keys().hasAll(['title', 'description', 'category', 'submittedBy', 'submittedAt', 'approved'])
+        && data.title is string && data.title.size() > 0
+        && data.description is string && data.description.size() > 0
+        && data.category is string
+        && data.approved == false; // New submissions must be unapproved
+    }
+    
+    function validateGameUpdate(existingData, newData) {
+      // Users can only update certain fields, not change approval status
+      return !newData.diff(existingData).affectedKeys().hasAny(['approved', 'submittedBy', 'submittedAt']);
+    }
+  }
+} 

@@ -757,23 +757,36 @@
             </section>
         </main>
 
-        <!-- Compact Footer -->
+        <!-- Clean Organized Footer -->
         <footer class="footer">
             <div class="footer-content">
-                <span class="copyright">© 2024 DUMBASSGAMES</span>
+                <!-- Top Row: Actions & Support -->
+                <div class="footer-top">
+                    <div class="footer-actions">
+                        <button class="footer-btn bug-report-btn" onclick="showBugReportModal()">
+                            🐛 REPORT A BUG
+                        </button>
+                    </div>
+                    
+                    <div class="footer-support">
+                        <script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script>
+                        <script type='text/javascript'>kofiwidget2.init('Support dumbassgames', '#0a0a0a', 'D1D81G3DWV');kofiwidget2.draw();</script>
+                    </div>
+                </div>
+                
+                <!-- Disclaimer Section -->
                 <div class="footer-disclaimer">
-                    <p>⚠️ <strong>DISCLAIMER:</strong> User-submitted content is not reviewed or endorsed by DUMBASSGAMES. We are not responsible for the quality, safety, or legality of user-submitted games or content. Play at your own risk. Report inappropriate content.</p>
+                    <div class="disclaimer-box">
+                        <div class="disclaimer-header">⚠️ DISCLAIMER</div>
+                        <p>User-submitted content is not reviewed or endorsed by DUMBASSGAMES. We are not responsible for the quality, safety, or legality of user-submitted games or content. Play at your own risk.</p>
+                    </div>
                 </div>
-                <div class="footer-actions">
-                    <button class="footer-btn bug-report-btn" onclick="showBugReportModal()">
-                        🐛 REPORT A BUG
-                    </button>
+                
+                <!-- Bottom Row: Copyright & Easter Egg -->
+                <div class="footer-bottom">
+                    <span class="copyright">© 2024 DUMBASSGAMES</span>
+                    <span class="easter-egg" title="Konami Code">↑↑↓↓←→←→BA</span>
                 </div>
-                <div class="footer-support">
-                    <script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script>
-                    <script type='text/javascript'>kofiwidget2.init('Support dumbassgames', '#0a0a0a', 'D1D81G3DWV');kofiwidget2.draw();</script>
-                </div>
-                <span class="easter-egg">↑↑↓↓←→←→BA</span>
             </div>
         </footer>
     </div>

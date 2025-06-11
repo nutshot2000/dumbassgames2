@@ -2058,38 +2058,141 @@ body::before {
     opacity: 1;
 }
 
-/* Compact Footer */
+/* Clean Organized Footer */
 .footer {
     text-align: center;
-    padding: 15px 0;
-    border-top: 1px solid #333;
-    margin-top: 30px;
-    background: rgba(0, 0, 0, 0.6);
-    border-radius: 8px;
+    padding: 25px 15px 15px 15px;
+    border-top: 2px solid rgba(0, 255, 0, 0.3);
+    margin-top: 40px;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(0, 20, 0, 0.6));
+    border-radius: 12px;
+    backdrop-filter: blur(5px);
 }
 
 .footer-content {
+    max-width: 1000px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Top Row: Actions & Support */
+.footer-top {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.footer-actions {
+    display: flex;
+    justify-content: center;
+    margin: 0;
+}
+
+.footer-support {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Disclaimer Section */
+.footer-disclaimer {
+    padding: 15px 0;
+}
+
+.disclaimer-box {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 15px 20px;
+    background: rgba(255, 165, 0, 0.05);
+    border: 1px solid rgba(255, 165, 0, 0.3);
+    border-radius: 8px;
+    border-left: 4px solid #ff6600;
+}
+
+.disclaimer-header {
+    color: #ff6600;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 11px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-shadow: 0 0 5px rgba(255, 102, 0, 0.5);
+}
+
+.footer-disclaimer p {
+    color: #cccccc;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* Bottom Row: Copyright & Easter Egg */
+.footer-bottom {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.4rem;
-    color: #666;
+    padding-top: 15px;
+    border-top: 1px solid rgba(0, 255, 0, 0.2);
 }
 
 .copyright {
+    color: #888;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
     opacity: 0.8;
 }
 
 .easter-egg {
     color: var(--primary-color);
+    font-family: 'Press Start 2P', cursive;
+    font-size: 10px;
     opacity: 0.6;
     cursor: pointer;
     transition: all 0.3s ease;
+    padding: 5px 10px;
+    border-radius: 5px;
+    border: 1px solid transparent;
 }
 
 .easter-egg:hover {
     opacity: 1;
     text-shadow: 0 0 8px currentColor;
+    border-color: var(--primary-color);
+    background: rgba(0, 255, 0, 0.05);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .footer {
+        padding: 20px 10px;
+    }
+    
+    .footer-top {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .footer-bottom {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+    
+    .disclaimer-box {
+        padding: 12px 15px;
+    }
+    
+    .footer-disclaimer p {
+        font-size: 11px;
+    }
+    
+    .disclaimer-header {
+        font-size: 10px;
+    }
 }
 
 /* Enhanced Modal */
