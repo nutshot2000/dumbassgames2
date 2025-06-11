@@ -6221,6 +6221,16 @@ class FirebaseAuthManager {
                 if (typeof updateAdminButton === 'function') {
                     updateAdminButton();
                 }
+                // Force update if still not visible but user is admin
+                setTimeout(() => {
+                    if (isUserAdmin()) {
+                        const adminBtn = document.getElementById('adminBtn');
+                        if (adminBtn && adminBtn.style.display === 'none') {
+                            adminBtn.style.display = 'block';
+                            console.log('🔧 Admin button auto-corrected for admin user');
+                        }
+                    }
+                }, 1000);
             }, 500);
         } else {
             // User is signed out - update dynamic auth button
@@ -12544,6 +12554,10 @@ function isUserAdmin() {
     const currentUser = window.firebaseAuth?.currentUser;
     if (!currentUser) return false;
     
+    // Debug: Log current user UID to console
+    console.log('🔍 Current user UID:', currentUser.uid);
+    console.log('🔍 Current user email:', currentUser.email);
+    
     // Admin UIDs (your Firebase user ID)
     const adminUIDs = [
         'FIMoIezOXMRmkg9bl3ArJGCkuf93', // dumbassgames@proton.me
@@ -12551,7 +12565,9 @@ function isUserAdmin() {
     ];
     
     // Check if current user is in admin list
-    return adminUIDs.includes(currentUser.uid);
+    const isAdmin = adminUIDs.includes(currentUser.uid);
+    console.log('🔍 Is user admin?', isAdmin);
+    return isAdmin;
 }
 
 // Show/hide admin button based on user status
@@ -12566,3 +12582,50 @@ function updateAdminButton() {
         }
     }
 }
+
+// Manual functions to help debug admin access
+window.debugAdminAccess = function() {
+    console.group('🔧 ADMIN ACCESS DEBUG');
+    const currentUser = window.firebaseAuth?.currentUser;
+    if (currentUser) {
+        console.log('✅ User is signed in');
+        console.log('📧 Email:', currentUser.email);
+        console.log('🆔 UID:', currentUser.uid);
+        console.log('👑 Is Admin:', isUserAdmin());
+        
+        // Force show admin button for debugging
+        const adminBtn = document.getElementById('adminBtn');
+        if (adminBtn) {
+            adminBtn.style.display = 'block';
+            console.log('🔧 Admin button forced visible');
+        }
+    } else {
+        console.log('❌ No user signed in');
+    }
+    console.groupEnd();
+};
+
+window.forceShowAdminButton = function() {
+    const adminBtn = document.getElementById('adminBtn');
+    if (adminBtn) {
+        adminBtn.style.display = 'block';
+        console.log('🔧 Admin button forced visible');
+    } else {
+        console.log('❌ Admin button not found');
+    }
+};
+
+// Check admin status on page load
+window.addEventListener('load', () => {
+    // Wait for Firebase to initialize
+    setTimeout(() => {
+        const currentUser = window.firebaseAuth?.currentUser;
+        if (currentUser && isUserAdmin()) {
+            const adminBtn = document.getElementById('adminBtn');
+            if (adminBtn) {
+                adminBtn.style.display = 'block';
+                console.log('👑 Admin button shown on page load');
+            }
+        }
+    }, 2000);
+});

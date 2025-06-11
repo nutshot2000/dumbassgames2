@@ -764,6 +764,11 @@
                 <div class="footer-disclaimer">
                     <p>⚠️ <strong>DISCLAIMER:</strong> User-submitted content is not reviewed or endorsed by DUMBASSGAMES. We are not responsible for the quality, safety, or legality of user-submitted games or content. Play at your own risk. Report inappropriate content.</p>
                 </div>
+                <div class="footer-actions">
+                    <button class="footer-btn bug-report-btn" onclick="showBugReportModal()">
+                        🐛 REPORT A BUG
+                    </button>
+                </div>
                 <div class="footer-support">
                     <script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script>
                     <script type='text/javascript'>kofiwidget2.init('Support dumbassgames', '#0a0a0a', 'D1D81G3DWV');kofiwidget2.draw();</script>
@@ -1414,6 +1419,103 @@
         </div>
     </div>
 
+    <!-- Bug Report Modal -->
+    <div id="bugReportModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>🐛 BUG REPORT</h3>
+                <span class="close" onclick="hideBugReportModal()">&times;</span>
+            </div>
+            <div class="bug-report-content">
+                <div class="bug-report-intro">
+                    <h4>🎯 Help Us Fix Issues!</h4>
+                    <p>Found a bug or issue on DUMBASSGAMES? Let us know! Your report helps make the platform better for everyone.</p>
+                </div>
+                
+                <form id="bugReportForm" class="bug-report-form">
+                    <div class="form-group">
+                        <label for="bugTitle">🏷️ Bug Title *</label>
+                        <input type="text" id="bugTitle" name="title" placeholder="Brief description of the bug" required maxlength="100">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="bugCategory">📂 Category *</label>
+                        <select id="bugCategory" name="category" required>
+                            <option value="">Select a category...</option>
+                            <option value="ui">🎨 User Interface / Design</option>
+                            <option value="gameplay">🎮 Game Loading / Playing</option>
+                            <option value="account">👤 Account / Login Issues</option>
+                            <option value="submission">📤 Game Submission</option>
+                            <option value="mobile">📱 Mobile Compatibility</option>
+                            <option value="performance">⚡ Performance / Speed</option>
+                            <option value="audio">🔊 Music / Sound</option>
+                            <option value="favorites">⭐ Favorites System</option>
+                            <option value="search">🔍 Search / Filtering</option>
+                            <option value="other">🤷 Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="bugSeverity">⚠️ Severity</label>
+                        <select id="bugSeverity" name="severity">
+                            <option value="low">🟢 Low - Minor issue, cosmetic</option>
+                            <option value="medium" selected>🟡 Medium - Affects functionality</option>
+                            <option value="high">🟠 High - Major feature broken</option>
+                            <option value="critical">🔴 Critical - Site unusable</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="bugDescription">📝 Detailed Description *</label>
+                        <textarea id="bugDescription" name="description" placeholder="Describe what happened, what you expected to happen, and steps to reproduce the bug..." required rows="6" maxlength="1000"></textarea>
+                        <div class="char-count">
+                            <span id="bugDescCharCount">0</span>/1000 characters
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="bugSteps">🔄 Steps to Reproduce</label>
+                        <textarea id="bugSteps" name="steps" placeholder="1. Go to...&#10;2. Click on...&#10;3. Then..." rows="4" maxlength="500"></textarea>
+                        <div class="char-count">
+                            <span id="bugStepsCharCount">0</span>/500 characters
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group half">
+                            <label for="bugBrowser">🌐 Browser</label>
+                            <input type="text" id="bugBrowser" name="browser" placeholder="e.g., Chrome 120, Firefox 119" maxlength="50">
+                        </div>
+                        <div class="form-group half">
+                            <label for="bugDevice">📱 Device</label>
+                            <input type="text" id="bugDevice" name="device" placeholder="e.g., iPhone 14, Windows PC" maxlength="50">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="bugContact">📧 Email (Optional)</label>
+                        <input type="email" id="bugContact" name="contact" placeholder="Your email for follow-up (optional)" maxlength="100">
+                        <small>We'll only use this to ask for clarification if needed</small>
+                    </div>
+                    
+                    <div class="bug-report-actions">
+                        <button type="button" class="btn-secondary" onclick="hideBugReportModal()">❌ CANCEL</button>
+                        <button type="submit" class="btn-primary" id="submitBugBtn">🚀 SUBMIT BUG REPORT</button>
+                    </div>
+                </form>
+                
+                <div id="bugReportSuccess" class="bug-report-success" style="display: none;">
+                    <div class="success-content">
+                        <h3>✅ Bug Report Submitted!</h3>
+                        <p>Thank you for helping improve DUMBASSGAMES! Your bug report has been sent to the admin dashboard.</p>
+                        <p><strong>Report ID:</strong> <span id="bugReportId">-</span></p>
+                        <button class="btn-primary" onclick="hideBugReportModal()">🎮 BACK TO GAMES</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-SX6PEFMQD4"></script>
     <script>
@@ -1543,6 +1645,9 @@
     <script src="fix-tier-system.js"></script>
     
     <script src="script.js"></script>
+    
+    <!-- Bug Report System -->
+    <script src="bug-report.js"></script>
     
     <!-- Twitter Integration -->
     <script src="twitter-integration.js"></script>
