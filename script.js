@@ -38,7 +38,8 @@ const PayPalErrorSuppressor = {
             }
         };
         
-        console.status('🔇 PayPal analytics error suppression enabled');
+        // Use console.log since console.status isn't defined yet
+        console.log('%c🔇 PayPal analytics error suppression enabled', 'color: #00ff00; font-weight: bold;');
         
         // Add a subtle status indicator for users
         this.addStatusIndicator();
