@@ -230,6 +230,7 @@
         .warning-text { color: #ffff00; }
         .info-text { color: #00ffff; }
     </style>
+
 </head>
 <body>
     <div class="admin-header">
@@ -345,12 +346,12 @@
         </div>
     </div>
 
-    <!-- Firebase SDK v9 -->
+    <!-- Firebase SDK v11.0.2 (Updated to match main site) -->
     <script type="module">
         // Firebase configuration (same as main site)
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js';
-        import { getFirestore, collection, getDocs, query, where, orderBy, limit } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js';
-        import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js';
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js';
+        import { getFirestore, collection, getDocs, query, where, orderBy, limit, addDoc } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
+        import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyCuaKGPn6_wVD9p56U2MNHuyVBI-CN3o70",
@@ -374,7 +375,9 @@
         window.firebaseWhere = where;
         window.firebaseOrderBy = orderBy;
         window.firebaseLimit = limit;
-        window.firebaseCollection = firebaseCollection;
+        window.firebaseAddDoc = addDoc;
+        window.firebaseCollection = (db, collectionName) => collection(db, collectionName);
+        window.firebaseDb = db;
         window.db = db;
         window.auth = auth;
 
