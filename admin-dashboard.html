@@ -322,6 +322,10 @@
                 <button class="admin-btn" onclick="generateRandomRecommendation()" style="border-color: #ff00ff;">🎲 Random Pick</button>
                 <button class="admin-btn" onclick="generateMilestone()" style="border-color: #00ff00;">🏆 Milestone</button>
                 <button class="admin-btn" onclick="generateSitePromo()" style="border-color: #ff00ff;">🚀 Site Promo</button>
+                <button class="admin-btn" onclick="generateVibeCheck()" style="border-color: #ff6b35;">✨ Vibe Check</button>
+                <button class="admin-btn" onclick="generateChaosUpdate()" style="border-color: #8b00ff;">🌪️ Chaos Update</button>
+                <button class="admin-btn" onclick="generateDevCallout()" style="border-color: #00ff80;">📢 Dev Callout</button>
+                <button class="admin-btn" onclick="generateFunFact()" style="border-color: #ff1493;">🎯 Fun Fact</button>
                 <button class="admin-btn" onclick="runTwitterCommand('enableTwitter')" style="border-color: #00ff00;">✅ Enable Twitter</button>
                 <button class="admin-btn" onclick="runTwitterCommand('disableTwitter')" style="border-color: #ff4444;">❌ Disable Twitter</button>
                 <button class="admin-btn" onclick="runTwitterCommand('testTwitter')" style="border-color: #ffff00;">🧪 Test Connection</button>
@@ -1236,7 +1240,10 @@
                 // Pick a random game to spotlight
                 const spotlightGame = games[Math.floor(Math.random() * games.length)];
                 
-                const tweetText = `⭐ GAME SPOTLIGHT: "${spotlightGame.title}"\n\n${spotlightGame.description || 'A wild retro gaming adventure!'}\n\n🎯 Why we love it: Pure ${['chaotic', 'nostalgic', 'bizarre', 'epic', 'mind-bending'][Math.floor(Math.random() * 5)]} fun!\n\n🕹️ Play at dumbassgames.xyz\n#GameSpotlight #RetroGaming`;
+                const adjectives = ['chaotic', 'cursed', 'blessed', 'unhinged', 'galaxy brain', 'peak dumbass', 'vibe coded', 'beautifully broken', 'digitally abominable'];
+                const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+                
+                const tweetText = `⭐ GAME SPOTLIGHT: "${spotlightGame.title}"\n\n${spotlightGame.description || 'A wild digital abomination!'}\n\n🎯 Why we love it: Pure ${randomAdjective} energy!\n💀 This is what we call "vibe coded perfection"\n\n🕹️ Play at dumbassgames.xyz\n#GameSpotlight #VibeGames #DigitalChaos`;
                 
                 window.lastGeneratedTweet = tweetText;
                 
@@ -1274,7 +1281,16 @@
                 const totalGames = games.length;
                 const weeklySubmissions = weeklyGames.length;
                 
-                const tweetText = `📅 WEEKLY WRAP-UP:\n\n🎮 ${totalGames} total games in our arcade\n📝 ${weeklySubmissions} new submissions this week\n🔥 Community is ${weeklySubmissions > 3 ? 'ON FIRE' : weeklySubmissions > 0 ? 'growing strong' : 'ready for more chaos'}!\n\n🕹️ Join the retro revolution at dumbassgames.xyz\n#WeeklyStats #RetroGaming #Community`;
+                const chaosLevels = {
+                    high: 'MAXIMUM OVERDRIVE 🌪️',
+                    medium: 'beautifully chaotic 💫', 
+                    low: 'ready for more digital abominations 💀'
+                };
+                
+                const chaosLevel = weeklySubmissions > 3 ? chaosLevels.high : 
+                                 weeklySubmissions > 0 ? chaosLevels.medium : chaosLevels.low;
+                
+                const tweetText = `📅 WEEKLY CHAOS REPORT:\n\n🎮 ${totalGames} total digital abominations\n📝 ${weeklySubmissions} new vibe coded games this week\n🔥 Chaos level: ${chaosLevel}\n💀 No gatekeeping, just pure vibes\n\n🕹️ Submit your weird creation at dumbassgames.xyz\n#WeeklyStats #VibeGames #DigitalChaos`;
                 
                 window.lastGeneratedTweet = tweetText;
                 
@@ -1305,10 +1321,20 @@
                 }
                 
                 const randomGame = games[Math.floor(Math.random() * games.length)];
-                const vibes = ['cursed', 'blessed', 'chaotic', 'peak dumbass', 'galaxy brain', 'unhinged', 'fire', 'cracked'];
+                const vibes = ['cursed but blessed', 'chaotically perfect', 'peak dumbass energy', 'galaxy brain chaos', 'unhinged excellence', 'digitally abominable', 'vibe coded perfection', 'beautifully broken'];
                 const randomVibe = vibes[Math.floor(Math.random() * vibes.length)];
                 
-                const tweetText = `🎲 RANDOM PICK OF THE DAY:\n\n"${randomGame.title}"\n\n🎯 Vibe: ${randomVibe}\n💭 ${randomGame.description || 'No description needed - just pure gaming chaos!'}\n\n🎮 Feeling lucky? Play it at dumbassgames.xyz\n#RandomPick #RetroGaming`;
+                const descriptions = [
+                    'No description needed - just pure digital chaos!',
+                    'The kind of game that shouldn\'t exist, but we\'re glad it does',
+                    'Vibe coded perfection in its natural habitat',
+                    'This is what happens when chaos meets creativity',
+                    'A beautiful disaster waiting to be discovered'
+                ];
+                
+                const randomDescription = descriptions[Math.floor(Math.random() * descriptions.length)];
+                
+                const tweetText = `🎲 CHAOS ROULETTE:\n\n"${randomGame.title}"\n\n🎯 Vibe: ${randomVibe}\n💭 ${randomGame.description || randomDescription}\n\n🎮 Feeling chaotic? Play it at dumbassgames.xyz\n#ChaosRoulette #VibeGames #DigitalAbomination`;
                 
                 window.lastGeneratedTweet = tweetText;
                 
@@ -1362,6 +1388,138 @@
                 window.open(twitterUrl, '_blank');
                 
                 output.innerHTML += `<div style="color: #00ff00;">✅ Milestone tweet (${totalGames} games) opened in Twitter!</div>`;
+                
+            } catch (error) {
+                output.innerHTML += `<div style="color: #ff4444;">❌ Error: ${error.message}</div>`;
+            }
+            output.scrollTop = output.scrollHeight;
+        }
+
+        // Vibe Check Tweet
+        async function generateVibeCheck() {
+            const output = document.getElementById('consoleOutput');
+            output.innerHTML += `<div style="color: #00ffff; margin-top: 10px;">✨ Generating Vibe Check Tweet</div>`;
+            
+            try {
+                const gamesCollection = window.firebaseCollection(window.firebaseDb, 'games');
+                const gamesSnapshot = await window.firebaseGetDocs(gamesCollection);
+                const games = gamesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                const vibes = [
+                    'cursed but blessed', 'chaotically perfect', 'beautifully broken', 
+                    'peak dumbass energy', 'galaxy brain chaos', 'unhinged excellence',
+                    'digitally abominable', 'gloriously failing', 'vibe coded perfection'
+                ];
+                
+                const randomVibe = vibes[Math.floor(Math.random() * vibes.length)];
+                const totalGames = games.length;
+                
+                const vibeCheckTweets = [
+                    `✨ VIBE CHECK: How's your chaos energy today? 🌪️\n\n🎮 We've got ${totalGames} games of pure ${randomVibe}\n💀 Digital abominations? ✅\n🔥 Glorious failures? ✅\n⚡ 60-second submissions? ✅\n\n🕹️ Submit your vibe at dumbassgames.xyz\n#VibeCheck #ChaosGaming`,
+                    
+                    `🎯 DAILY VIBE: ${randomVibe} 💫\n\n✨ Current chaos level: MAXIMUM\n🎮 Games that hit different: ${totalGames}+\n💀 Your weird game belongs here\n⚡ No gatekeeping, just pure vibes\n\n🚀 dumbassgames.xyz\n#Vibes #DigitalChaos`,
+                    
+                    `🌪️ CHAOS ENERGY REPORT 📊\n\n✅ Vibe: ${randomVibe}\n✅ Games: ${totalGames} digital abominations\n✅ Gatekeeping: Absolutely none\n✅ Fun guaranteed: 100%\n\n🎮 What's your vibe? Add it to the collection!\n👉 dumbassgames.xyz\n#VibeCheck`
+                ];
+                
+                const randomTweet = vibeCheckTweets[Math.floor(Math.random() * vibeCheckTweets.length)];
+                window.lastGeneratedTweet = randomTweet;
+                
+                const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(randomTweet)}`;
+                window.open(twitterUrl, '_blank');
+                
+                output.innerHTML += `<div style="color: #00ff00;">✅ Vibe Check tweet opened in Twitter!</div>`;
+                
+            } catch (error) {
+                output.innerHTML += `<div style="color: #ff4444;">❌ Error: ${error.message}</div>`;
+            }
+            output.scrollTop = output.scrollHeight;
+        }
+
+        // Chaos Update Tweet
+        async function generateChaosUpdate() {
+            const output = document.getElementById('consoleOutput');
+            output.innerHTML += `<div style="color: #00ffff; margin-top: 10px;">🌪️ Generating Chaos Update</div>`;
+            
+            try {
+                const gamesCollection = window.firebaseCollection(window.firebaseDb, 'games');
+                const gamesSnapshot = await window.firebaseGetDocs(gamesCollection);
+                const totalGames = gamesSnapshot.size;
+                
+                const chaosUpdates = [
+                    `🌪️ CHAOS STATUS UPDATE 📊\n\n💀 Digital abominations catalogued: ${totalGames}\n🔥 Glorious failures archived: ALL OF THEM\n⚡ Submission time: Still under 60 seconds\n🎯 Sanity level: Not guaranteed\n\n🎮 Join the beautiful chaos at dumbassgames.xyz\n#ChaosUpdate`,
+                    
+                    `📢 BREAKING: Local platform contains ${totalGames} games of pure chaos! 🎮\n\n✨ Vibe coded monstrosities? ✅\n💀 Cursed but blessed content? ✅\n🌟 Zero gatekeeping policy? ✅\n⚡ 60-second game uploads? ✅\n\n🚀 dumbassgames.xyz - where chaos thrives\n#DigitalChaos`,
+                    
+                    `🎮 CHAOS LEVEL: MAXIMUM OVERDRIVE 💫\n\n🔥 Current collection: ${totalGames} beautiful disasters\n💀 Quality control: What's that?\n✨ Vibe requirement: Just exist\n⚡ Upload barrier: Literally none\n\n👉 Add to the chaos: dumbassgames.xyz\n#ChaosGaming`
+                ];
+                
+                const randomTweet = chaosUpdates[Math.floor(Math.random() * chaosUpdates.length)];
+                window.lastGeneratedTweet = randomTweet;
+                
+                const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(randomTweet)}`;
+                window.open(twitterUrl, '_blank');
+                
+                output.innerHTML += `<div style="color: #00ff00;">✅ Chaos Update opened in Twitter!</div>`;
+                
+            } catch (error) {
+                output.innerHTML += `<div style="color: #ff4444;">❌ Error: ${error.message}</div>`;
+            }
+            output.scrollTop = output.scrollHeight;
+        }
+
+        // Developer Callout Tweet
+        async function generateDevCallout() {
+            const output = document.getElementById('consoleOutput');
+            output.innerHTML += `<div style="color: #00ffff; margin-top: 10px;">📢 Generating Dev Callout</div>`;
+            
+            const devCallouts = [
+                `📢 CALLING ALL DEVS! 🎮\n\n🤔 Got a game that's "finished" but cursed?\n💡 Built something weird in a game jam?\n🔥 Created digital chaos that somehow works?\n⚡ Have a URL? That's literally our only requirement!\n\n✨ dumbassgames.xyz - 60 second submissions\n#GameDev #IndieGames`,
+                
+                `🎯 ATTENTION GAME CREATORS! 💫\n\n✅ Your game doesn't need to be "good"\n✅ Weird, broken, or bizarre? PERFECT\n✅ Made in 5 minutes? Upload it anyway\n✅ Got a working URL? You're already qualified\n\n🚀 No gatekeeping at dumbassgames.xyz\n#GameDev #VibeGames`,
+                
+                `💀 DIGITAL ABOMINATION COLLECTORS WANTED! 🎮\n\n🔥 Made something that shouldn't exist? WE WANT IT\n⚡ Browser games, web experiments, chaos engines\n🎯 Working URL = automatic acceptance\n💫 Submission time: Under 60 seconds, guaranteed\n\n👉 dumbassgames.xyz\n#GameDev #WebGames`,
+                
+                `🌟 GAME DEVS: Your "trash" is our treasure! 💎\n\n✨ Prototype that got out of hand? Perfect\n🎮 Game jam disaster? Even better\n💀 Something that barely works? IDEAL\n⚡ URL ready? Submit in 60 seconds\n\n🚀 Zero judgment zone: dumbassgames.xyz\n#IndieGames #GameDev`
+            ];
+            
+            const randomTweet = devCallouts[Math.floor(Math.random() * devCallouts.length)];
+            window.lastGeneratedTweet = randomTweet;
+            
+            const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(randomTweet)}`;
+            window.open(twitterUrl, '_blank');
+            
+            output.innerHTML += `<div style="color: #00ff00;">✅ Dev Callout opened in Twitter!</div>`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        // Fun Fact Tweet
+        async function generateFunFact() {
+            const output = document.getElementById('consoleOutput');
+            output.innerHTML += `<div style="color: #00ffff; margin-top: 10px;">🎯 Generating Fun Fact</div>`;
+            
+            try {
+                const gamesCollection = window.firebaseCollection(window.firebaseDb, 'games');
+                const gamesSnapshot = await window.firebaseGetDocs(gamesCollection);
+                const totalGames = gamesSnapshot.size;
+                
+                const funFacts = [
+                    `🎯 FUN FACT: DUMBASSGAMES has ${totalGames} games and exactly ZERO gatekeepers! 🎮\n\n✨ Every game gets in if it has a URL\n💀 Quality control is just a suggestion\n⚡ Submission time: Always under 60 seconds\n🔥 Chaos level: Guaranteed maximum\n\n👉 dumbassgames.xyz\n#FunFact`,
+                    
+                    `💡 DID YOU KNOW? We've archived ${totalGames} digital abominations! 💀\n\n🎮 From cursed to blessed\n✨ From broken to beautiful\n🌪️ From chaos to... more chaos\n⚡ All submitted in under 60 seconds\n\n🚀 Add yours: dumbassgames.xyz\n#DidYouKnow #DigitalChaos`,
+                    
+                    `🌟 WILD FACT: Our platform requires literally ONE thing - a working URL! 🎯\n\n❌ No approval process\n❌ No quality standards\n❌ No gatekeeping\n✅ Just pure vibe coded chaos\n\n🎮 ${totalGames} games and counting at dumbassgames.xyz\n#WildFact #VibeGames`,
+                    
+                    `🔥 RANDOM FACT: Every game on DUMBASSGAMES was submitted by someone who said "this is probably dumb, but..." 🎮\n\n💫 Plot twist: We LOVE dumb\n✨ Dumb is our specialty\n💀 Dumb games = best games\n\n👉 Submit your dumb game: dumbassgames.xyz\n#RandomFact #DumbGames`
+                ];
+                
+                const randomTweet = funFacts[Math.floor(Math.random() * funFacts.length)];
+                window.lastGeneratedTweet = randomTweet;
+                
+                const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(randomTweet)}`;
+                window.open(twitterUrl, '_blank');
+                
+                output.innerHTML += `<div style="color: #00ff00;">✅ Fun Fact tweet opened in Twitter!</div>`;
                 
             } catch (error) {
                 output.innerHTML += `<div style="color: #ff4444;">❌ Error: ${error.message}</div>`;
