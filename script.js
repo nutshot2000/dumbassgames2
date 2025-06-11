@@ -6215,6 +6215,13 @@ class FirebaseAuthManager {
             if (document.querySelector('.auth-tabs')) {
                 document.querySelector('.auth-tabs').style.display = 'none';
             }
+            
+            // Update admin button visibility
+            setTimeout(() => {
+                if (typeof updateAdminButton === 'function') {
+                    updateAdminButton();
+                }
+            }, 500);
         } else {
             // User is signed out - update dynamic auth button
             window.dumbassGame?.updateAuthButton();
@@ -6228,6 +6235,12 @@ class FirebaseAuthManager {
             }
             if (document.querySelector('.auth-tabs')) {
                 document.querySelector('.auth-tabs').style.display = 'flex';
+            }
+            
+            // Hide admin button when signed out
+            const adminBtn = document.getElementById('adminBtn');
+            if (adminBtn) {
+                adminBtn.style.display = 'none';
             }
         }
 
@@ -12499,6 +12512,13 @@ window.fixProgressBar = function() {
 
 // Admin dashboard opener function
 function openAdminDashboard() {
+    // Check if user is admin
+    if (!isUserAdmin()) {
+        console.warn('🚫 Unauthorized admin access attempt');
+        alert('🚫 Access Denied: Admin privileges required');
+        return;
+    }
+
     // Check if admin system is ready
     if (!window.dumbassGameAdmin) {
         console.log('⏳ Admin system not ready yet, initializing...');
@@ -12517,4 +12537,32 @@ function openAdminDashboard() {
     // Open the dashboard
     window.open('admin-dashboard.html', '_blank');
     console.log('👑 Admin dashboard opened!');
+}
+
+// Check if current user is admin
+function isUserAdmin() {
+    const currentUser = window.firebaseAuth?.currentUser;
+    if (!currentUser) return false;
+    
+    // Admin UIDs (your Firebase user ID)
+    const adminUIDs = [
+        'FIMoIezOXMRmkg9bl3ArJGCkuf93', // dumbassgames@proton.me
+        // Add other admin UIDs here if needed
+    ];
+    
+    // Check if current user is in admin list
+    return adminUIDs.includes(currentUser.uid);
+}
+
+// Show/hide admin button based on user status
+function updateAdminButton() {
+    const adminBtn = document.getElementById('adminBtn');
+    if (adminBtn) {
+        if (isUserAdmin()) {
+            adminBtn.style.display = 'block';
+            console.log('👑 Admin button enabled for authorized user');
+        } else {
+            adminBtn.style.display = 'none';
+        }
+    }
 }

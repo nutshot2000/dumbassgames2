@@ -377,6 +377,53 @@
         window.db = db;
         window.auth = auth;
 
+        // Check if user is authorized admin
+        function isUserAdmin() {
+            const currentUser = auth?.currentUser;
+            if (!currentUser) return false;
+            
+            // Admin UIDs - must match main site
+            const adminUIDs = [
+                'FIMoIezOXMRmkg9bl3ArJGCkuf93', // dumbassgames@proton.me
+                // Add other admin UIDs here if needed
+            ];
+            
+            return adminUIDs.includes(currentUser.uid);
+        }
+
+        // Protect admin dashboard access
+        async function checkAdminAccess() {
+            try {
+                // Wait for auth to initialize
+                await new Promise((resolve) => {
+                    if (auth.currentUser !== undefined) {
+                        resolve();
+                    } else {
+                        const unsubscribe = onAuthStateChanged(auth, (user) => {
+                            unsubscribe();
+                            resolve();
+                        });
+                    }
+                });
+
+                if (!isUserAdmin()) {
+                    document.body.innerHTML = `
+                        <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #0a0a0a; color: #ff4444; font-family: 'Press Start 2P', cursive; text-align: center; flex-direction: column;">
+                            <h1>🚫 ACCESS DENIED</h1>
+                            <p style="margin: 20px 0; color: #00ffff;">Admin privileges required</p>
+                            <button onclick="window.close()" style="background: #ff4444; color: #000; border: none; padding: 10px 20px; font-family: 'Press Start 2P', cursive; font-size: 8px; cursor: pointer;">CLOSE</button>
+                        </div>
+                    `;
+                    console.warn('🚫 Unauthorized admin access attempt blocked');
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                return false;
+            }
+        }
+
         // Lightweight Admin System
         class DashboardAdmin {
             constructor() {
@@ -386,6 +433,12 @@
 
             async initialize() {
                 try {
+                    // Check admin access first
+                    const hasAccess = await checkAdminAccess();
+                    if (!hasAccess) {
+                        return;
+                    }
+
                     // Test Firebase connection using same method as main site
                     await getDocs(query(firebaseCollection, limit(1)));
                     this.isReady = true;
