@@ -621,14 +621,153 @@
                 }
             }
 
-            recentSignups() {
-                console.log('📧 Recent signups are tracked in the main site console');
-                return 'Check main site console for signup notifications';
+            async recentSignups() {
+                try {
+                    console.log('📧 Fetching recent signups...');
+                    
+                    // Get users from Firebase Auth (if available) or admin_events collection
+                    const usersCollection = window.firebaseCollection(window.firebaseDb, 'admin_events');
+                    const signupQuery = window.firebaseQuery(
+                        usersCollection,
+                        window.firebaseWhere('type', '==', 'signup'),
+                        window.firebaseOrderBy('timestamp', 'desc'),
+                        window.firebaseLimit(10)
+                    );
+                    
+                    const signupSnapshot = await window.firebaseGetDocs(signupQuery);
+                    const signups = signupSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    
+                    if (signups.length === 0) {
+                        // Try to get user profiles instead
+                        const profilesCollection = window.firebaseCollection(window.firebaseDb, 'users');
+                        const profileQuery = window.firebaseQuery(
+                            profilesCollection,
+                            window.firebaseOrderBy('joinDate', 'desc'),
+                            window.firebaseLimit(5)
+                        );
+                        
+                        const profileSnapshot = await window.firebaseGetDocs(profileQuery);
+                        const profiles = profileSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        
+                        console.group('👥 RECENT USER PROFILES');
+                        profiles.forEach((profile, index) => {
+                            const joinDate = new Date(profile.joinDate).toLocaleString();
+                            console.log(`${index + 1}. ${profile.email || profile.displayName || 'Unknown'} - Joined: ${joinDate}`);
+                        });
+                        console.groupEnd();
+                        
+                        // Also add to dashboard output
+                        const output = document.getElementById('consoleOutput');
+                        if (output) {
+                            output.innerHTML += `<div style="color: #00ffff; margin-top: 10px;">👥 RECENT USER PROFILES:</div>`;
+                            profiles.forEach((profile, index) => {
+                                const joinDate = new Date(profile.joinDate).toLocaleString();
+                                const displayName = profile.email || profile.displayName || 'Unknown';
+                                output.innerHTML += `<div style="color: #888;">${index + 1}. ${displayName} - Joined: ${joinDate}</div>`;
+                            });
+                            output.scrollTop = output.scrollHeight;
+                        }
+                        
+                        return `Found ${profiles.length} recent user profiles`;
+                    }
+                    
+                    console.group('📧 RECENT SIGNUPS');
+                    signups.forEach((signup, index) => {
+                        const signupTime = new Date(signup.timestamp).toLocaleString();
+                        console.log(`${index + 1}. ${signup.data?.email || signup.email || 'Unknown'} - ${signupTime}`);
+                        if (signup.data?.referrer) {
+                            console.log(`   📍 Referrer: ${signup.data.referrer}`);
+                        }
+                    });
+                    console.groupEnd();
+                    
+                    // Also add to dashboard output
+                    const output = document.getElementById('consoleOutput');
+                    if (output) {
+                        output.innerHTML += `<div style="color: #00ffff; margin-top: 10px;">📧 RECENT SIGNUPS:</div>`;
+                        signups.forEach((signup, index) => {
+                            const signupTime = new Date(signup.timestamp).toLocaleString();
+                            const email = signup.data?.email || signup.email || 'Unknown';
+                            output.innerHTML += `<div style="color: #888;">${index + 1}. ${email} - ${signupTime}</div>`;
+                            if (signup.data?.referrer) {
+                                output.innerHTML += `<div style="color: #666;">   📍 Referrer: ${signup.data.referrer}</div>`;
+                            }
+                        });
+                        output.scrollTop = output.scrollHeight;
+                    }
+                    
+                    return `Found ${signups.length} recent signups`;
+                } catch (error) {
+                    console.warn('Error fetching signups:', error);
+                    return `Error fetching signups: ${error.message}`;
+                }
             }
 
-            recentErrors() {
-                console.log('🚨 Recent errors are tracked in the main site console');
-                return 'Check main site console for error notifications';
+            async recentErrors() {
+                try {
+                    console.log('🚨 Fetching recent errors...');
+                    
+                    // Get errors from admin_events collection
+                    const eventsCollection = window.firebaseCollection(window.firebaseDb, 'admin_events');
+                    const errorQuery = window.firebaseQuery(
+                        eventsCollection,
+                        window.firebaseWhere('type', '==', 'error'),
+                        window.firebaseOrderBy('timestamp', 'desc'),
+                        window.firebaseLimit(10)
+                    );
+                    
+                    const errorSnapshot = await window.firebaseGetDocs(errorQuery);
+                    const errors = errorSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    
+                    if (errors.length === 0) {
+                        console.log('✅ No recent errors found - site is running smoothly!');
+                        
+                        // Also add to dashboard output
+                        const output = document.getElementById('consoleOutput');
+                        if (output) {
+                            output.innerHTML += `<div style="color: #00ff00; margin-top: 10px;">✅ No recent errors found - site is healthy!</div>`;
+                            output.scrollTop = output.scrollHeight;
+                        }
+                        
+                        return 'No recent errors found - site is healthy! ✅';
+                    }
+                    
+                    console.group('🚨 RECENT ERRORS');
+                    errors.forEach((error, index) => {
+                        const errorTime = new Date(error.timestamp).toLocaleString();
+                        console.log(`${index + 1}. ${error.data?.message || error.message || 'Unknown error'} - ${errorTime}`);
+                        if (error.data?.stack) {
+                            console.log(`   📍 Stack: ${error.data.stack.substring(0, 100)}...`);
+                        }
+                        if (error.data?.userAgent) {
+                            console.log(`   🖥️ Browser: ${error.data.userAgent.substring(0, 50)}...`);
+                        }
+                    });
+                    console.groupEnd();
+                    
+                    // Also add to dashboard output
+                    const output = document.getElementById('consoleOutput');
+                    if (output) {
+                        output.innerHTML += `<div style="color: #ff4444; margin-top: 10px;">🚨 RECENT ERRORS:</div>`;
+                        errors.forEach((error, index) => {
+                            const errorTime = new Date(error.timestamp).toLocaleString();
+                            const message = error.data?.message || error.message || 'Unknown error';
+                            output.innerHTML += `<div style="color: #888;">${index + 1}. ${message} - ${errorTime}</div>`;
+                            if (error.data?.stack) {
+                                output.innerHTML += `<div style="color: #666;">   📍 Stack: ${error.data.stack.substring(0, 100)}...</div>`;
+                            }
+                            if (error.data?.userAgent) {
+                                output.innerHTML += `<div style="color: #666;">   🖥️ Browser: ${error.data.userAgent.substring(0, 50)}...</div>`;
+                            }
+                        });
+                        output.scrollTop = output.scrollHeight;
+                    }
+                    
+                    return `Found ${errors.length} recent errors`;
+                } catch (error) {
+                    console.warn('Error fetching errors:', error);
+                    return `Error fetching error logs: ${error.message}`;
+                }
             }
 
             searchAnalytics() {
@@ -780,7 +919,23 @@
                 }
                 
                 if (window.dumbassGameAdmin && window.dumbassGameAdmin[commandName]) {
-                    result = window.dumbassGameAdmin[commandName]();
+                    // Special handling for async commands
+                    if (commandName === 'recentSignups' || commandName === 'recentErrors') {
+                        // Show loading indicator
+                        output.innerHTML += `<div style="color: #ffff00;">⏳ Loading ${commandName === 'recentSignups' ? 'signups' : 'errors'}...</div>`;
+                        
+                        // Call async function
+                        window.dumbassGameAdmin[commandName]().then(res => {
+                            output.innerHTML += `<div style="color: #00ff00;">✅ ${res}</div>`;
+                            output.scrollTop = output.scrollHeight;
+                        }).catch(err => {
+                            output.innerHTML += `<div style="color: #ff4444;">❌ Error: ${err}</div>`;
+                            output.scrollTop = output.scrollHeight;
+                        });
+                        return; // Exit early for async commands
+                    } else {
+                        result = window.dumbassGameAdmin[commandName]();
+                    }
                 } else {
                     result = `❌ Command "${commandName}" not found in admin system`;
                 }
@@ -1408,7 +1563,14 @@
                 const vibes = [
                     'cursed but blessed', 'chaotically perfect', 'beautifully broken', 
                     'peak dumbass energy', 'galaxy brain chaos', 'unhinged excellence',
-                    'digitally abominable', 'gloriously failing', 'vibe coded perfection'
+                    'digitally abominable', 'gloriously failing', 'vibe coded perfection',
+                    'spectacularly unhinged', 'criminally underrated', 'blessing in disguise',
+                    'certified digital chaos', 'premium grade nonsense', 'artistically terrible',
+                    'transcendently broken', 'professionally unprofessional', 'academically unserious',
+                    'deliberately accidental', 'intentionally confused', 'strategically chaotic',
+                    'expertly amateur', 'scientifically unscientific', 'logically illogical',
+                    'magnificently cursed', 'divinely dumb', 'wonderfully weird',
+                    'fantastically flawed', 'splendidly broken', 'delightfully chaotic'
                 ];
                 
                 const randomVibe = vibes[Math.floor(Math.random() * vibes.length)];
@@ -1419,7 +1581,13 @@
                     
                     `🎯 DAILY VIBE: ${randomVibe} 💫\n\n✨ Current chaos level: MAXIMUM\n🎮 Games that hit different: ${totalGames}+\n💀 Your weird game belongs here\n⚡ No gatekeeping, just pure vibes\n\n🚀 dumbassgames.xyz\n#Vibes #DigitalChaos`,
                     
-                    `🌪️ CHAOS ENERGY REPORT 📊\n\n✅ Vibe: ${randomVibe}\n✅ Games: ${totalGames} digital abominations\n✅ Gatekeeping: Absolutely none\n✅ Fun guaranteed: 100%\n\n🎮 What's your vibe? Add it to the collection!\n👉 dumbassgames.xyz\n#VibeCheck`
+                    `🌪️ CHAOS ENERGY REPORT 📊\n\n✅ Vibe: ${randomVibe}\n✅ Games: ${totalGames} digital abominations\n✅ Gatekeeping: Absolutely none\n✅ Fun guaranteed: 100%\n\n🎮 What's your vibe? Add it to the collection!\n👉 dumbassgames.xyz\n#VibeCheck`,
+                    
+                    `🔥 VIBE METER READING: ${randomVibe.toUpperCase()} 📈\n\n🎮 Collection status: ${totalGames} beautiful disasters\n💫 Quality control: We don't know her\n⚡ Submission barrier: What barrier?\n✨ Your weird creation needed: YES\n\n🚀 dumbassgames.xyz\n#VibeReading #DigitalChaos`,
+                    
+                    `💫 TODAY'S ENERGY: ${randomVibe} vibes only 🎮\n\n🌟 Currently hosting ${totalGames} digital monstrosities\n💀 Cursed content? We love it\n🔥 Blessed disasters? Even better\n⚡ Upload time: Still under 60 seconds\n\n✨ dumbassgames.xyz\n#VibeEnergy #ChaosGaming`,
+                    
+                    `🎮 CHAOS BAROMETER: ${randomVibe} detected! 🌪️\n\n📊 Current inventory: ${totalGames} vibe coded masterpieces\n💀 Sanity level: Not found\n🔥 Fun level: Off the charts\n⚡ Barrier to entry: None whatsoever\n\n🚀 dumbassgames.xyz\n#ChaosBarometer #VibeGames`
                 ];
                 
                 const randomTweet = vibeCheckTweets[Math.floor(Math.random() * vibeCheckTweets.length)];
@@ -1451,7 +1619,15 @@
                     
                     `📢 BREAKING: Local platform contains ${totalGames} games of pure chaos! 🎮\n\n✨ Vibe coded monstrosities? ✅\n💀 Cursed but blessed content? ✅\n🌟 Zero gatekeeping policy? ✅\n⚡ 60-second game uploads? ✅\n\n🚀 dumbassgames.xyz - where chaos thrives\n#DigitalChaos`,
                     
-                    `🎮 CHAOS LEVEL: MAXIMUM OVERDRIVE 💫\n\n🔥 Current collection: ${totalGames} beautiful disasters\n💀 Quality control: What's that?\n✨ Vibe requirement: Just exist\n⚡ Upload barrier: Literally none\n\n👉 Add to the chaos: dumbassgames.xyz\n#ChaosGaming`
+                    `🎮 CHAOS LEVEL: MAXIMUM OVERDRIVE 💫\n\n🔥 Current collection: ${totalGames} beautiful disasters\n💀 Quality control: What's that?\n✨ Vibe requirement: Just exist\n⚡ Upload barrier: Literally none\n\n👉 Add to the chaos: dumbassgames.xyz\n#ChaosGaming`,
+                    
+                    `⚡ URGENT UPDATE: Chaos levels reaching critical mass! 🚨\n\n📊 Abomination count: ${totalGames} and rising\n🌪️ Vibe coded disasters: Infinite\n💀 Approval process: Still doesn't exist\n🔥 Submission speed: Faster than your regrets\n\n🎮 dumbassgames.xyz\n#ChaosAlert`,
+                    
+                    `🔊 PLATFORM ANNOUNCEMENT: We're officially unhinged! 💀\n\n🎮 ${totalGames} games of questionable decisions\n✨ Zero quality gates, maximum chaos gates\n⚡ Upload your digital crime in 60 seconds\n🌟 We said yes to everything, and we're not sorry\n\n🚀 dumbassgames.xyz\n#UnhingedUpdate`,
+                    
+                    `💫 CHAOS METRICS REPORT: Everything is on fire! 🔥\n\n📈 Collection growth: ${totalGames} beautiful mistakes\n🎯 Rejection rate: 0% (we're not monsters)\n💀 Average submission quality: Perfectly imperfect\n⚡ Time to regret your upload: Immediate\n\n🎮 dumbassgames.xyz\n#ChaosMetrics`,
+                    
+                    `🌪️ SYSTEM STATUS: Beautifully broken as intended 💎\n\n🎮 Games that shouldn't exist: ${totalGames}\n✨ Games we're glad exist anyway: Also ${totalGames}\n💀 Cursed content warnings: We gave up\n🔥 Blessed disaster counter: Off the charts\n\n🚀 dumbassgames.xyz\n#SystemChaos`
                 ];
                 
                 const randomTweet = chaosUpdates[Math.floor(Math.random() * chaosUpdates.length)];
@@ -1480,7 +1656,15 @@
                 
                 `💀 DIGITAL ABOMINATION COLLECTORS WANTED! 🎮\n\n🔥 Made something that shouldn't exist? WE WANT IT\n⚡ Browser games, web experiments, chaos engines\n🎯 Working URL = automatic acceptance\n💫 Submission time: Under 60 seconds, guaranteed\n\n👉 dumbassgames.xyz\n#GameDev #WebGames`,
                 
-                `🌟 GAME DEVS: Your "trash" is our treasure! 💎\n\n✨ Prototype that got out of hand? Perfect\n🎮 Game jam disaster? Even better\n💀 Something that barely works? IDEAL\n⚡ URL ready? Submit in 60 seconds\n\n🚀 Zero judgment zone: dumbassgames.xyz\n#IndieGames #GameDev`
+                `🌟 GAME DEVS: Your "trash" is our treasure! 💎\n\n✨ Prototype that got out of hand? Perfect\n🎮 Game jam disaster? Even better\n💀 Something that barely works? IDEAL\n⚡ URL ready? Submit in 60 seconds\n\n🚀 Zero judgment zone: dumbassgames.xyz\n#IndieGames #GameDev`,
+                
+                `🚨 DEV EMERGENCY: We need your weird games! 🎮\n\n💭 That thing you made at 3am? UPLOAD IT\n🔥 Broken physics engine? WE'LL TAKE IT\n⚡ Accidentally good bad game? PERFECT\n💀 Cursed HTML5 experiment? YES PLEASE\n\n🚀 dumbassgames.xyz\n#DevEmergency #CursedGames`,
+                
+                `🎪 WANTED: Creators of digital circus acts! 💫\n\n🤹 Juggling game logic and prayer? That's our vibe\n🎨 Art style: "I tried my best"? IDEAL\n🎵 Sound design: Random keyboard mashing? CHEF'S KISS\n⚡ Submission requirement: One (1) working URL\n\n🌟 dumbassgames.xyz\n#DigitalCircus #GameDev`,
+                
+                `🔊 PSA FOR DEVS: Your rejected game jam entry belongs here! 🎮\n\n💔 Too weird for itch.io? Perfect for us\n🌪️ Judges didn't "get it"? We will\n💀 Broke the theme spectacularly? AMAZING\n⚡ Upload faster than your regret sets in\n\n✨ dumbassgames.xyz\n#GameJamRejects #VibeGames`,
+                
+                `📡 SIGNAL BOOST: Seeking creators of beautiful disasters! 💎\n\n🎮 Tutorial you never finished? Upload the chaos\n🔥 Feature that became the whole game? ICONIC\n💫 Bug that's now a core mechanic? GENIUS\n⚡ Working in browser? You're 100% qualified\n\n🚀 dumbassgames.xyz\n#BeautifulDisasters #WebGames`
             ];
             
             const randomTweet = devCallouts[Math.floor(Math.random() * devCallouts.length)];
@@ -1510,7 +1694,17 @@
                     
                     `🌟 WILD FACT: Our platform requires literally ONE thing - a working URL! 🎯\n\n❌ No approval process\n❌ No quality standards\n❌ No gatekeeping\n✅ Just pure vibe coded chaos\n\n🎮 ${totalGames} games and counting at dumbassgames.xyz\n#WildFact #VibeGames`,
                     
-                    `🔥 RANDOM FACT: Every game on DUMBASSGAMES was submitted by someone who said "this is probably dumb, but..." 🎮\n\n💫 Plot twist: We LOVE dumb\n✨ Dumb is our specialty\n💀 Dumb games = best games\n\n👉 Submit your dumb game: dumbassgames.xyz\n#RandomFact #DumbGames`
+                    `🔥 RANDOM FACT: Every game on DUMBASSGAMES was submitted by someone who said "this is probably dumb, but..." 🎮\n\n💫 Plot twist: We LOVE dumb\n✨ Dumb is our specialty\n💀 Dumb games = best games\n\n👉 Submit your dumb game: dumbassgames.xyz\n#RandomFact #DumbGames`,
+                    
+                    `🧠 BRAIN FACT: Our rejection rate is 0% and we're proud of it! 💀\n\n🎮 ${totalGames} games submitted, ${totalGames} games accepted\n✨ Mathematical perfection: 100% chaos rate\n⚡ Upload regret timeline: Instant\n🔥 Fun guarantee: Unbreakable\n\n🚀 dumbassgames.xyz\n#BrainFact #ZeroRejection`,
+                    
+                    `💀 SPOOKY FACT: We've never rejected a single game! 👻\n\n🎮 Horror rate: 0% (we love everything)\n✨ Acceptance rate: Suspiciously high (100%)\n⚡ Quality standards: What are those?\n🌟 Your game's survival rate: Guaranteed\n\n🔥 dumbassgames.xyz\n#SpookyFact #DigitalHorror`,
+                    
+                    `🤯 MIND-BLOWING FACT: Our longest submission took 37 seconds! ⚡\n\n🎮 Average upload time: Under 30 seconds\n💀 Fastest submission: 8 seconds (new record!)\n✨ Slowest submission: Still faster than ordering pizza\n🔥 Current collection: ${totalGames} speed-submitted disasters\n\n🚀 dumbassgames.xyz\n#SpeedFact #FastChaos`,
+                    
+                    `🎭 THEATER FACT: Every game here is a performance art piece! 🎪\n\n🎮 Intentional games: Some of them\n💀 Accidental masterpieces: Most of them\n✨ Games that transcend understanding: ${totalGames}\n⚡ Art critics' opinion: We don't ask\n\n🌟 dumbassgames.xyz\n#ArtFact #DigitalTheater`,
+                    
+                    `🧪 SCIENCE FACT: We're conducting the world's largest chaos experiment! 🔬\n\n🎮 Test subjects: ${totalGames} digital specimens\n💀 Control group: Doesn't exist\n✨ Hypothesis: Chaos = Fun\n⚡ Results: Hypothesis confirmed\n\n🔥 dumbassgames.xyz\n#ScienceFact #ChaosExperiment`
                 ];
                 
                 const randomTweet = funFacts[Math.floor(Math.random() * funFacts.length)];
@@ -1553,7 +1747,19 @@
                     `🕹️ REMEMBER WHEN GAMES WERE JUST... WEIRD? 🎮\n\n💫 DUMBASSGAMES brings back that energy:\n🎯 No corporate polish, just raw creativity\n⚡ Submit your game in 60 seconds flat\n🔥 ${totalGames}+ games of pure retro insanity\n💀 Sanity not guaranteed, fun definitely is!\n\n🚀 dumbassgames.xyz\n#RetroGaming #IndieGames`,
                     
                     // Simple and direct
-                    `🎮 FREE RETRO GAME ARCADE ⚡\n\n🔥 ${totalGames}+ vibe coded games\n⏱️ Add YOUR game in <1 minute\n💀 Digital abominations welcome\n🎯 No gatekeeping, pure chaos\n🕹️ Browser-based, instant play\n\n👉 dumbassgames.xyz\n#FreeGames #RetroGaming #BrowserGames`
+                    `🎮 FREE RETRO GAME ARCADE ⚡\n\n🔥 ${totalGames}+ vibe coded games\n⏱️ Add YOUR game in <1 minute\n💀 Digital abominations welcome\n🎯 No gatekeeping, pure chaos\n🕹️ Browser-based, instant play\n\n👉 dumbassgames.xyz\n#FreeGames #RetroGaming #BrowserGames`,
+                    
+                    // Chaos-focused
+                    `🌪️ THE INTERNET'S MOST UNHINGED GAME COLLECTION! 💀\n\n🎮 ${totalGames}+ games that probably shouldn't exist\n💫 But we're glad they do anyway\n⚡ Fastest submission process on the web\n🔥 Zero quality control, maximum fun\n\n✨ dumbassgames.xyz\n#ChaosGaming #DigitalChaos`,
+                    
+                    // Anti-corporate
+                    `🎯 TIRED OF CORPORATE GAMES? Try digital chaos instead! 🎮\n\n💀 No polish, just passion\n🔥 No committees, just creativity\n⚡ No barriers, just browsers\n🌟 No gatekeeping, just games\n\n👉 ${totalGames}+ indie abominations at dumbassgames.xyz\n#IndieGames #AntiCorporate`,
+                    
+                    // Creator-focused
+                    `🚀 CREATORS: Your weird game has a home! 🎮\n\n✨ Made something in 5 minutes? PERFECT\n💀 Accidentally created art? EVEN BETTER\n⚡ Got a browser game? YOU'RE IN\n🔥 Have zero budget? WHO CARES\n\n🌟 dumbassgames.xyz - where creativity wins\n#CreateToday #IndieCreators`,
+                    
+                    // Discovery-focused
+                    `🕹️ DISCOVER GAMES YOU'VE NEVER SEEN BEFORE! 🎮\n\n💫 No algorithm, just pure chaos\n🎯 ${totalGames}+ hidden gems & disasters\n⚡ New submissions daily\n💀 From blessed to cursed, we have it all\n\n🔥 Start exploring: dumbassgames.xyz\n#GameDiscovery #HiddenGems`
                 ];
                 
                 // Pick a random promotional tweet
