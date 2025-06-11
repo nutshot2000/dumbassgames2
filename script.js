@@ -261,12 +261,8 @@ class DumbassGameEnhanced {
     }
 
     preloadAssets() {
-        // Preload critical assets for smoother experience
-        const linkPreload = document.createElement('link');
-        linkPreload.rel = 'preload';
-        linkPreload.href = 'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap';
-        linkPreload.as = 'style';
-        document.head.appendChild(linkPreload);
+        // Font is already loaded in HTML head, no need for preload
+        // Critical assets are loaded via service worker in production
     }
 
     loadDefaultGames() {
