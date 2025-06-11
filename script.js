@@ -9935,44 +9935,37 @@ function initializeAllSystems() {
     console.log('🚀 Starting DumbassGames System Initialization...');
     
     // Initialize Site Owner Monitoring System with error handling
-    try {
-        console.log('👑 Initializing Site Owner Monitoring...');
-        window.siteMonitoring = new SiteOwnerMonitoring();
-        
-        // Auto-enable automation features
-        window.siteMonitoring.enableTwitterIntegration();
-        window.siteMonitoring.enableEmailNotifications();
-        
-        console.log('✅ Site Owner Monitoring initialized and automation enabled!');
-        
-        // Verify it's accessible
-        if (window.siteMonitoring) {
-            console.log('✅ Site monitoring globally accessible');
-        }
-    } catch (error) {
-        console.error('❌ Site Monitoring initialization failed:', error);
-        
-        // Retry after a delay
-        setTimeout(() => {
-            try {
-                console.log('🔄 Retrying Site Monitoring initialization...');
+    // Initialize Site Owner Monitoring with Firebase dependency check
+    const initSiteMonitoring = () => {
+        try {
+            if (window.firebaseAuth && window.firebaseAuth.onAuthStateChanged) {
+                console.status('👑 Initializing Site Owner Monitoring...');
                 window.siteMonitoring = new SiteOwnerMonitoring();
+                
+                // Auto-enable automation features
                 window.siteMonitoring.enableTwitterIntegration();
                 window.siteMonitoring.enableEmailNotifications();
-                console.log('✅ Site Monitoring retry successful!');
-            } catch (retryError) {
-                console.error('❌ Site Monitoring retry failed:', retryError);
+                
+                console.status('✅ Site Owner Monitoring initialized!');
+            } else {
+                // Firebase not ready, retry in 500ms
+                setTimeout(initSiteMonitoring, 500);
             }
-        }, 1000);
-    }
+        } catch (error) {
+            console.error('❌ Site Monitoring initialization failed:', error);
+        }
+    };
+    
+    // Start site monitoring init with delay to ensure Firebase is ready
+    setTimeout(initSiteMonitoring, 2000);
     
     // Initialize Admin Console with robust error handling
     const initAdminConsole = () => {
         try {
             if (!window.dumbassGameAdmin && window.dumbassGame) {
-                console.log('🔧 Initializing Admin Console...');
+                console.status('🔧 Initializing Admin Console...');
                 window.dumbassGameAdmin = new DumbassGameAdmin(window.dumbassGame);
-                console.log('✅ Admin Console ready!');
+                console.status('✅ Admin Console ready!');
                 
                 // Verify all automation features are connected
                 if (window.siteMonitoring) {
@@ -9996,17 +9989,22 @@ function initializeAllSystems() {
     
     // Final verification check
     setTimeout(() => {
-        console.log('🔍 FINAL SYSTEM CHECK:');
-        console.log('Main Game:', !!window.dumbassGame);
-        console.log('Admin System:', !!window.dumbassGameAdmin);
-        console.log('Site Monitoring:', !!window.siteMonitoring);
-        console.log('Twitter API:', !!window.TwitterAPI);
-        console.log('Twitter Configured:', window.TwitterAPI?.isConfigured);
+        if (window.DEVELOPMENT_MODE) {
+            console.log('🔍 FINAL SYSTEM CHECK:');
+            console.log('Main Game:', !!window.dumbassGame);
+            console.log('Admin System:', !!window.dumbassGameAdmin);
+            console.log('Site Monitoring:', !!window.siteMonitoring);
+            console.log('Twitter API:', !!window.TwitterAPI);
+            console.log('Twitter Configured:', window.TwitterAPI?.isConfigured);
+            
+            if (window.siteMonitoring) {
+                const automationStatus = window.siteMonitoring.getAutomationStatus();
+                console.log('🤖 Automation Status:', automationStatus);
+            }
+        }
         
         if (window.siteMonitoring) {
-            const automationStatus = window.siteMonitoring.getAutomationStatus();
-            console.log('🤖 Automation Status:', automationStatus);
-            console.log('✅ ALL SYSTEMS OPERATIONAL!');
+            console.status('✅ ALL SYSTEMS OPERATIONAL!');
         } else {
             console.error('❌ Site monitoring system failed to initialize properly');
         }
@@ -10016,7 +10014,7 @@ function initializeAllSystems() {
 // Start initialization
 initializeAllSystems();
 
-console.log('✅ System initialization started!');
+console.status('🚀 System initialization started!');
 
 // Update volume slider appearance after everything is loaded
 setTimeout(() => {
