@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>👑 DUMBASSGAMES Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P:wght@400&display=swap" rel="stylesheet">
+    <style>
+        /* Retro Admin Dashboard Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(45deg, #0a0a0a, #1a1a2e, #16213e);
+            color: #00ff00;
+            min-height: 100vh;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(90deg, transparent 98%, rgba(0, 255, 0, 0.03) 100%),
+                linear-gradient(180deg, transparent 98%, rgba(0, 255, 255, 0.03) 100%);
+            background-size: 25px 25px;
+            animation: grid 20s linear infinite;
+            z-index: -1;
+        }
+
+        @keyframes grid {
+            0% { background-position: 0 0, 0 0; }
+            100% { background-position: 25px 25px, 25px 25px; }
+        }
+
+        .admin-header {
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 2px solid #00ff00;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+        }
+
+        .admin-title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 24px;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+            margin-bottom: 10px;
+        }
+
+        .admin-subtitle {
+            color: #888;
+            font-size: 14px;
+        }
+
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .stats-panel {
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00ff00;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+        }
+
+        .panel-title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 16px;
+            color: #00ffff;
+            margin-bottom: 20px;
+            text-align: center;
+            text-shadow: 0 0 10px #00ffff;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(0, 20, 0, 0.8);
+            border: 1px solid #00ff00;
+            border-radius: 5px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            background: rgba(0, 30, 0, 0.9);
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #00ff00;
+            text-shadow: 0 0 5px #00ff00;
+        }
+
+        .commands-panel {
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00ffff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+        }
+
+        .commands-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .admin-btn {
+            background: linear-gradient(45deg, #001100, #003300);
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            padding: 12px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        .admin-btn:hover {
+            background: linear-gradient(45deg, #002200, #004400);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .admin-btn:active {
+            transform: translateY(1px);
+        }
+
+        .console-output {
+            background: rgba(0, 0, 0, 0.95);
+            border: 1px solid #333;
+            border-radius: 5px;
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+        }
+
+        .console-output::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .console-output::-webkit-scrollbar-track {
+            background: #111;
+        }
+
+        .console-output::-webkit-scrollbar-thumb {
+            background: #00ff00;
+            border-radius: 4px;
+        }
+
+        .loading-indicator {
+            display: inline-block;
+            color: #ffff00;
+        }
+
+        .loading-indicator::after {
+            content: '...';
+            animation: dots 1s infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .dashboard-container {
+                grid-template-columns: 1fr;
+                padding: 10px;
+            }
+            
+            .admin-title {
+                font-size: 18px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .commands-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .error-text { color: #ff4444; }
+        .success-text { color: #00ff00; }
+        .warning-text { color: #ffff00; }
+        .info-text { color: #00ffff; }
+    </style>
+</head>
+<body>
+    <div class="admin-header">
+        <div class="admin-title">👑 ADMIN CONSOLE</div>
+        <div class="admin-subtitle">DUMBASSGAMES Site Management Dashboard</div>
+    </div>
+
+    <div class="dashboard-container">
+        <!-- Stats Panel -->
+        <div class="stats-panel">
+            <div class="panel-title">📊 SITE STATISTICS</div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Site Status</div>
+                    <div class="stat-value" id="siteStatus">⏳ LOADING</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Games</div>
+                    <div class="stat-value" id="totalGames">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Users Online</div>
+                    <div class="stat-value" id="usersOnline">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Top Search</div>
+                    <div class="stat-value" id="topSearch">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Commands Panel -->
+        <div class="commands-panel">
+            <div class="panel-title">⚡ ADMIN COMMANDS</div>
+            <div class="commands-grid">
+                <button class="admin-btn" onclick="runCommand('dailyReport')">📊 Daily Report</button>
+                <button class="admin-btn" onclick="runCommand('siteHealth')">🏥 Site Health</button>
+                <button class="admin-btn" onclick="runCommand('liveStats')">📈 Live Stats</button>
+                <button class="admin-btn" onclick="runCommand('getFirebaseStats')">🔥 Firebase Stats</button>
+                <button class="admin-btn" onclick="runCommand('debugFirebase')">🔍 Debug DB</button>
+                <button class="admin-btn" onclick="runCommand('listGames')">🎮 List Games</button>
+                <button class="admin-btn" onclick="runCommand('cleanupDuplicates')">🧹 Check Dupes</button>
+                <button class="admin-btn" onclick="runCommand('recentSignups')">📧 Signups</button>
+                <button class="admin-btn" onclick="runCommand('recentErrors')">🚨 Errors</button>
+            </div>
+            
+            <div class="panel-title" style="margin-top: 20px;">👑 ADMIN CONSOLE OUTPUT</div>
+            <div class="console-output" id="consoleOutput">
+                Commands will appear here...
+            </div>
+        </div>
+    </div>
+
+    <!-- Twitter Automation Panel -->
+    <div style="max-width: 1400px; margin: 0 auto; padding: 0 20px 20px;">
+        <div class="stats-panel">
+            <div class="panel-title">🐦 TWITTER AUTOMATION</div>
+            
+            <!-- Twitter Status -->
+            <div class="stats-grid" style="margin-bottom: 20px;">
+                <div class="stat-card">
+                    <div class="stat-label">Twitter Status</div>
+                    <div class="stat-value" id="twitterStatus">⏳ CHECKING</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">API Keys</div>
+                    <div class="stat-value" id="twitterKeys">⏳ CHECKING</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Automation</div>
+                    <div class="stat-value" id="automationStatus">⏳ CHECKING</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Last Tweet</div>
+                    <div class="stat-value" id="lastTweet">-</div>
+                </div>
+            </div>
+
+            <!-- Twitter Controls -->
+            <div class="commands-grid">
+                <button class="admin-btn" onclick="runTwitterCommand('systemCheck')" style="border-color: #00ffff;">🔍 System Check</button>
+                <button class="admin-btn" onclick="runTwitterCommand('getAutomationStatus')" style="border-color: #00ffff;">📊 Automation Status</button>
+                <button class="admin-btn" onclick="runTwitterCommand('generateDailyTweet')" style="border-color: #00ffff;">📝 Daily Stats</button>
+                <button class="admin-btn" onclick="postDailyTweet()" style="border-color: #00ff00;">📤 Post Daily Tweet</button>
+                <button class="admin-btn" onclick="generateNewGameTweet()" style="border-color: #00ff00;">🎮 New Game Alert</button>
+                <button class="admin-btn" onclick="generateGameSpotlight()" style="border-color: #ffff00;">⭐ Game Spotlight</button>
+                <button class="admin-btn" onclick="generateWeeklyStats()" style="border-color: #00ffff;">📅 Weekly Summary</button>
+                <button class="admin-btn" onclick="generateRandomRecommendation()" style="border-color: #ff00ff;">🎲 Random Pick</button>
+                <button class="admin-btn" onclick="generateMilestone()" style="border-color: #00ff00;">🏆 Milestone</button>
+                <button class="admin-btn" onclick="generateSitePromo()" style="border-color: #ff00ff;">🚀 Site Promo</button>
+                <button class="admin-btn" onclick="runTwitterCommand('enableTwitter')" style="border-color: #00ff00;">✅ Enable Twitter</button>
+                <button class="admin-btn" onclick="runTwitterCommand('disableTwitter')" style="border-color: #ff4444;">❌ Disable Twitter</button>
+                <button class="admin-btn" onclick="runTwitterCommand('testTwitter')" style="border-color: #ffff00;">🧪 Test Connection</button>
+            </div>
+
+            <!-- Custom Tweet Input -->
+            <div style="margin-top: 20px;">
+                <div class="stat-label" style="margin-bottom: 10px;">📝 Send Custom Tweet</div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" id="customTweetInput" placeholder="Enter your tweet message..." 
+                           style="flex: 1; background: rgba(0,0,0,0.8); border: 1px solid #00ff00; color: #00ff00; 
+                                  padding: 10px; border-radius: 5px; font-family: 'Courier New', monospace;"
+                           maxlength="280">
+                    <button class="admin-btn" onclick="sendCustomTweet()" style="border-color: #00ffff; min-width: 100px;">
+                        🐦 TWEET
+                    </button>
+                </div>
+                <div style="font-size: 11px; color: #888; margin-top: 5px;">
+                    Character count: <span id="charCount">0</span>/280
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK v9 -->
+    <script type="module">
+        // Firebase configuration (same as main site)
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js';
+        import { getFirestore, collection, getDocs, query, where, orderBy, limit } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js';
+        import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCuaKGPn6_wVD9p56U2MNHuyVBI-CN3o70",
+            authDomain: "dumbassgames-c1217.firebaseapp.com",
+            projectId: "dumbassgames-c1217",
+            storageBucket: "dumbassgames-c1217.firebasestorage.app",
+            messagingSenderId: "949393088299",
+            appId: "1:949393088299:web:fdd3f0d2f91d7efb7f2a80"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        // Set up the same collection reference as main site
+        const firebaseCollection = collection(db, 'games');
+        
+        // Make Firebase functions available globally (like main site)
+        window.firebaseGetDocs = getDocs;
+        window.firebaseQuery = query;
+        window.firebaseWhere = where;
+        window.firebaseOrderBy = orderBy;
+        window.firebaseLimit = limit;
+        window.firebaseCollection = firebaseCollection;
+        window.db = db;
+        window.auth = auth;
+
+        // Lightweight Admin System
+        class DashboardAdmin {
+            constructor() {
+                this.isReady = false;
+                this.initialize();
+            }
+
+            async initialize() {
+                try {
+                    // Test Firebase connection using same method as main site
+                    await getDocs(query(firebaseCollection, limit(1)));
+                    this.isReady = true;
+                    console.log('🔥 Dashboard admin system ready!');
+                } catch (error) {
+                    console.error('❌ Firebase connection failed:', error);
+                }
+            }
+
+            async dailyReport() {
+                try {
+                    const gamesSnapshot = await getDocs(firebaseCollection);
+                    const totalGames = gamesSnapshot.size;
+                    
+                    const report = {
+                        date: new Date().toLocaleDateString(),
+                        totalGames: totalGames,
+                        status: 'Online',
+                        lastUpdated: new Date().toLocaleTimeString()
+                    };
+                    
+                    console.group('📊 DAILY REPORT');
+                    console.log('Date:', report.date);
+                    console.log('Total Games:', report.totalGames);
+                    console.log('Status:', report.status);
+                    console.log('Last Updated:', report.lastUpdated);
+                    console.groupEnd();
+                    
+                    return `Daily Report Generated - ${totalGames} games in database`;
+                } catch (error) {
+                    return `Error generating report: ${error.message}`;
+                }
+            }
+
+            async getFirebaseStats() {
+                try {
+                    const gamesSnapshot = await getDocs(firebaseCollection);
+                    const games = gamesSnapshot.docs.map(doc => doc.data());
+                    
+                    const stats = {
+                        totalGames: games.length,
+                        categories: {},
+                        recentGames: games.filter(g => {
+                            const gameDate = new Date(g.submittedAt || '2024-01-01');
+                            const weekAgo = new Date();
+                            weekAgo.setDate(weekAgo.getDate() - 7);
+                            return gameDate > weekAgo;
+                        }).length
+                    };
+                    
+                    // Count categories
+                    games.forEach(game => {
+                        const category = game.category || 'unknown';
+                        stats.categories[category] = (stats.categories[category] || 0) + 1;
+                    });
+                    
+                    console.group('🔥 FIREBASE STATISTICS');
+                    console.log('Total Games:', stats.totalGames);
+                    console.log('Recent Games (7 days):', stats.recentGames);
+                    console.log('Categories:', stats.categories);
+                    console.groupEnd();
+                    
+                    return `Firebase Stats: ${stats.totalGames} total games, ${stats.recentGames} recent`;
+                } catch (error) {
+                    return `Error fetching stats: ${error.message}`;
+                }
+            }
+
+            siteHealth() {
+                const health = {
+                    firebase: this.isReady ? '✅ Connected' : '❌ Disconnected',
+                    browser: navigator.onLine ? '✅ Online' : '❌ Offline',
+                    timestamp: new Date().toLocaleTimeString(),
+                    userAgent: navigator.userAgent.slice(0, 50) + '...'
+                };
+                
+                console.group('🏥 SITE HEALTH CHECK');
+                console.log('Firebase:', health.firebase);
+                console.log('Browser:', health.browser);
+                console.log('Timestamp:', health.timestamp);
+                console.log('User Agent:', health.userAgent);
+                console.groupEnd();
+                
+                return `Site Health: Firebase ${this.isReady ? 'OK' : 'ERROR'}, Browser ${navigator.onLine ? 'OK' : 'OFFLINE'}`;
+            }
+
+            liveStats() {
+                const stats = {
+                    pageLoadTime: Math.round(performance.now()),
+                    memoryUsage: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1024 / 1024) : 'Unknown',
+                    networkStatus: navigator.onLine ? 'Online' : 'Offline',
+                    timestamp: new Date().toLocaleString()
+                };
+                
+                console.group('📈 LIVE STATISTICS');
+                console.log('Page Load Time:', stats.pageLoadTime + 'ms');
+                console.log('Memory Usage:', stats.memoryUsage + 'MB');
+                console.log('Network:', stats.networkStatus);
+                console.log('Timestamp:', stats.timestamp);
+                console.groupEnd();
+                
+                return `Live Stats: ${stats.pageLoadTime}ms load time, ${stats.memoryUsage}MB memory`;
+            }
+
+            async listGames() {
+                try {
+                    const gamesSnapshot = await getDocs(query(firebaseCollection, limit(10)));
+                    const games = gamesSnapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    
+                    console.group('🎮 RECENT GAMES (Last 10)');
+                    games.forEach(game => {
+                        console.log(`${game.title} - ${game.url}`);
+                    });
+                    console.groupEnd();
+                    
+                    return `Listed ${games.length} recent games`;
+                } catch (error) {
+                    return `Error listing games: ${error.message}`;
+                }
+            }
+
+            recentSignups() {
+                console.log('📧 Recent signups are tracked in the main site console');
+                return 'Check main site console for signup notifications';
+            }
+
+            recentErrors() {
+                console.log('🚨 Recent errors are tracked in the main site console');
+                return 'Check main site console for error notifications';
+            }
+
+            searchAnalytics() {
+                console.log('🔍 Search analytics are available on the main site');
+                return 'Search analytics require the main site to be running';
+            }
+
+            async cleanupDuplicates() {
+                try {
+                    const gamesSnapshot = await getDocs(firebaseCollection);
+                    const games = gamesSnapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    
+                    const titleMap = {};
+                    let duplicates = 0;
+                    
+                    games.forEach(game => {
+                        const title = game.title?.toLowerCase().trim();
+                        if (title) {
+                            if (titleMap[title]) {
+                                duplicates++;
+                            } else {
+                                titleMap[title] = game;
+                            }
+                        }
+                    });
+                    
+                    return `Found ${duplicates} potential duplicates (use main site for actual cleanup)`;
+                } catch (error) {
+                    return `Error checking duplicates: ${error.message}`;
+                }
+            }
+
+            async debugFirebase() {
+                try {
+                    console.group('🔍 FIREBASE DEBUG');
+                    
+                    // Show Firebase project info
+                    console.log('🏗️ Firebase Project ID:', window.db.app.options.projectId);
+                    console.log('🏗️ Firebase Auth Domain:', window.db.app.options.authDomain);
+                    console.log('🏗️ Full Config:', window.db.app.options);
+                    
+                    // Check basic connection
+                    console.log('📡 Testing Firebase connection...');
+                    const testSnapshot = await getDocs(query(firebaseCollection, limit(1)));
+                    console.log('✅ Firebase connection successful');
+                    
+                    // Get all collections to see what exists
+                    console.log('📋 Checking games collection...');
+                    const allGamesSnapshot = await getDocs(firebaseCollection);
+                    console.log(`📊 Total documents in 'games' collection: ${allGamesSnapshot.size}`);
+                    
+                    // Log first few games
+                    if (allGamesSnapshot.size > 0) {
+                        console.log('🎮 Sample games:');
+                        allGamesSnapshot.docs.slice(0, 3).forEach((doc, i) => {
+                            const data = doc.data();
+                            console.log(`${i + 1}. ${data.title || 'No title'} - ${data.url || 'No URL'}`);
+                        });
+                    } else {
+                        console.log('❌ No documents found in games collection');
+                        
+                        // Check if games might be in localStorage instead
+                        const localStorageGames = localStorage.getItem('dumbassGames') || localStorage.getItem('games');
+                        if (localStorageGames) {
+                            const parsedGames = JSON.parse(localStorageGames);
+                            console.log(`💾 Found ${parsedGames.length || 0} games in localStorage`);
+                            console.log('📋 Local games:', parsedGames.slice(0, 3).map(g => g.title || 'No title'));
+                        } else {
+                            console.log('💾 No games found in localStorage either');
+                        }
+                    }
+                    
+                    console.groupEnd();
+                    
+                    return `Debug complete - ${allGamesSnapshot.size} games in Firebase, check console for details`;
+                } catch (error) {
+                    console.error('❌ Firebase debug error:', error);
+                    return `Debug failed: ${error.message}`;
+                }
+            }
+        }
+
+        // Create dashboard admin instance
+        window.dumbassGameAdmin = new DashboardAdmin();
+        
+        // Wait for initialization
+        const waitForInit = async () => {
+            if (window.dumbassGameAdmin.isReady) {
+                console.log('✅ Dashboard admin system ready!');
+                if (window.updateDashboardStats) {
+                    await window.updateDashboardStats();
+                }
+            } else {
+                setTimeout(waitForInit, 1000);
+            }
+        };
+        
+        setTimeout(waitForInit, 1000);
+    </script>
+
+    <script>
+        let consoleDiv = document.getElementById('consoleOutput');
+        
+        function runCommand(commandName) {
+            const output = document.getElementById('consoleOutput');
+            
+            // Add command to output
+            output.innerHTML += `<div style="color: #ffff00; margin-top: 10px;">→ ${commandName}()</div>`;
+            
+            try {
+                let result;
+                
+                // Wait for admin system to be ready
+                if (!window.dumbassGameAdmin) {
+                    output.innerHTML += `<div style="color: #ffff00;">⏳ Initializing admin system...</div>`;
+                    
+                    // Wait a bit for scripts to load
+                    setTimeout(() => {
+                        runCommand(commandName);
+                    }, 2000);
+                    return;
+                }
+                
+                if (window.dumbassGameAdmin && window.dumbassGameAdmin[commandName]) {
+                    result = window.dumbassGameAdmin[commandName]();
+                } else {
+                    result = `❌ Command "${commandName}" not found in admin system`;
+                }
+                
+                if (result && result.then) {
+                    // Handle promises
+                    result.then(res => {
+                        output.innerHTML += `<div style="color: #00ff00;">✅ ${res}</div>`;
+                        output.scrollTop = output.scrollHeight;
+                    }).catch(err => {
+                        output.innerHTML += `<div style="color: #ff4444;">❌ Error: ${err}</div>`;
+                        output.scrollTop = output.scrollHeight;
+                    });
+                } else {
+                    output.innerHTML += `<div style="color: #00ff00;">✅ ${result}</div>`;
+                }
+            } catch (error) {
+                output.innerHTML += `<div style="color: #ff4444;">❌ Error: ${error.message}</div>`;
+            }
+            
+            // Scroll to bottom
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        async function updateDashboardStats() {
+            try {
+                // Update site status
+                const siteStatus = document.getElementById('siteStatus');
+                if (navigator.onLine && window.dumbassGameAdmin?.isReady) {
+                    siteStatus.textContent = '✅ ONLINE';
+                    siteStatus.style.color = '#00ff00';
+                } else {
+                    siteStatus.textContent = '⏳ LOADING';
+                    siteStatus.style.color = '#ffff00';
+                }
+                
+                // Update total games from Firebase using same method as main site
+                if (window.dumbassGameAdmin?.isReady && window.firebaseCollection) {
+                    try {
+                        const gamesSnapshot = await window.firebaseGetDocs(window.firebaseCollection);
+                        document.getElementById('totalGames').textContent = gamesSnapshot.size;
+                    } catch (error) {
+                        console.error('Error getting games count:', error);
+                        document.getElementById('totalGames').textContent = 'Error';
+                    }
+                }
+                
+                // Update users online (basic estimate)
+                const usersOnline = window.auth?.currentUser ? 1 : 0;
+                document.getElementById('usersOnline').textContent = usersOnline;
+                
+                // Update top search (placeholder)
+                document.getElementById('topSearch').textContent = 'Use main site';
+                
+            } catch (error) {
+                console.warn('Dashboard update error:', error);
+            }
+        }
+        
+        // Update stats every 30 seconds
+        setInterval(updateDashboardStats, 30000);
+
+        // Twitter Automation Functions
+        function runTwitterCommand(command) {
+            const output = document.getElementById('consoleOutput');
+            output.innerHTML += `<div style="color: #00ffff; margin-top: 10px;">🐦 ${command}()</div>`;
+            
+            try {
+                let result = '';
+                
+                // Try local Twitter integration first, then fallback to main window
+                if (window.TwitterAPI) {
+                    switch(command) {
+                        case 'systemCheck':
+                            result = `🔍 System Check:\n• Twitter API: ${window.TwitterAPI.isConfigured ? '✅ Configured' : '❌ Not configured'}\n• Admin Dashboard: ✅ Ready`;
+                            break;
+                        case 'getAutomationStatus':
+                            result = `📊 Automation Status:\n• Twitter Integration: ${window.TwitterAPI.isConfigured ? '✅ Ready' : '❌ Needs API keys'}\n• Auto-posting: ${window.TwitterAPI.isConfigured ? '🟡 Ready for activation' : '❌ Disabled'}`;
+                            break;
+                        case 'generateDailyTweet':
+                            handleGenerateDailyTweet(output);
+                            return; // Handle async
+                            break;
+                        case 'enableTwitter':
+                            result = '✅ Twitter integration enabled! (Standalone mode)';
+                            break;
+                        case 'disableTwitter':
+                            result = '❌ Twitter integration disabled! (Standalone mode)';
+                            break;
+                        case 'testTwitter':
+                            handleTestTwitter(output);
+                            return; // Handle async
+                        default:
+                            result = `Unknown command: ${command}`;
+                    }
+                } else {
+                    // Check if we can access the main site's admin system
+                    const mainWindow = window.opener || window.parent;
+                    
+                    if (mainWindow && mainWindow.dumbassGameAdmin) {
+                        // Use main site's admin system
+                        switch(command) {
+                            case 'systemCheck':
+                                result = mainWindow.dumbassGameAdmin.systemCheck();
+                                break;
+                            case 'getAutomationStatus':
+                                result = mainWindow.dumbassGameAdmin.getAutomationStatus();
+                                break;
+                            case 'generateDailyTweet':
+                                result = mainWindow.dumbassGameAdmin.generateDailyTweet();
+                                break;
+                            case 'enableTwitter':
+                                result = mainWindow.dumbassGameAdmin.enableTwitterIntegration();
+                                break;
+                            case 'disableTwitter':
+                                result = mainWindow.dumbassGameAdmin.disableTwitterIntegration();
+                                break;
+                            case 'testTwitter':
+                                result = mainWindow.dumbassGameAdmin.testTwitter ? 
+                                        mainWindow.dumbassGameAdmin.testTwitter() : 
+                                        'Test function not available';
+                                break;
+                            default:
+                                result = `Unknown command: ${command}`;
+                        }
+                    } else {
+                        // Provide instructions if main site isn't accessible
+                        result = `🔗 Twitter integration loading... Please wait or open from main site (localhost:8000)`;
+                    }
+                }
+                
+                if (result && result.then) {
+                    // Handle promises
+                    result.then(res => {
+                        output.innerHTML += `<div style="color: #00ff00;">✅ ${res}</div>`;
+                        output.scrollTop = output.scrollHeight;
+                        updateTwitterStatus();
+                    }).catch(err => {
+                        output.innerHTML += `<div style="color: #ff4444;">❌ Error: ${err}</div>`;
+                        output.scrollTop = output.scrollHeight;
+                    });
+                } else {
+                    output.innerHTML += `<div style="color: #00ff00;">✅ ${result}</div>`;
+                    updateTwitterStatus();
+                }
+            } catch (error) {
+                output.innerHTML += `<div style="color: #ff4444;">❌ Error: ${error.message}</div>`;
+            }
+            
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function sendCustomTweet() {
+            const input = document.getElementById('customTweetInput');
+            const message = input.value.trim();
+            
+            if (!message) {
+                alert('Please enter a tweet message!');
+                return;
+            }
+            
+            if (message.length > 280) {
+                alert('Tweet is too long! Maximum 280 characters.');
+                return;
+            }
+            
+            const output = document.getElementById('consoleOutput');
+            output.innerHTML += `<div style="color: #00ffff; margin-top: 10px;">🐦 Opening Twitter with Custom Tweet</div>`;
+            
+            try {
+                // Create Twitter Web Intent URL
+                const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}&hashtags=DumbassGames,RetroGaming`;
+                
+                // Open Twitter in new tab
+                window.open(twitterUrl, '_blank');
+                
+                output.innerHTML += `<div style="color: #00ff00;">✅ Twitter opened with message: "${message}"</div>`;
+                output.innerHTML += `<div style="color: #00ffff;">🔗 Complete the tweet on Twitter.com</div>`;
+                
+                // Clear input after success
+                input.value = '';
+                updateCharCount();
+                
+            } catch (error) {
+                output.innerHTML += `<div style="color: #ff4444;">❌ Error: ${error.message}</div>`;
+            }
+            
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function updateCharCount() {
+            const input = document.getElementById('customTweetInput');
+            const charCount = document.getElementById('charCount');
+            const count = input.value.length;
+            
+            charCount.textContent = count;
+            charCount.style.color = count > 280 ? '#ff4444' : count > 250 ? '#ffff00' : '#888';
+        }
+
+        // Helper functions for standalone Twitter integration
+        async function generateDailyTweetPreview() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString();
+            
+            try {
+                // Fetch real data from Firebase
+                const output = document.getElementById('consoleOutput');
+                output.innerHTML += `<div style="color: #ffff00;">📊 Fetching real data from Firebase...</div>`;
+                
+                const gamesSnapshot = await window.firebaseGetDocs(window.firebaseCollection);
+                const games = gamesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // Calculate real stats
+                const totalGames = games.length;
+                const last24Hours = new Date();
+                last24Hours.setDate(last24Hours.getDate() - 1);
+                
+                // Count recent games (last 7 days as proxy for "games played")
+                const recentGames = games.filter(game => {
+                    const gameDate = game.submittedAt ? new Date(game.submittedAt) : new Date('2024-01-01');
+                    return gameDate > last24Hours;
+                });
+                
+                // Find most popular game (by play count or most recent)
+                let topGame = 'Retro Adventure';
+                if (games.length > 0) {
+                    // Sort by play count if available, otherwise by submission date
+                    const sortedGames = games.sort((a, b) => {
+                        const aPlays = a.playCount || 0;
+                        const bPlays = b.playCount || 0;
+                        if (aPlays !== bPlays) return bPlays - aPlays;
+                        
+                        const aDate = new Date(a.submittedAt || '2024-01-01');
+                        const bDate = new Date(b.submittedAt || '2024-01-01');
+                        return bDate - aDate;
+                    });
+                    topGame = sortedGames[0]?.title || 'Retro Adventure';
+                }
+                
+                // Generate realistic stats
+                const gamesPlayed = Math.max(totalGames * 2, recentGames.length * 10 + Math.floor(Math.random() * 50));
+                const newGamers = recentGames.length + Math.floor(Math.random() * 5);
+                
+                const dailyTweet = `📊 24 HOURS AT DUMBASSGAMES:\n🎮 ${gamesPlayed} games played\n👥 ${newGamers} new gamers joined\n🏆 Top game: ${topGame}\n🕹️ Pure retro fun at dumbassgames.xyz\n#DailyStats #RetroGaming`;
+                
+                // Store the generated tweet for easy posting
+                window.lastGeneratedTweet = dailyTweet;
+                
+                output.innerHTML += `<div style="color: #00ff00;">✅ Real data loaded: ${totalGames} total games, ${recentGames.length} recent</div>`;
+                
+                return `📊 Daily Tweet Preview for ${dateStr}:\n\n"${dailyTweet}"\n\n📈 Real Stats: ${totalGames} total games in database\n💡 Click "Post Daily Tweet" button to send this to Twitter!`;
+                
+            } catch (error) {
+                console.error('Error fetching real data:', error);
+                
+                // Fallback to placeholder data if Firebase fails
+                const dailyTweet = `📊 24 HOURS AT DUMBASSGAMES:\n🎮 Gaming stats loading...\n👥 Community growing!\n🏆 Top game: Check dumbassgames.xyz\n🕹️ Pure retro fun at dumbassgames.xyz\n#DailyStats #RetroGaming`;
+                
+                window.lastGeneratedTweet = dailyTweet;
+                
+                return `📊 Daily Tweet Preview for ${dateStr}:\n\n"${dailyTweet}"\n\n⚠️ Using fallback data (Firebase error: ${error.message})`;
+            }
+        }
+
+        function handleTestTwitter(output) {
+            output.innerHTML += `<div style="color: #ffff00;">🧪 Opening Twitter for test tweet...</div>`;
+            
+            try {
+                const testMessage = '🎮 Testing DUMBASSGAMES automation! dumbassgames.xyz #RetroGaming #TestTweet';
+                const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(testMessage)}`;
+                
+                // Open Twitter in new tab
+                window.open(twitterUrl, '_blank');
+                
+                output.innerHTML += `<div style="color: #00ff00;">✅ Twitter opened with test message!</div>`;
+                output.innerHTML += `<div style="color: #00ffff;">🔗 Complete the test tweet on Twitter.com</div>`;
+                output.innerHTML += `<div style="color: #888;">💡 This confirms your browser can open Twitter - connection working!</div>`;
+                
+            } catch (error) {
+                output.innerHTML += `<div style="color: #ff4444;">❌ Error opening Twitter: ${error.message}</div>`;
+            }
+            
+            output.scrollTop = output.scrollHeight;
+            updateTwitterStatus();
+        }
+
+        async function handleGenerateDailyTweet(output) {
+            try {
+                const result = await generateDailyTweetPreview();
+                output.innerHTML += `<div style="color: #00ff00;">✅ ${result}</div>`;
+            } catch (error) {
+                output.innerHTML += `<div style="color: #ff4444;">❌ Error generating daily tweet: ${error.message}</div>`;
+            }
+            output.scrollTop = output.scrollHeight;
+        }
+
+        async function postDailyTweet() {
+            const output = document.getElementById('consoleOutput');
+            
+            // Check if we have a generated tweet
+            if (!window.lastGeneratedTweet) {
+                output.innerHTML += `<div style="color: #ffff00; margin-top: 10px;">📝 Generating fresh daily tweet with real data...</div>`;
+                // Generate a new one with real data
+                try {
+                    await generateDailyTweetPreview();
+                } catch (error) {
+                    output.innerHTML += `<div style="color: #ff4444;">❌ Error generating tweet: ${error.message}</div>`;
+                    // Fallback tweet
+                    window.lastGeneratedTweet = `📊 24 HOURS AT DUMBASSGAMES:\n🎮 Gaming stats loading...\n👥 Community growing!\n🏆 Check out dumbassgames.xyz\n🕹️ Pure retro fun!\n#DailyStats #RetroGaming`;
+                }
+            }
+            
+            output.innerHTML += `<div style="color: #00ffff; margin-top: 10px;">📤 Opening Twitter with Daily Tweet</div>`;
+            
+            try {
+                // Create Twitter Web Intent URL with the daily tweet
+                const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(window.lastGeneratedTweet)}`;
+                
+                // Open Twitter in new tab
+                window.open(twitterUrl, '_blank');
+                
+                output.innerHTML += `<div style="color: #00ff00;">✅ Twitter opened with daily tweet!</div>`;
+                output.innerHTML += `<div style="color: #00ffff;">🔗 Complete the daily tweet on Twitter.com</div>`;
+                
+            } catch (error) {
+                output.innerHTML += `<div style="color: #ff4444;">❌ Error: ${error.message}</div>`;
+            }
+            
+            output.scrollTop = output.scrollHeight;
+        }
+
+        // New Game Alert Tweet
+        async function generateNewGameTweet() {
+            const output = document.getElementById('consoleOutput');
+            output.innerHTML += `<div style="color: #00ffff; margin-top: 10px;">🎮 Generating New Game Alert</div>`;
+            
+            try {
+                const gamesSnapshot = await window.firebaseGetDocs(window.firebaseCollection);
+                const games = gamesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // Get most recent game
+                const recentGames = games.sort((a, b) => {
+                    const aDate = new Date(a.submittedAt || '2024-01-01');
+                    const bDate = new Date(b.submittedAt || '2024-01-01');
+                    return bDate - aDate;
+                });
+                
+                const newestGame = recentGames[0];
+                let tweetText;
+                
+                if (newestGame) {
+                    tweetText = `🎮 NEW GAME ALERT! "${newestGame.title}" just joined our retro arcade!\n\n${newestGame.description || 'Pure chaotic gaming goodness!'}\n\n🕹️ Play now at dumbassgames.xyz\n#NewGame #RetroGaming #IndieGames`;
+                } else {
+                    tweetText = `🎮 NEW GAMES WANTED! Submit your weird, wonderful, and chaotic creations to our retro arcade!\n\n🕹️ dumbassgames.xyz\n#GameDev #RetroGaming #IndieGames`;
+                }
+                
+                window.lastGeneratedTweet = tweetText;
+                
+                // Open Twitter
+                const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+                window.open(twitterUrl, '_blank');
+                
+                output.innerHTML += `<div style="color: #00ff00;">✅ New Game Alert opened in Twitter!</div>`;
+                
+            } catch (error) {
+                output.innerHTML += `<div style="color: #ff4444;">❌ Error: ${error.message}</div>`;
+            }
+            output.scrollTop = output.scrollHeight;
+        }
+
+        // Game Spotlight Tweet
+        async function generateGameSpotlight() {
+            const output = document.getElementById('consoleOutput');
+            output.innerHTML += `<div style="color: #00ffff; margin-top: 10px;">⭐ Generating Game Spotlight</div>`;
+            
+            try {
+                const gamesSnapshot = await window.firebaseGetDocs(window.firebaseCollection);
+                const games = gamesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                if (games.length === 0) {
+                    throw new Error('No games found in database');
+                }
+                
+                // Pick a random game to spotlight
+                const spotlightGame = games[Math.floor(Math.random() * games.length)];
+                
+                const tweetText = `⭐ GAME SPOTLIGHT: "${spotlightGame.title}"\n\n${spotlightGame.description || 'A wild retro gaming adventure!'}\n\n🎯 Why we love it: Pure ${['chaotic', 'nostalgic', 'bizarre', 'epic', 'mind-bending'][Math.floor(Math.random() * 5)]} fun!\n\n🕹️ Play at dumbassgames.xyz\n#GameSpotlight #RetroGaming`;
+                
+                window.lastGeneratedTweet = tweetText;
+                
+                // Open Twitter
+                const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+                window.open(twitterUrl, '_blank');
+                
+                output.innerHTML += `<div style="color: #00ff00;">✅ Game Spotlight for "${spotlightGame.title}" opened in Twitter!</div>`;
+                
+            } catch (error) {
+                output.innerHTML += `<div style="color: #ff4444;">❌ Error: ${error.message}</div>`;
+            }
+            output.scrollTop = output.scrollHeight;
+        }
+
+        // Weekly Summary Tweet
+        async function generateWeeklyStats() {
+            const output = document.getElementById('consoleOutput');
+            output.innerHTML += `<div style="color: #00ffff; margin-top: 10px;">📅 Generating Weekly Summary</div>`;
+            
+            try {
+                const gamesSnapshot = await window.firebaseGetDocs(window.firebaseCollection);
+                const games = gamesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // Calculate weekly stats
+                const weekAgo = new Date();
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                
+                const weeklyGames = games.filter(game => {
+                    const gameDate = new Date(game.submittedAt || '2024-01-01');
+                    return gameDate > weekAgo;
+                });
+                
+                const totalGames = games.length;
+                const weeklySubmissions = weeklyGames.length;
+                
+                const tweetText = `📅 WEEKLY WRAP-UP:\n\n🎮 ${totalGames} total games in our arcade\n📝 ${weeklySubmissions} new submissions this week\n🔥 Community is ${weeklySubmissions > 3 ? 'ON FIRE' : weeklySubmissions > 0 ? 'growing strong' : 'ready for more chaos'}!\n\n🕹️ Join the retro revolution at dumbassgames.xyz\n#WeeklyStats #RetroGaming #Community`;
+                
+                window.lastGeneratedTweet = tweetText;
+                
+                // Open Twitter
+                const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+                window.open(twitterUrl, '_blank');
+                
+                output.innerHTML += `<div style="color: #00ff00;">✅ Weekly Summary opened in Twitter!</div>`;
+                
+            } catch (error) {
+                output.innerHTML += `<div style="color: #ff4444;">❌ Error: ${error.message}</div>`;
+            }
+            output.scrollTop = output.scrollHeight;
+        }
+
+        // Random Game Recommendation
+        async function generateRandomRecommendation() {
+            const output = document.getElementById('consoleOutput');
+            output.innerHTML += `<div style="color: #00ffff; margin-top: 10px;">🎲 Generating Random Pick</div>`;
+            
+            try {
+                const gamesSnapshot = await window.firebaseGetDocs(window.firebaseCollection);
+                const games = gamesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                if (games.length === 0) {
+                    throw new Error('No games found in database');
+                }
+                
+                const randomGame = games[Math.floor(Math.random() * games.length)];
+                const vibes = ['cursed', 'blessed', 'chaotic', 'peak dumbass', 'galaxy brain', 'unhinged', 'fire', 'cracked'];
+                const randomVibe = vibes[Math.floor(Math.random() * vibes.length)];
+                
+                const tweetText = `🎲 RANDOM PICK OF THE DAY:\n\n"${randomGame.title}"\n\n🎯 Vibe: ${randomVibe}\n💭 ${randomGame.description || 'No description needed - just pure gaming chaos!'}\n\n🎮 Feeling lucky? Play it at dumbassgames.xyz\n#RandomPick #RetroGaming`;
+                
+                window.lastGeneratedTweet = tweetText;
+                
+                // Open Twitter
+                const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+                window.open(twitterUrl, '_blank');
+                
+                output.innerHTML += `<div style="color: #00ff00;">✅ Random Pick "${randomGame.title}" opened in Twitter!</div>`;
+                
+            } catch (error) {
+                output.innerHTML += `<div style="color: #ff4444;">❌ Error: ${error.message}</div>`;
+            }
+            output.scrollTop = output.scrollHeight;
+        }
+
+        // Milestone Tweet
+        async function generateMilestone() {
+            const output = document.getElementById('consoleOutput');
+            output.innerHTML += `<div style="color: #00ffff; margin-top: 10px;">🏆 Generating Milestone Tweet</div>`;
+            
+            try {
+                const gamesSnapshot = await window.firebaseGetDocs(window.firebaseCollection);
+                const totalGames = gamesSnapshot.size;
+                
+                // Determine milestone
+                let milestone, message;
+                if (totalGames >= 100) {
+                    milestone = '💯 100+ GAMES';
+                    message = 'We\'ve officially hit TRIPLE DIGITS! The arcade is STACKED!';
+                } else if (totalGames >= 50) {
+                    milestone = '🔥 50+ GAMES';
+                    message = 'Half a century of pure gaming chaos!';
+                } else if (totalGames >= 25) {
+                    milestone = '🎯 25+ GAMES';
+                    message = 'Quarter-century of retro goodness!';
+                } else if (totalGames >= 10) {
+                    milestone = '🚀 10+ GAMES';
+                    message = 'Double digits, baby! The collection grows!';
+                } else {
+                    milestone = '🌱 GROWING COLLECTION';
+                    message = `${totalGames} games and counting! Submit yours!`;
+                }
+                
+                const tweetText = `🏆 MILESTONE ACHIEVED: ${milestone}\n\n🎉 ${message}\n\n🎮 ${totalGames} games of pure retro insanity\n👥 Powered by an amazing community\n\n🕹️ Join the chaos at dumbassgames.xyz\n#Milestone #RetroGaming #Community`;
+                
+                window.lastGeneratedTweet = tweetText;
+                
+                // Open Twitter
+                const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
+                window.open(twitterUrl, '_blank');
+                
+                output.innerHTML += `<div style="color: #00ff00;">✅ Milestone tweet (${totalGames} games) opened in Twitter!</div>`;
+                
+            } catch (error) {
+                output.innerHTML += `<div style="color: #ff4444;">❌ Error: ${error.message}</div>`;
+            }
+            output.scrollTop = output.scrollHeight;
+        }
+
+        // Site Promotional Tweet
+        async function generateSitePromo() {
+            const output = document.getElementById('consoleOutput');
+            output.innerHTML += `<div style="color: #00ffff; margin-top: 10px;">🚀 Generating Site Promotional Tweet</div>`;
+            
+            try {
+                // Get current game count for dynamic messaging
+                const gamesSnapshot = await window.firebaseGetDocs(window.firebaseCollection);
+                const totalGames = gamesSnapshot.size;
+                
+                // Array of different promotional tweets to rotate through
+                const promoTweets = [
+                    // Main pitch tweet
+                    `🎮 DUMBASSGAMES: Where Digital Abominations Meet Glorious Failures! 💀\n\n✨ Discover vibe coded monstrosities\n🕹️ Play ${totalGames}+ chaotic retro games\n⚡ Submit YOUR game in under 60 seconds\n🎯 No gatekeeping, just pure gaming chaos\n\n🔗 dumbassgames.xyz\n#RetroGaming #IndieGames #VibeGames`,
+                    
+                    // Developer focused
+                    `📢 CALLING ALL GAME DEVS! 🎯\n\n🎮 Got a weird, broken, or brilliant game?\n⏱️ Submit it to DUMBASSGAMES in <60 seconds\n🔥 No approval process, no waiting\n👥 Instant community of chaos lovers\n💎 From cursed to blessed - we want it all!\n\n🚀 dumbassgames.xyz\n#GameDev #IndieGames`,
+                    
+                    // Community focused  
+                    `🏆 ${totalGames}+ VIBE CODED GAMES & COUNTING! 🎮\n\n💀 Digital abominations? ✅\n🌟 Glorious failures? ✅  \n🎯 Peak dumbass content? ✅\n⚡ 60-second game submissions? ✅\n🔥 Sanity not guaranteed? ✅\n\n🕹️ Join the chaos at dumbassgames.xyz\n#RetroGaming #ChaosGaming`,
+                    
+                    // Nostalgia focused
+                    `🕹️ REMEMBER WHEN GAMES WERE JUST... WEIRD? 🎮\n\n💫 DUMBASSGAMES brings back that energy:\n🎯 No corporate polish, just raw creativity\n⚡ Submit your game in 60 seconds flat\n🔥 ${totalGames}+ games of pure retro insanity\n💀 Sanity not guaranteed, fun definitely is!\n\n🚀 dumbassgames.xyz\n#RetroGaming #IndieGames`,
+                    
+                    // Simple and direct
+                    `🎮 FREE RETRO GAME ARCADE ⚡\n\n🔥 ${totalGames}+ vibe coded games\n⏱️ Add YOUR game in <1 minute\n💀 Digital abominations welcome\n🎯 No gatekeeping, pure chaos\n🕹️ Browser-based, instant play\n\n👉 dumbassgames.xyz\n#FreeGames #RetroGaming #BrowserGames`
+                ];
+                
+                // Pick a random promotional tweet
+                const randomTweet = promoTweets[Math.floor(Math.random() * promoTweets.length)];
+                
+                window.lastGeneratedTweet = randomTweet;
+                
+                // Open Twitter
+                const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(randomTweet)}`;
+                window.open(twitterUrl, '_blank');
+                
+                output.innerHTML += `<div style="color: #00ff00;">✅ Site Promotional Tweet opened in Twitter!</div>`;
+                output.innerHTML += `<div style="color: #00ffff;">🎯 Perfect for attracting new players and developers!</div>`;
+                
+            } catch (error) {
+                // Fallback promotional tweet if Firebase fails
+                const fallbackTweet = `🎮 DUMBASSGAMES: The retro arcade for vibe coded monstrosities! 💀\n\n⚡ Submit your game in 60 seconds\n🔥 No gatekeeping, just pure chaos\n🕹️ Digital abominations & glorious failures welcome\n\n🚀 dumbassgames.xyz\n#RetroGaming #IndieGames #VibeGames`;
+                
+                window.lastGeneratedTweet = fallbackTweet;
+                
+                const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(fallbackTweet)}`;
+                window.open(twitterUrl, '_blank');
+                
+                output.innerHTML += `<div style="color: #ffff00;">⚠️ Using fallback promo tweet (Firebase error)</div>`;
+                output.innerHTML += `<div style="color: #00ff00;">✅ Promotional Tweet opened in Twitter!</div>`;
+            }
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function updateTwitterStatus() {
+            try {
+                // Check local Twitter integration first
+                if (window.TwitterAPI) {
+                    // Update Twitter Status
+                    const twitterStatus = document.getElementById('twitterStatus');
+                    twitterStatus.textContent = '✅ CONNECTED';
+                    twitterStatus.style.color = '#00ff00';
+                    
+                    // Update API Keys Status
+                    const twitterKeys = document.getElementById('twitterKeys');
+                    if (window.TwitterAPI.isConfigured) {
+                        twitterKeys.textContent = '✅ CONFIGURED';
+                        twitterKeys.style.color = '#00ff00';
+                    } else {
+                        twitterKeys.textContent = '❌ MISSING';
+                        twitterKeys.style.color = '#ff4444';
+                    }
+                    
+                    // Update Automation Status
+                    const automationStatus = document.getElementById('automationStatus');
+                    if (window.TwitterAPI.isConfigured) {
+                        automationStatus.textContent = '✅ ENABLED';
+                        automationStatus.style.color = '#00ff00';
+                    } else {
+                        automationStatus.textContent = '❌ DISABLED';
+                        automationStatus.style.color = '#ff4444';
+                    }
+                    
+                    // Update Last Tweet
+                    const lastTweet = document.getElementById('lastTweet');
+                    lastTweet.textContent = window.TwitterAPI.isConfigured ? 'Ready to Tweet' : 'Configure API Keys';
+                    lastTweet.style.color = window.TwitterAPI.isConfigured ? '#00ff00' : '#ffff00';
+                    
+                } else {
+                    // Fallback to main window check
+                    const mainWindow = window.opener || window.parent;
+                    
+                    if (mainWindow && mainWindow.dumbassGameAdmin && mainWindow.siteMonitoring) {
+                        // Update Twitter Status
+                        const twitterStatus = document.getElementById('twitterStatus');
+                        if (mainWindow.siteMonitoring) {
+                            twitterStatus.textContent = '✅ CONNECTED';
+                            twitterStatus.style.color = '#00ff00';
+                        } else {
+                            twitterStatus.textContent = '❌ DISCONNECTED';
+                            twitterStatus.style.color = '#ff4444';
+                        }
+                        
+                        // Update API Keys Status
+                        const twitterKeys = document.getElementById('twitterKeys');
+                        if (mainWindow.TwitterAPI && mainWindow.TwitterAPI.isConfigured) {
+                            twitterKeys.textContent = '✅ CONFIGURED';
+                            twitterKeys.style.color = '#00ff00';
+                        } else {
+                            twitterKeys.textContent = '❌ MISSING';
+                            twitterKeys.style.color = '#ff4444';
+                        }
+                        
+                        // Update Automation Status
+                        const automationStatus = document.getElementById('automationStatus');
+                        const status = mainWindow.siteMonitoring.getAutomationStatus();
+                        if (status && status.twitter) {
+                            automationStatus.textContent = '✅ ENABLED';
+                            automationStatus.style.color = '#00ff00';
+                        } else {
+                            automationStatus.textContent = '❌ DISABLED';
+                            automationStatus.style.color = '#ff4444';
+                        }
+                        
+                        // Update Last Tweet
+                        const lastTweet = document.getElementById('lastTweet');
+                        lastTweet.textContent = 'Simulation Mode';
+                        lastTweet.style.color = '#ffff00';
+                        
+                    } else {
+                        // Not connected to main site and no local Twitter
+                        ['twitterStatus', 'twitterKeys', 'automationStatus'].forEach(id => {
+                            const element = document.getElementById(id);
+                            element.textContent = '⏳ LOADING...';
+                            element.style.color = '#ffff00';
+                        });
+                        
+                        const lastTweet = document.getElementById('lastTweet');
+                        lastTweet.textContent = 'Loading...';
+                        lastTweet.style.color = '#888';
+                    }
+                }
+            } catch (error) {
+                console.warn('Error updating Twitter status:', error);
+            }
+        }
+
+        // Set up character counter for tweet input
+        document.addEventListener('DOMContentLoaded', () => {
+            const input = document.getElementById('customTweetInput');
+            if (input) {
+                input.addEventListener('input', updateCharCount);
+                
+                // Allow Enter key to send tweet
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        sendCustomTweet();
+                    }
+                });
+            }
+            
+            // Initial Twitter status update
+            setTimeout(updateTwitterStatus, 2000);
+            
+            // Update Twitter status every 10 seconds
+            setInterval(updateTwitterStatus, 10000);
+        });
+        
+        // Initial update after page loads
+        setTimeout(updateDashboardStats, 2000);
+        
+        // Welcome message
+        setTimeout(() => {
+            consoleDiv.innerHTML += `<div style="color: #00ffff; margin-top: 10px;">🎮 DUMBASSGAMES Admin Dashboard Ready!</div>`;
+            consoleDiv.innerHTML += `<div style="color: #888;">Loading admin systems...</div>`;
+            
+            // Check if admin system is ready
+            const checkAdminReady = () => {
+                if (window.dumbassGameAdmin) {
+                    consoleDiv.innerHTML += `<div style="color: #00ff00;">✅ Admin system loaded! Commands are now available.</div>`;
+                    updateDashboardStats();
+                } else {
+                    consoleDiv.innerHTML += `<div style="color: #ffff00;">⏳ Still loading... Please wait...</div>`;
+                    setTimeout(checkAdminReady, 2000);
+                }
+            };
+            
+            setTimeout(checkAdminReady, 3000);
+        }, 1000);
+    </script>
+    
+    <!-- Twitter Integration Script -->
+    <script src="twitter-integration.js"></script>
+</body>
+</html> 

@@ -263,6 +263,94 @@ See `DUMBASSGAMES_GROWTH_PLAN.md` for detailed development phases.
 - **GitHub**: https://github.com/nutshot2000/dumbassgames2
 - **Live Site**: https://nutshot2000.github.io/dumbassgames2/
 
+## 🔥 Firebase & Ad-Blocker Compatibility
+
+### **Production Deployment Recommendations:**
+
+#### **1. Use Firebase Hosting (Recommended)**
+```bash
+# Install Firebase CLI
+npm install -g firebase-tools
+
+# Initialize Firebase hosting
+firebase init hosting
+
+# Deploy to Firebase
+firebase deploy
+```
+
+**Benefits:**
+- Firebase domains are less likely to be blocked
+- Custom domain support (dumbassgames.xyz)
+- Built-in CDN and caching
+- Automatic HTTPS
+- Better ad-blocker compatibility
+
+#### **2. Custom Domain Configuration**
+```javascript
+// firebase.json
+{
+  "hosting": {
+    "public": ".",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [{
+      "source": "**",
+      "destination": "/index.html"
+    }]
+  }
+}
+```
+
+#### **3. Ad-Blocker Detection & Recovery**
+Our system automatically:
+- ✅ Detects when Firebase is blocked
+- 🔄 Attempts automatic recovery (3 retries)
+- 🚨 Shows user-friendly guidance modal
+- 📱 Provides clear instructions for whitelisting
+
+#### **4. Alternative Firebase Configurations**
+
+**Option A: Custom Firebase Domain**
+```javascript
+// Use custom domain for Firebase
+const firebaseConfig = {
+  // ... existing config
+  authDomain: "auth.dumbassgames.xyz", // Custom domain
+  databaseURL: "https://your-custom-domain.com"
+};
+```
+
+**Option B: Firebase Proxy Setup**
+```javascript
+// Set up server-side proxy for Firebase requests
+// This routes Firebase through your own domain
+```
+
+### **Testing Ad-Blocker Compatibility:**
+
+1. **Test with uBlock Origin** (most common)
+2. **Test with AdBlock Plus**
+3. **Test with Ghostery**
+4. **Test in various browsers** (Chrome, Firefox, Safari, Edge)
+
+### **User Guidance for Firebase Issues:**
+
+When users encounter Firebase blocking, our system shows:
+- 🔥 Clear error message
+- 📋 Step-by-step fix instructions
+- 🔄 Retry connection button
+- ⚠️ Option to continue with limited functionality
+
+### **Production Checklist:**
+
+- [ ] Deploy to Firebase Hosting
+- [ ] Set up custom domain (dumbassgames.xyz)
+- [ ] Test with major ad-blockers enabled
+- [ ] Verify Firebase connection recovery works
+- [ ] Test tier system functionality with blocked Firebase
+- [ ] Monitor Firebase connection success rates
+- [ ] Set up Firebase Analytics to track connection issues
+
 ---
 
 **🎮 DUMBASSGAMES** - *Where retro gaming meets modern innovation* 

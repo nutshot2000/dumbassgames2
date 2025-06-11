@@ -55,7 +55,7 @@
     
     <!-- Resource Hints for Better Loading -->
     <link rel="preload" href="app.min.css" as="style">
-    <link rel="preload" href="script.min.js" as="script">
+    <link rel="preload" href="script.js" as="script">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="app.min.css">
     
@@ -267,6 +267,163 @@
             font-size: 11px;
             opacity: 0.8;
         }
+
+        /* Tier Diagnostics Panel Styles */
+        .tier-diagnostics-panel {
+            margin: 20px 0;
+            padding: 20px;
+            background: var(--primary-alpha-2);
+            border: 2px solid var(--primary-color);
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .diagnostics-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--primary-color);
+        }
+
+        .diagnostics-header h3 {
+            margin: 0;
+            color: var(--primary-color);
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            text-shadow: 0 0 10px var(--primary-alpha-4);
+        }
+
+        .close-diagnostics {
+            background: rgba(255, 0, 0, 0.2);
+            border: 1px solid #ff6666;
+            border-radius: 4px;
+            color: #ff6666;
+            padding: 8px 12px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .close-diagnostics:hover {
+            background: rgba(255, 0, 0, 0.4);
+            border-color: #ff0000;
+            color: #ff0000;
+        }
+
+        .diagnostics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .diag-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            background: var(--primary-alpha-3);
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            color: var(--primary-color);
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+        }
+
+        .diag-btn:hover {
+            background: var(--primary-alpha-5);
+            box-shadow: 0 0 12px var(--primary-alpha-4);
+            transform: translateY(-2px);
+        }
+
+        .diag-btn.primary {
+            background: var(--primary-alpha-4);
+            box-shadow: 0 0 8px var(--primary-alpha-3);
+        }
+
+        .diag-btn.upgrade {
+            border-color: #ffaa00;
+            color: #ffaa00;
+            background: rgba(255, 170, 0, 0.2);
+        }
+
+        .diag-btn.upgrade:hover {
+            background: rgba(255, 170, 0, 0.4);
+            box-shadow: 0 0 12px rgba(255, 170, 0, 0.3);
+        }
+
+        .diag-btn.pro {
+            border-color: #00aaff;
+            color: #00aaff;
+            background: rgba(0, 170, 255, 0.2);
+        }
+
+        .diag-btn.pro:hover {
+            background: rgba(0, 170, 255, 0.4);
+            box-shadow: 0 0 12px rgba(0, 170, 255, 0.3);
+        }
+
+        .diag-btn.dev {
+            border-color: #aa00ff;
+            color: #aa00ff;
+            background: rgba(170, 0, 255, 0.2);
+        }
+
+        .diag-btn.dev:hover {
+            background: rgba(170, 0, 255, 0.4);
+            box-shadow: 0 0 12px rgba(170, 0, 255, 0.3);
+        }
+
+        .diag-btn.reset {
+            border-color: #ff6666;
+            color: #ff6666;
+            background: rgba(255, 102, 102, 0.2);
+        }
+
+        .diag-btn.reset:hover {
+            background: rgba(255, 102, 102, 0.4);
+            box-shadow: 0 0 12px rgba(255, 102, 102, 0.3);
+        }
+
+        .diagnostics-output {
+            background: #0a0a0a;
+            border: 1px solid var(--primary-color);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .output-header {
+            color: var(--primary-color);
+            font-size: 11px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 5px var(--primary-alpha-4);
+        }
+
+        .output-content {
+            color: #ccc;
+            font-size: 11px;
+            line-height: 1.4;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        @media (max-width: 768px) {
+            .diagnostics-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .diag-btn {
+                font-size: 9px;
+                padding: 10px 14px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -299,6 +456,7 @@
                 </button>
                 <button class="control-btn compact" onclick="showAddGameForm()">+ ADD GAME</button>
                 <button class="control-btn compact" onclick="showUserProfile()">💛 FAVORITES</button>
+                <button class="control-btn compact admin-btn" onclick="openAdminDashboard()" title="Admin Dashboard" style="background: #ffaa00; border-color: #ffaa00; color: #000; font-weight: bold;">👑 ADMIN</button>
                 <!-- Dynamic Auth Button - changes based on user state -->
                 <button id="authBtn" class="control-btn compact primary" onclick="handleAuthClick()">
                     <span class="btn-icon">👤</span><span id="authBtnText">SIGN UP</span>
@@ -526,14 +684,75 @@
                         <span class="btn-icon">+</span>
                         <span class="btn-text">ADD GAME</span>
                     </button>
-                    <button class="action-btn" onclick="dumbassGameAdmin.help()">
-                        <span class="btn-icon">⌘</span>
+                    <button class="action-btn" onclick="openAdminDashboard()">
+                        <span class="btn-icon">👑</span>
                         <span class="btn-text">ADMIN</span>
                     </button>
                     <button class="action-btn" onclick="location.reload()">
                         <span class="btn-icon">↻</span>
                         <span class="btn-text">REFRESH</span>
                     </button>
+                    <button class="action-btn" onclick="toggleTierDiagnostics()">
+                        <span class="btn-icon">💎</span>
+                        <span class="btn-text">TIER DEBUG</span>
+                    </button>
+                </div>
+
+                <!-- Tier System Diagnostics Panel -->
+                <div id="tierDiagnosticsPanel" class="tier-diagnostics-panel" style="display: none;">
+                    <div class="diagnostics-header">
+                        <h3>💎 TIER SYSTEM DIAGNOSTICS</h3>
+                        <button class="close-diagnostics" onclick="toggleTierDiagnostics()">✕</button>
+                    </div>
+                    
+                    <div class="diagnostics-grid">
+                        <button class="diag-btn primary" onclick="runDiagnoseTiers()">
+                            <span class="btn-icon">🔍</span>
+                            DIAGNOSE SYSTEM
+                        </button>
+                        
+                        <button class="diag-btn" onclick="runFixTiers()">
+                            <span class="btn-icon">🔧</span>
+                            FIX TIER SYSTEM
+                        </button>
+                        
+                        <button class="diag-btn" onclick="runSubmissionSync()">
+                            <span class="btn-icon">📊</span>
+                            SYNC SUBMISSIONS
+                        </button>
+                        
+                        <button class="diag-btn" onclick="testTierLimits()">
+                            <span class="btn-icon">🧪</span>
+                            TEST LIMITS
+                        </button>
+                        
+                        <button class="diag-btn upgrade" onclick="testUpgradeModal()">
+                            <span class="btn-icon">💎</span>
+                            TEST UPGRADE
+                        </button>
+                        
+                        <button class="diag-btn dev" onclick="runUpgradeToDev()">
+                            <span class="btn-icon">🚀</span>
+                            UPGRADE TO DEV
+                        </button>
+                        
+                        <button class="diag-btn pro" onclick="runUpgradeToPro()">
+                            <span class="btn-icon">⭐</span>
+                            UPGRADE TO PRO
+                        </button>
+                        
+                        <button class="diag-btn reset" onclick="runResetToFree()">
+                            <span class="btn-icon">🔄</span>
+                            RESET TO FREE
+                        </button>
+                    </div>
+                    
+                    <div class="diagnostics-output">
+                        <div class="output-header">📋 DIAGNOSTIC OUTPUT:</div>
+                        <div id="diagnosticsOutput" class="output-content">
+                            Click any button above to run tier system diagnostics...
+                        </div>
+                    </div>
                 </div>
             </section>
         </main>
@@ -607,6 +826,7 @@
                 <button class="profile-tab active" data-tab="overview" onclick="switchProfileTab('overview')">📊 OVERVIEW</button>
                 <button class="profile-tab" data-tab="favorites" onclick="switchProfileTab('favorites')">⭐ FAVORITES</button>
                 <button class="profile-tab" data-tab="submissions" onclick="switchProfileTab('submissions')">🎮 MY GAMES</button>
+                <button class="profile-tab dev-only" data-tab="analytics" onclick="switchProfileTab('analytics')" style="display: none;">📈 ANALYTICS</button>
                 <button class="profile-tab" data-tab="settings" onclick="switchProfileTab('settings')">⚙️ SETTINGS</button>
             </div>
 
@@ -674,6 +894,78 @@
                 </div>
                     <div id="submissionsGrid" class="submissions-grid">
                         <!-- User's submitted games will be loaded here -->
+                    </div>
+                </div>
+
+                <!-- Analytics Tab (DEV Only) -->
+                <div class="profile-tab-content" id="analyticsTab" style="display: none;">
+                    <div class="analytics-header">
+                        <h4>📈 Game Analytics Dashboard</h4>
+                        <div class="dev-exclusive-badge">🚀 DEV TIER EXCLUSIVE</div>
+                    </div>
+                    
+                    <div class="analytics-grid">
+                        <!-- Personal Stats -->
+                        <div class="analytics-card">
+                            <div class="analytics-card-header">
+                                <h5>👤 Your Activity</h5>
+                                <span class="analytics-icon">📊</span>
+                            </div>
+                            <div class="analytics-stats">
+                                <div class="stat-item">
+                                    <span class="stat-label">Total Games Played</span>
+                                    <span class="stat-value" id="totalGamesPlayed">-</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Games Submitted</span>
+                                    <span class="stat-value" id="totalGamesSubmitted">-</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Favorites Added</span>
+                                    <span class="stat-value" id="totalFavoritesAdded">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Your Games Performance -->
+                        <div class="analytics-card">
+                            <div class="analytics-card-header">
+                                <h5>🎮 Your Games Performance</h5>
+                                <span class="analytics-icon">🏆</span>
+                            </div>
+                            <div class="analytics-content">
+                                <div id="gamesPerformanceGrid" class="games-performance-grid">
+                                    <!-- Performance data will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Platform Analytics -->
+                        <div class="analytics-card full-width">
+                            <div class="analytics-card-header">
+                                <h5>🌍 Platform Analytics</h5>
+                                <span class="analytics-icon">📈</span>
+                            </div>
+                            <div class="analytics-stats">
+                                <div class="stat-item">
+                                    <span class="stat-label">Total Platform Games</span>
+                                    <span class="stat-value" id="platformTotalGames">-</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Your Contribution</span>
+                                    <span class="stat-value" id="yourContributionPercent">-</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Most Played Game</span>
+                                    <span class="stat-value" id="mostPlayedGame">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="analytics-footer">
+                        <button class="btn-secondary" onclick="refreshAnalytics()">🔄 REFRESH DATA</button>
+                        <p class="analytics-note">📊 Analytics update in real-time as users play your games</p>
                     </div>
                 </div>
 
@@ -868,6 +1160,26 @@
             </div>
             
             <div class="upgrade-tiers">
+                <!-- FREE Tier (Current Plan) -->
+                <div class="tier-option current-plan" data-tier="FREE">
+                    <div class="current-plan-badge">📍 CURRENT PLAN</div>
+                    <div class="tier-plan-header">
+                        <span class="tier-badge-xl">🆓</span>
+                        <h4>FREE PLAYER</h4>
+                        <div class="tier-price">$0<span>/month</span></div>
+                    </div>
+                    <div class="tier-features">
+                        <div class="feature">🎮 Play all games</div>
+                        <div class="feature">💛 15 favorites max</div>
+                        <div class="feature">🎯 2 submissions per month</div>
+                        <div class="feature">👤 Basic profile</div>
+                        <div class="feature">🎵 Music player access</div>
+                    </div>
+                    <div class="current-plan-status">
+                        YOU'RE HERE
+                    </div>
+                </div>
+                
                 <!-- PRO Tier -->
                 <div class="tier-option" data-tier="PRO">
                     <div class="tier-plan-header">
@@ -1227,6 +1539,136 @@
     <!-- Stripe Payment Processing -->
     <script src="https://js.stripe.com/v3/"></script>
     
-    <script src="script.min.js"></script>
+    <!-- Tier System Fix -->
+    <script src="fix-tier-system.js"></script>
+    
+    <script src="script.js"></script>
+    
+    <!-- Twitter Integration -->
+    <script src="twitter-integration.js"></script>
+    
+    <!-- Tier Diagnostics UI Functions -->
+    <script>
+        function toggleTierDiagnostics() {
+            const panel = document.getElementById('tierDiagnosticsPanel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function logToOutput(message) {
+            const output = document.getElementById('diagnosticsOutput');
+            const timestamp = new Date().toLocaleTimeString();
+            output.textContent += `[${timestamp}] ${message}\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function clearOutput() {
+            document.getElementById('diagnosticsOutput').textContent = '';
+        }
+
+        async function runDiagnoseTiers() {
+            clearOutput();
+            logToOutput('🔍 Starting tier system diagnosis...');
+            try {
+                const result = await diagnoseTiers();
+                logToOutput('✅ Diagnosis completed successfully');
+            } catch (error) {
+                logToOutput(`❌ Diagnosis failed: ${error.message}`);
+            }
+        }
+
+        async function runFixTiers() {
+            clearOutput();
+            logToOutput('🔧 Starting comprehensive tier system fix...');
+            try {
+                const result = await fixTiers();
+                logToOutput('✅ Tier system fix completed');
+            } catch (error) {
+                logToOutput(`❌ Fix failed: ${error.message}`);
+            }
+        }
+
+        async function runSubmissionSync() {
+            clearOutput();
+            logToOutput('📊 Syncing submission counts with Firebase...');
+            try {
+                const result = await fixSubmissionSync();
+                if (result.success) {
+                    logToOutput(`✅ Found ${result.actualSubmissions} total submissions`);
+                    logToOutput(`📊 Monthly submissions: ${result.monthlySubmissions}/${result.tierLimits.submissionsPerMonth}`);
+                    logToOutput(`📊 Remaining this month: ${result.remainingSubmissions}`);
+                    if (result.isOverLimit) {
+                        logToOutput('🚫 USER IS OVER MONTHLY LIMIT - Future submissions should be blocked');
+                    } else {
+                        logToOutput('✅ User is within submission limits');
+                    }
+                } else {
+                    logToOutput(`❌ Sync failed: ${result.error}`);
+                }
+            } catch (error) {
+                logToOutput(`❌ Submission sync failed: ${error.message}`);
+            }
+        }
+
+        async function testTierLimits() {
+            clearOutput();
+            logToOutput('🧪 Testing tier limit enforcement...');
+            try {
+                const result = await testSubmissionLimitsWithRecount();
+                if (result.success) {
+                    logToOutput(`📊 Current submissions: ${result.syncResult.monthlySubmissions}/${result.syncResult.tierLimits.submissionsPerMonth}`);
+                    logToOutput(`🎮 Can submit games: ${result.canSubmit.allowed}`);
+                    logToOutput(`✅ Limit checking working: ${result.limitCheckingWorking}`);
+                } else {
+                    logToOutput('❌ Limit test failed');
+                }
+            } catch (error) {
+                logToOutput(`❌ Limit test failed: ${error.message}`);
+            }
+        }
+
+        function testUpgradeModal() {
+            clearOutput();
+            logToOutput('💎 Testing upgrade modal...');
+            try {
+                showUpgradeModal();
+                logToOutput('✅ Upgrade modal opened successfully');
+            } catch (error) {
+                logToOutput(`❌ Upgrade modal test failed: ${error.message}`);
+            }
+        }
+
+        function runUpgradeToDev() {
+            clearOutput();
+            logToOutput('🚀 Upgrading to DEV tier...');
+            try {
+                upgradeToDev();
+                logToOutput('✅ Upgraded to DEV tier ($10/month, unlimited submissions)');
+            } catch (error) {
+                logToOutput(`❌ DEV upgrade failed: ${error.message}`);
+            }
+        }
+
+        function runUpgradeToPro() {
+            clearOutput();
+            logToOutput('⭐ Upgrading to PRO tier...');
+            try {
+                upgradeToPro();
+                logToOutput('✅ Upgraded to PRO tier ($5/month, 8 submissions/month)');
+            } catch (error) {
+                logToOutput(`❌ PRO upgrade failed: ${error.message}`);
+            }
+        }
+
+        function runResetToFree() {
+            clearOutput();
+            logToOutput('🔄 Resetting to FREE tier...');
+            try {
+                resetToFree();
+                logToOutput('✅ Reset to FREE tier (2 submissions/month)');
+            } catch (error) {
+                logToOutput(`❌ Reset failed: ${error.message}`);
+            }
+        }
+    </script>
 </body>
 </html> 

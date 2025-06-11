@@ -1070,13 +1070,27 @@ class DumbassGameEnhanced {
         const userAvatarImg = document.getElementById('userAvatarImg');
         const userDisplayName = document.getElementById('userDisplayName');
         
-        if (!userProfile || !userAvatarImg || !userDisplayName) return;
+        console.log('🔄 updateAvatarButton called');
+        console.log('📋 Elements found:', {
+            userProfile: userProfile ? 'yes' : 'no',
+            userAvatarImg: userAvatarImg ? 'yes' : 'no',
+            userDisplayName: userDisplayName ? 'yes' : 'no',
+            avatarData: userProfile?.avatar ? 'yes (' + userProfile.avatar.length + ' chars)' : 'no'
+        });
+        
+        if (!userProfile || !userAvatarImg || !userDisplayName) {
+            console.log('❌ Missing required elements for avatar button update');
+            return;
+        }
         
         // Update avatar image
         if (userProfile.avatar) {
+            console.log('✅ Setting avatar src to base64 data');
             userAvatarImg.src = userProfile.avatar;
             userAvatarImg.style.display = 'block';
+            userAvatarImg.style.opacity = '1';
         } else {
+            console.log('ℹ️ No avatar data, hiding avatar image');
             userAvatarImg.src = '';
             userAvatarImg.style.display = 'none';
         }
@@ -1088,6 +1102,8 @@ class DumbassGameEnhanced {
         userDisplayName.textContent = displayName.length > 15 ? 
                                      displayName.substring(0, 15) + '...' : 
                                      displayName;
+        
+        console.log('✅ Avatar button updated with display name:', userDisplayName.textContent);
     }
     
     markUserHasAccount() {
@@ -2248,6 +2264,20 @@ class DumbassGameAdmin {
                 console.log('%ccheckTierProfile() - Check current user tier profile', 'color: #00ff00;');
                 console.log('%ctestUpgrade(tier) - Test tier upgrade simulation (PRO/DEV)', 'color: #00ff00;');
                 console.log('%cforceUpgradeButton() - Force show upgrade button for testing', 'color: #00ff00;');
+                console.log('%c=== SITE OWNER MONITORING ===', 'color: #ffff00; font-weight: bold;');
+                console.log('%cdailyReport() - Generate daily site activity report', 'color: #ffff00;');
+                console.log('%crecentSignups() - Show recent user signups', 'color: #ffff00;');
+                console.log('%crecentErrors() - Show recent site errors', 'color: #ffff00;');
+                console.log('%csiteHealth() - Check overall site health status', 'color: #ffff00;');
+                console.log('%cliveStats() - Show live site statistics', 'color: #ffff00;');
+                console.log('%c=== AUTOMATION SYSTEM ===', 'color: #ff00ff; font-weight: bold;');
+                console.log('%cenableEmailNotifications() - Turn on email alerts', 'color: #ff00ff;');
+                console.log('%cenableTwitterIntegration() - Turn on Twitter posts', 'color: #ff00ff;');
+                console.log('%cdisableEmailNotifications() - Turn off email alerts', 'color: #ff00ff;');
+                console.log('%cdisableTwitterIntegration() - Turn off Twitter posts', 'color: #ff00ff;');
+                console.log('%cgetAutomationStatus() - Check automation status', 'color: #ff00ff;');
+                console.log('%cgenerateDailyTweet() - Generate daily stats tweet', 'color: #ff00ff;');
+                console.log('%ctrackGamePlay("Game Title") - Track game play for tweets', 'color: #ff00ff;');
                 console.log('%c=== DEBUG COMMANDS ===', 'color: #00ffff; font-weight: bold;');
                 console.log('%cdebugProfile() - Test profile save/load functionality', 'color: #00ff00;');
                 console.groupEnd();
@@ -2758,7 +2788,693 @@ class DumbassGameAdmin {
                     console.warn('⚠️ tierUpgrade element not found');
                     return '❌ tierUpgrade element not found in DOM';
                 }
+            },
+
+            // 👑 SITE OWNER MONITORING COMMANDS
+            dailyReport: () => {
+                if (window.siteMonitoring) {
+                    return window.siteMonitoring.getTodaysActivity();
+                }
+                return '❌ Monitoring system not initialized';
+            },
+
+            recentSignups: () => {
+                if (window.siteMonitoring) {
+                    return window.siteMonitoring.getRecentSignups();
+                }
+                return '❌ Monitoring system not initialized';
+            },
+
+            recentErrors: () => {
+                if (window.siteMonitoring) {  
+                    return window.siteMonitoring.getRecentErrors();
+                }
+                return '❌ Monitoring system not initialized';
+            },
+
+            siteHealth: () => {
+                console.group('%c🏥 SITE HEALTH CHECK', 'color: #00ffff; font-weight: bold; font-size: 14px;');
+                console.log('Firebase Status:', window.firebaseCollection ? '✅ Connected' : '❌ Disconnected');
+                console.log('Auth Status:', window.firebaseAuth?.currentUser ? '✅ Authenticated' : '❌ Not authenticated');
+                console.log('Game Manager:', window.enhancedGameManager ? '✅ Active' : '❌ Inactive');
+                console.log('Music Player:', window.musicPlayer ? '✅ Active' : '❌ Inactive');
+                console.log('Monitoring:', window.siteMonitoring ? '✅ Active' : '❌ Inactive');
+                console.log('Users Online:', document.querySelectorAll('.auth-profile').length);
+                console.log('Games Loaded:', window.enhancedGameManager?.allGames?.length || 0);
+                console.groupEnd();
+                return 'Site health check complete';
+            },
+
+            liveStats: () => {
+                console.group('%c📈 LIVE SITE STATISTICS', 'color: #00ffff; font-weight: bold; font-size: 14px;');
+                console.log('Page Load Time:', performance.now().toFixed(2) + 'ms');
+                console.log('Memory Usage:', (performance.memory?.usedJSHeapSize / 1024 / 1024).toFixed(2) + 'MB');
+                console.log('Network Status:', navigator.onLine ? '✅ Online' : '❌ Offline');
+                console.log('User Agent:', navigator.userAgent);
+                console.log('Referrer:', document.referrer || 'Direct');
+                console.log('Current URL:', window.location.href);
+                console.groupEnd();
+                return 'Live stats displayed';
+            },
+
+            // 🤖 AUTOMATION SYSTEM COMMANDS
+            enableEmailNotifications: () => {
+                if (window.siteMonitoring) {
+                    window.siteMonitoring.enableEmailNotifications();
+                    return '📧 Email notifications ENABLED! Set up EmailJS to receive alerts.';
+                }
+                // Auto-fix if possible
+                try {
+                    console.log('🔧 Auto-fixing site monitoring for email notifications...');
+                    window.siteMonitoring = new SiteOwnerMonitoring();
+                    window.siteMonitoring.enableEmailNotifications();
+                    window.siteMonitoring.enableTwitterIntegration();
+                    return '📧 Email notifications ENABLED (after auto-fix)! Set up EmailJS to receive alerts.';
+                } catch (error) {
+                    return '❌ Monitoring system not initialized - run fixSiteMonitoring()';
+                }
+            },
+
+            enableTwitterIntegration: () => {
+                if (window.siteMonitoring) {
+                    window.siteMonitoring.enableTwitterIntegration();
+                    return '🐦 Twitter integration ENABLED! Connect your API to start posting.';
+                }
+                // Auto-fix if possible
+                try {
+                    console.log('🔧 Auto-fixing site monitoring for Twitter integration...');
+                    window.siteMonitoring = new SiteOwnerMonitoring();
+                    window.siteMonitoring.enableTwitterIntegration();
+                    window.siteMonitoring.enableEmailNotifications();
+                    return '🐦 Twitter integration ENABLED (after auto-fix)! Connect your API to start posting.';
+                } catch (error) {
+                    return '❌ Monitoring system not initialized - run fixSiteMonitoring()';
+                }
+            },
+
+            disableEmailNotifications: () => {
+                if (window.siteMonitoring) {
+                    window.siteMonitoring.disableEmailNotifications();
+                    return '📧 Email notifications DISABLED';
+                }
+                return '❌ Monitoring system not initialized - run fixSiteMonitoring()';
+            },
+
+            disableTwitterIntegration: () => {
+                if (window.siteMonitoring) {
+                    window.siteMonitoring.disableTwitterIntegration();
+                    return '🐦 Twitter integration DISABLED';
+                }
+                return '❌ Monitoring system not initialized - run fixSiteMonitoring()';
+            },
+
+            getAutomationStatus: () => {
+                if (window.siteMonitoring) {
+                    const status = window.siteMonitoring.getAutomationStatus();
+                    console.group('%c🤖 AUTOMATION STATUS', 'color: #ff00ff; font-weight: bold; font-size: 14px;');
+                    console.log('Email Notifications:', status.email ? '✅ ENABLED' : '❌ DISABLED');
+                    console.log('Twitter Integration:', status.twitter ? '✅ ENABLED' : '❌ DISABLED');
+                    console.log('Total Signups Tracked:', status.stats.totalSignups);
+                    console.log('Total Submissions Tracked:', status.stats.totalSubmissions);
+                    console.log('Total Plays Tracked:', status.stats.totalPlays);
+                    console.log('Popular Games:', status.stats.popularGames);
+                    console.log('User Locations:', status.stats.userLocations);
+                    console.log('Device Types:', status.stats.deviceTypes);
+                    console.groupEnd();
+                    return status;
+                }
+                return '❌ Monitoring system not initialized - run fixSiteMonitoring()';
+            },
+
+            // 🔧 SYSTEM REPAIR COMMANDS
+            fixSiteMonitoring: () => {
+                console.log('🔧 Attempting to fix Site Monitoring system...');
+                try {
+                    if (!window.siteMonitoring) {
+                        console.log('🔄 Initializing Site Monitoring...');
+                        window.siteMonitoring = new SiteOwnerMonitoring();
+                        
+                        // Auto-enable features
+                        window.siteMonitoring.enableTwitterIntegration();
+                        window.siteMonitoring.enableEmailNotifications();
+                        
+                        console.log('✅ Site Monitoring initialized and automation enabled!');
+                        return '✅ Site monitoring system fixed and ready!';
+                    } else {
+                        console.log('✅ Site monitoring already working');
+                        return '✅ Site monitoring system is already working';
+                    }
+                } catch (error) {
+                    console.error('❌ Failed to fix site monitoring:', error);
+                    return '❌ Failed to fix site monitoring - check console for errors';
+                }
+            },
+
+            systemCheck: () => {
+                console.log('🔍 COMPREHENSIVE SYSTEM CHECK:');
+                console.log('=====================================');
+                
+                const systems = {
+                    'Main Game': !!window.dumbassGame,
+                    'Admin System': !!window.dumbassGameAdmin,
+                    'Site Monitoring': !!window.siteMonitoring,
+                    'Twitter API': !!window.TwitterAPI,
+                    'Twitter Configured': window.TwitterAPI?.isConfigured,
+                    'Firebase Auth': !!window.authManager,
+                    'Enhanced Game Manager': !!window.enhancedGameManager,
+                    'User Profile Manager': !!window.userProfileManager
+                };
+                
+                Object.entries(systems).forEach(([name, status]) => {
+                    console.log(`${status ? '✅' : '❌'} ${name}`);
+                });
+                
+                if (window.siteMonitoring) {
+                    const automationStatus = window.siteMonitoring.getAutomationStatus();
+                    console.log('🤖 Automation Status:', automationStatus);
+                }
+                
+                console.log('=====================================');
+                return 'System check complete - see console for details';
+            },
+
+            reinitializeAll: () => {
+                console.log('🚀 REINITIALIZING ALL SYSTEMS...');
+                
+                // Call the main initialization function
+                if (typeof initializeAllSystems === 'function') {
+                    initializeAllSystems();
+                    return '🔄 Reinitialization started - check console for progress';
+                } else {
+                    return '❌ Main initialization function not found';
+                }
+            },
+
+            generateDailyTweet: () => {
+                if (window.siteMonitoring) {
+                    const tweet = window.siteMonitoring.generateDailyTweet();
+                    console.log('%c🐦 DAILY TWEET GENERATED:', 'color: #ff00ff; font-weight: bold;');
+                    console.log(tweet);
+                    return 'Daily tweet generated! Check console for content.';
+                }
+                return '❌ Monitoring system not initialized - run fixSiteMonitoring()';
+            },
+
+            trackGamePlay: (gameTitle) => {
+                if (!gameTitle) {
+                    return '❌ Please provide a game title: trackGamePlay("Game Name")';
+                }
+                if (window.siteMonitoring) {
+                    window.siteMonitoring.trackGamePlay(gameTitle);
+                    return `🎮 Tracked play for "${gameTitle}"`;
+                }
+                return '❌ Monitoring system not initialized - run fixSiteMonitoring()';
             }
+        };
+    }
+}
+
+// 👑 SITE OWNER MONITORING SYSTEM
+class SiteOwnerMonitoring {
+    constructor() {
+        this.adminEmail = 'dumbassgames@proton.me';
+        this.emailEnabled = false;
+        this.twitterEnabled = false;
+        this.stats = {
+            totalSignups: 0,
+            totalSubmissions: 0,
+            totalPlays: 0,
+            popularGames: {},
+            userLocations: {},
+            deviceTypes: {}
+        };
+        this.setupEventListeners();
+        this.setupEmailJS();
+        this.setupAdvancedTracking();
+        this.startDailyReporting();
+        console.log('👑 Site Owner Monitoring System initialized');
+    }
+
+    setupEventListeners() {
+        // Track new user signups
+        if (window.firebaseAuth) {
+            window.firebaseAuth.onAuthStateChanged((user) => {
+                if (user && this.isNewUser(user)) {
+                    this.reportNewSignup(user);
+                }
+            });
+        }
+
+        // Track errors
+        window.addEventListener('error', (error) => {
+            this.reportError(error);
+        });
+
+        // Track unhandled promise rejections
+        window.addEventListener('unhandledrejection', (event) => {
+            this.reportError({
+                message: event.reason?.message || 'Unhandled Promise Rejection',
+                filename: 'Promise',
+                lineno: 0,
+                error: event.reason
+            });
+        });
+
+        // Track game submissions
+        this.trackGameSubmissions();
+    }
+
+    isNewUser(user) {
+        // Check if user signed up recently (within last hour)  
+        const creationTime = new Date(user.metadata.creationTime);
+        const now = new Date();
+        const hoursDiff = (now - creationTime) / (1000 * 60 * 60);
+        return hoursDiff < 1;
+    }
+
+    async reportNewSignup(user) {
+        const signupData = {
+            email: user.email,
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+            referrer: document.referrer || 'Direct',
+            ip: await this.getUserIP(),
+            uid: user.uid
+        };
+
+        console.group('%c🎉 NEW USER SIGNUP DETECTED!', 'color: #00ff00; font-weight: bold; font-size: 16px;');
+        console.log('📧 Email:', signupData.email);
+        console.log('🕐 Time:', new Date().toLocaleString());
+        console.log('🔗 Referrer:', signupData.referrer);
+        console.log('🌍 IP:', signupData.ip);
+        console.groupEnd();
+
+        this.storeAdminEvent('signup', signupData);
+        this.sendNotification('🎉 NEW USER JOINED!', signupData);
+    }
+
+    reportError(error) {
+        const errorData = {
+            message: error.message,
+            filename: error.filename || 'Unknown',
+            lineno: error.lineno || 0,
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+            url: window.location.href,
+            stack: error.error?.stack || 'No stack trace'
+        };
+
+        console.group('%c🚨 ERROR DETECTED', 'color: #ff4444; font-weight: bold; font-size: 14px;');
+        console.error('Message:', errorData.message);
+        console.error('File:', errorData.filename);
+        console.error('Line:', errorData.lineno);
+        console.error('Time:', new Date().toLocaleString());
+        console.groupEnd();
+
+        this.storeAdminEvent('error', errorData);
+    }
+
+    trackGameSubmissions() {
+        // Monitor form submissions
+        document.addEventListener('submit', (e) => {
+            if (e.target.id === 'addGameForm' || e.target.classList.contains('game-submission')) {
+                const gameData = {
+                    title: e.target.gameTitle?.value || 'Unknown',
+                    url: e.target.gameUrl?.value || 'Unknown',
+                    userEmail: window.firebaseAuth?.currentUser?.email || 'Anonymous',
+                    timestamp: new Date().toISOString()
+                };
+                
+                setTimeout(() => {
+                    // Check if submission was successful (no error displayed)
+                    const errorElement = document.querySelector('.auth-error');
+                    if (!errorElement || errorElement.style.display === 'none') {
+                        this.reportGameSubmission(gameData);
+                    }
+                }, 1000);
+            }
+        });
+    }
+
+    reportGameSubmission(gameData) {
+        console.group('%c🎮 NEW GAME SUBMITTED!', 'color: #00ffff; font-weight: bold; font-size: 16px;');
+        console.log('🎯 Title:', gameData.title);
+        console.log('🔗 URL:', gameData.url);
+        console.log('👤 User:', gameData.userEmail);
+        console.log('🕐 Time:', new Date().toLocaleString());
+        console.groupEnd();
+
+        this.storeAdminEvent('gameSubmission', gameData);
+        this.sendNotification('🎮 NEW GAME ADDED!', gameData);
+    }
+
+    async storeAdminEvent(type, data) {
+        try {
+            if (window.firebaseCollection) {
+                const adminEvent = {
+                    type,
+                    data,
+                    timestamp: new Date().toISOString(),
+                    processed: false
+                };
+
+                // Store in admin collection for review
+                const adminRef = window.firebaseFirestore?.collection('admin_events');
+                if (adminRef) {
+                    await window.firebaseAddDoc(adminRef, adminEvent);
+                }
+            }
+        } catch (error) {
+            console.warn('Could not store admin event:', error);
+        }
+    }
+
+    async getUserIP() {
+        try {
+            const response = await fetch('https://api.ipify.org?format=json');
+            const data = await response.json();
+            return data.ip;
+        } catch {
+            return 'Unknown';
+        }
+    }
+
+    sendNotification(title, data) {
+        // Console notification
+        console.log(`📬 ADMIN NOTIFICATION: ${title}`, data);
+        
+        // Flash the browser tab title
+        this.flashTabTitle(title);
+        
+        // Play notification sound if available
+        if (window.dumbassGame?.soundSystem?.sfxEnabled) {
+            window.dumbassGame.soundSystem.playSuccess();
+        }
+    }
+
+    flashTabTitle(message) {
+        const originalTitle = document.title;
+        let flashCount = 0;
+        const flashInterval = setInterval(() => {
+            document.title = flashCount % 2 === 0 ? `🔔 ${message}` : originalTitle;
+            flashCount++;
+            if (flashCount >= 6) {
+                clearInterval(flashInterval);
+                document.title = originalTitle;
+            }
+        }, 1000);
+    }
+
+    // Generate daily activity report
+    async generateDailyReport() {
+        try {
+            const stats = await this.getDailyStats();
+            
+            console.group('%c👑 DAILY SITE OWNER REPORT', 'color: #ffff00; font-weight: bold; font-size: 16px;');
+            console.log('📅 Date:', new Date().toLocaleDateString());
+            console.log('🔥 Site Status:', navigator.onLine ? '✅ ONLINE' : '❌ OFFLINE');
+            console.log('👥 New Signups Today:', stats.newSignups);
+            console.log('🎮 Games Submitted Today:', stats.gamesSubmitted);
+            console.log('📊 Total Games:', stats.totalGames);
+            console.log('👤 Total Users Seen:', stats.totalUsers);
+            console.log('🚨 Errors Today:', stats.errors);
+            console.log('🔍 Top Searches:', stats.topSearches.map(([term, count]) => `${term} (${count})`).join(', ') || 'None');
+            console.log('💾 Database Status:', window.firebaseCollection ? '✅ Connected' : '❌ Disconnected');
+            console.log('🎵 Music Player:', window.musicPlayer ? '✅ Active' : '❌ Inactive');
+            console.groupEnd();
+
+            return stats;
+        } catch (error) {
+            console.error('Error generating daily report:', error);
+            return null;
+        }
+    }
+
+    async getDailyStats() {
+        const stats = {
+            newSignups: 0,
+            gamesSubmitted: 0,
+            totalUsers: 0,
+            totalGames: 0,
+            errors: 0,
+            topSearches: []
+        };
+
+        try {
+            // Get total games count
+            if (window.enhancedGameManager?.allGames) {
+                stats.totalGames = window.enhancedGameManager.allGames.length;
+            }
+
+            // Get search analytics
+            if (window.enhancedGameManager) {
+                const searchAnalytics = window.enhancedGameManager.getSearchAnalytics();
+                stats.topSearches = searchAnalytics.topSearchTerms.slice(0, 3);
+            }
+
+            // Get user count estimate
+            if (window.firebaseAuth?.currentUser) {
+                stats.totalUsers = 1; // At least current user
+            }
+        } catch (error) {
+            console.warn('Error collecting some stats:', error);
+        }
+
+        return stats;
+    }
+
+    startDailyReporting() {
+        // Generate report every 24 hours at midnight
+        const now = new Date();
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(0, 0, 0, 0);
+        
+        const msUntilMidnight = tomorrow.getTime() - now.getTime();
+        
+        setTimeout(() => {
+            this.generateDailyReport();
+            // Then every 24 hours after that
+            setInterval(() => {
+                this.generateDailyReport();
+            }, 24 * 60 * 60 * 1000);
+        }, msUntilMidnight);
+
+        // Generate initial report after 2 minutes
+        setTimeout(() => {
+            this.generateDailyReport();
+        }, 120000);
+    }
+
+    // Manual admin commands
+    getTodaysActivity() {
+        return this.generateDailyReport();
+    }
+
+    getRecentSignups() {
+        console.log('📧 Recent signups are tracked in browser console and Firebase admin_events collection');
+        return 'Check console logs above for recent signup notifications';
+    }
+
+    getRecentErrors() {
+        console.log('🚨 Recent errors are tracked in browser console and Firebase admin_events collection');
+        return 'Check console logs above for recent error notifications';
+    }
+
+    // EmailJS Integration
+    setupEmailJS() {
+        // Load EmailJS script dynamically
+        if (!window.emailjs) {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js';
+            script.onload = () => {
+                console.log('📧 EmailJS loaded - ready for email notifications');
+                // Initialize with your EmailJS user ID (you'll add this later)
+                // window.emailjs.init('YOUR_EMAILJS_USER_ID');
+            };
+            document.head.appendChild(script);
+        }
+    }
+
+    // Enhanced tracking for Twitter content
+    setupAdvancedTracking() {
+        // Track user location
+        this.getUserLocation();
+        
+        // Track device type
+        this.trackDeviceType();
+        
+        // Track session start
+        this.trackSessionStart();
+        
+        console.log('📊 Advanced tracking initialized');
+    }
+
+    async getUserLocation() {
+        try {
+            const response = await fetch('https://ipapi.co/json/');
+            const data = await response.json();
+            this.stats.userLocations[data.country_name] = (this.stats.userLocations[data.country_name] || 0) + 1;
+            console.log(`🌍 User from ${data.country_name}, ${data.city}`);
+        } catch (error) {
+            console.log('🌍 Location tracking unavailable');
+        }
+    }
+
+    trackDeviceType() {
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const deviceType = isMobile ? 'mobile' : 'desktop';
+        this.stats.deviceTypes[deviceType] = (this.stats.deviceTypes[deviceType] || 0) + 1;
+        console.log(`📱 Device type: ${deviceType}`);
+    }
+
+    trackSessionStart() {
+        const sessionId = Date.now() + Math.random().toString(36).substr(2, 9);
+        sessionStorage.setItem('dgSessionId', sessionId);
+        console.log(`🎮 Session started: ${sessionId}`);
+    }
+
+    // Email notification system
+    async sendEmail(template, data) {
+        if (!this.emailEnabled || !window.emailjs) {
+            console.log('📧 Email notifications not configured yet');
+            return;
+        }
+
+        try {
+            await window.emailjs.send('YOUR_SERVICE_ID', template, {
+                to_email: this.adminEmail,
+                ...data
+            });
+            console.log('📧 Email sent successfully');
+        } catch (error) {
+            console.error('📧 Email send failed:', error);
+        }
+    }
+
+    // Twitter integration framework
+    async sendTweet(message, data = {}) {
+        if (!this.twitterEnabled) {
+            console.log(`🐦 Would tweet: "${message}"`);
+            return;
+        }
+
+        // This will connect to your Twitter API when ready
+        console.log(`🐦 Twitter: ${message}`, data);
+    }
+
+    // Enhanced user signup tracking
+    async reportEnhancedSignup(user) {
+        this.stats.totalSignups++;
+        
+        const signupData = {
+            email: user.email,
+            timestamp: new Date().toLocaleString(),
+            location: Object.keys(this.stats.userLocations).pop() || 'Unknown',
+            device: Object.keys(this.stats.deviceTypes).pop() || 'Unknown',
+            totalUsers: this.stats.totalSignups
+        };
+
+        // Send email notification
+        await this.sendEmail('new_signup', {
+            user_email: signupData.email,
+            signup_time: signupData.timestamp,
+            user_location: signupData.location,
+            device_type: signupData.device,
+            total_users: signupData.totalUsers
+        });
+
+        // Send tweet for milestones
+        if (this.stats.totalSignups % 10 === 0) {
+            await this.sendTweet(`🎉 MILESTONE: Just hit ${this.stats.totalSignups} users! Thanks for joining the retro gaming revolution! 🕹️ #DumbassGames #RetroGaming #IndieGames`);
+        }
+
+        console.log('📧 Enhanced signup tracking complete');
+    }
+
+    // Enhanced game submission tracking
+    async reportEnhancedGameSubmission(gameData) {
+        this.stats.totalSubmissions++;
+        
+        const submissionData = {
+            title: gameData.title,
+            url: gameData.url,
+            category: gameData.category || 'Unknown',
+            submittedBy: gameData.submittedBy,
+            timestamp: new Date().toLocaleString()
+        };
+
+        // Send email notification
+        await this.sendEmail('new_game', {
+            game_title: submissionData.title,
+            game_url: submissionData.url,
+            game_category: submissionData.category,
+            submitted_by: submissionData.submittedBy,
+            submission_time: submissionData.timestamp
+        });
+
+        // Send tweet for new games
+        await this.sendTweet(`🎮 NEW GAME ALERT! "${submissionData.title}" just joined our retro arcade! Check it out at dumbassgames.xyz 🕹️ #NewGame #${submissionData.category} #RetroGaming`);
+
+        console.log('🎮 Enhanced game submission tracking complete');
+    }
+
+    // Track game plays for Twitter content
+    trackGamePlay(gameTitle) {
+        this.stats.totalPlays++;
+        this.stats.popularGames[gameTitle] = (this.stats.popularGames[gameTitle] || 0) + 1;
+        
+        // Tweet trending games
+        if (this.stats.popularGames[gameTitle] === 50) {
+            this.sendTweet(`🔥 TRENDING: "${gameTitle}" is blowing up with 50+ plays! What's the hype about? Check it out! 🎮 #TrendingGame #RetroGaming`);
+        }
+    }
+
+    // Generate Twitter-worthy daily stats
+    async generateDailyTweet() {
+        const topGame = Object.entries(this.stats.popularGames)
+            .sort(([,a], [,b]) => b - a)[0];
+        
+        const tweet = `📊 24 HOURS AT DUMBASSGAMES:
+🎮 ${this.stats.totalPlays} games played
+👥 ${this.stats.totalSignups} new gamers joined
+🏆 Top game: ${topGame ? topGame[0] : 'Various classics'}
+🕹️ Pure retro fun at dumbassgames.xyz
+#DailyStats #RetroGaming #IndieGames`;
+
+        await this.sendTweet(tweet);
+        
+        return tweet;
+    }
+
+    // Enable automation systems
+    enableEmailNotifications() {
+        this.emailEnabled = true;
+        console.log('📧 Email notifications ENABLED');
+    }
+
+    enableTwitterIntegration() {
+        this.twitterEnabled = true;
+        console.log('🐦 Twitter integration ENABLED');
+    }
+
+    // Disable automation systems
+    disableEmailNotifications() {
+        this.emailEnabled = false;
+        console.log('📧 Email notifications DISABLED');
+    }
+
+    disableTwitterIntegration() {
+        this.twitterEnabled = false;
+        console.log('🐦 Twitter integration DISABLED');
+    }
+
+    // Get automation status
+    getAutomationStatus() {
+        return {
+            email: this.emailEnabled,
+            twitter: this.twitterEnabled,
+            stats: this.stats
         };
     }
 }
@@ -7669,6 +8385,21 @@ class UserProfileManager {
             // Load profile data when modal opens
             this.loadProfileForModal();
             
+            // Show/hide analytics tab based on user tier
+            setTimeout(() => {
+                if (window.showAnalyticsTab) {
+                    window.showAnalyticsTab();
+                } else {
+                    // Fallback if function not loaded yet
+                    const analyticsTab = document.querySelector('[data-tab="analytics"]');
+                    const userProfile = this.userProfile;
+                    if (analyticsTab && userProfile?.tier === 'DEV') {
+                        analyticsTab.style.display = 'flex';
+                        analyticsTab.classList.add('show');
+                    }
+                }
+            }, 200);
+            
             // Re-setup form handlers since modal content is now available
             if (this.setupHandlersOnShow) {
                 this.setupHandlersOnShow();
@@ -7721,14 +8452,27 @@ class UserProfileManager {
         });
 
         // Show selected tab
-        document.getElementById(tabName + 'Tab').classList.add('active');
-        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+        const selectedTab = document.getElementById(tabName + 'Tab');
+        const selectedBtn = document.querySelector(`[data-tab="${tabName}"]`);
+        
+        if (selectedTab) {
+            selectedTab.classList.add('active');
+        }
+        
+        if (selectedBtn) {
+            selectedBtn.classList.add('active');
+        }
 
         // Load tab-specific content
         if (tabName === 'favorites') {
             this.renderFavorites();
         } else if (tabName === 'submissions') {
             this.renderSubmissions();
+        } else if (tabName === 'analytics') {
+            // Load analytics data when tab is opened
+            if (window.loadAnalyticsData) {
+                window.loadAnalyticsData();
+            }
         }
     }
 }
@@ -9152,11 +9896,93 @@ window.effectsEnabled = true;
 console.log('🔥 Initializing Firebase Auth Manager...');
 window.authManager = new FirebaseAuthManager();
 
-// Initialize admin console
-console.log('🔧 Initializing Admin Console...');
-window.dumbassGameAdmin = new DumbassGameAdmin(window.dumbassGame);
+// 🚀 ROBUST SYSTEM INITIALIZATION WITH ERROR HANDLING
+function initializeAllSystems() {
+    console.log('🚀 Starting DumbassGames System Initialization...');
+    
+    // Initialize Site Owner Monitoring System with error handling
+    try {
+        console.log('👑 Initializing Site Owner Monitoring...');
+        window.siteMonitoring = new SiteOwnerMonitoring();
+        
+        // Auto-enable automation features
+        window.siteMonitoring.enableTwitterIntegration();
+        window.siteMonitoring.enableEmailNotifications();
+        
+        console.log('✅ Site Owner Monitoring initialized and automation enabled!');
+        
+        // Verify it's accessible
+        if (window.siteMonitoring) {
+            console.log('✅ Site monitoring globally accessible');
+        }
+    } catch (error) {
+        console.error('❌ Site Monitoring initialization failed:', error);
+        
+        // Retry after a delay
+        setTimeout(() => {
+            try {
+                console.log('🔄 Retrying Site Monitoring initialization...');
+                window.siteMonitoring = new SiteOwnerMonitoring();
+                window.siteMonitoring.enableTwitterIntegration();
+                window.siteMonitoring.enableEmailNotifications();
+                console.log('✅ Site Monitoring retry successful!');
+            } catch (retryError) {
+                console.error('❌ Site Monitoring retry failed:', retryError);
+            }
+        }, 1000);
+    }
+    
+    // Initialize Admin Console with robust error handling
+    const initAdminConsole = () => {
+        try {
+            if (!window.dumbassGameAdmin && window.dumbassGame) {
+                console.log('🔧 Initializing Admin Console...');
+                window.dumbassGameAdmin = new DumbassGameAdmin(window.dumbassGame);
+                console.log('✅ Admin Console ready!');
+                
+                // Verify all automation features are connected
+                if (window.siteMonitoring) {
+                    console.log('🔗 Connecting admin commands to automation...');
+                    // Test automation status
+                    const status = window.siteMonitoring.getAutomationStatus();
+                    console.log('📊 Automation Status:', status);
+                }
+            } else if (!window.dumbassGame) {
+                console.log('⏳ Waiting for main game system...');
+                // Retry in 500ms
+                setTimeout(initAdminConsole, 500);
+            }
+        } catch (error) {
+            console.error('❌ Admin Console initialization failed:', error);
+        }
+    };
+    
+    // Start admin console initialization
+    setTimeout(initAdminConsole, 1000);
+    
+    // Final verification check
+    setTimeout(() => {
+        console.log('🔍 FINAL SYSTEM CHECK:');
+        console.log('Main Game:', !!window.dumbassGame);
+        console.log('Admin System:', !!window.dumbassGameAdmin);
+        console.log('Site Monitoring:', !!window.siteMonitoring);
+        console.log('Twitter API:', !!window.TwitterAPI);
+        console.log('Twitter Configured:', window.TwitterAPI?.isConfigured);
+        
+        if (window.siteMonitoring) {
+            const automationStatus = window.siteMonitoring.getAutomationStatus();
+            console.log('🤖 Automation Status:', automationStatus);
+            console.log('✅ ALL SYSTEMS OPERATIONAL!');
+        } else {
+            console.error('❌ Site monitoring system failed to initialize properly');
+        }
+    }, 3000);
+}
 
-console.log('✅ All systems initialized successfully!');
+// Start initialization
+initializeAllSystems();
+
+console.log('✅ System initialization started!');
 
 // Update volume slider appearance after everything is loaded
 setTimeout(() => {
@@ -11039,6 +11865,433 @@ window.resetSubmissions = resetSubmissions;
 window.fixAuthButton = fixAuthButton;
 window.debugProfile = debugProfile;
 window.quickFix = quickFix;
+window.fixAvatarDisplay = fixAvatarDisplay;
+
+// Analytics Dashboard Functions (DEV Tier Only)
+function showAnalyticsTab() {
+    console.log('🔄 Checking user tier for analytics access...');
+    
+    const userProfile = window.userProfileManager?.userProfile;
+    const tierInfo = window.tierManager?.getTierInfo();
+    const analyticsTab = document.querySelector('[data-tab="analytics"]');
+    
+    if (!userProfile || !tierInfo) {
+        console.log('❌ No user profile or tier info found');
+        return;
+    }
+    
+    // Show analytics tab only for DEV tier
+    if (tierInfo.name === 'DEV') {
+        if (analyticsTab) {
+            analyticsTab.style.display = 'block';
+            analyticsTab.classList.add('show');
+            console.log('✅ Analytics tab enabled for DEV user');
+        }
+    } else {
+        if (analyticsTab) {
+            analyticsTab.style.display = 'none';
+            analyticsTab.classList.remove('show');
+        }
+        console.log(`ℹ️ Analytics tab hidden for ${tierInfo.name} tier user`);
+    }
+}
+
+async function loadAnalyticsData() {
+    console.log('📊 Loading analytics data...');
+    
+    const userProfile = window.userProfileManager?.userProfile;
+    if (!userProfile || !window.firebaseAuth?.currentUser) {
+        console.log('❌ No user profile found for analytics');
+        return;
+    }
+    
+    try {
+        // Personal Stats
+        await loadPersonalStats();
+        
+        // Games Performance 
+        await loadGamesPerformance();
+        
+        // Platform Analytics
+        await loadPlatformAnalytics();
+        
+        console.log('✅ Analytics data loaded successfully');
+    } catch (error) {
+        console.error('❌ Error loading analytics:', error);
+        showAnalyticsError();
+    }
+}
+
+async function loadPersonalStats() {
+    console.log('📊 Loading personal stats...');
+    
+    try {
+        const userProfile = window.userProfileManager?.userProfile;
+        const userId = window.firebaseAuth?.currentUser?.uid;
+        
+        console.log('User profile exists:', !!userProfile);
+        console.log('Firebase user exists:', !!userId);
+        console.log('Firebase DB available:', !!window.firebaseDb);
+        console.log('Firebase collection available:', !!window.firebaseCollection);
+        
+        if (!userId) {
+            console.log('❌ No Firebase user found');
+            document.getElementById('totalGamesPlayed').textContent = 'Login Required';
+            document.getElementById('totalGamesSubmitted').textContent = 'Login Required';
+            document.getElementById('totalFavoritesAdded').textContent = 'Login Required';
+            return;
+        }
+
+        if (!window.firebaseDb || !window.firebaseCollection) {
+            console.log('❌ Firebase database not available');
+            document.getElementById('totalGamesPlayed').textContent = 'Database Error';
+            document.getElementById('totalGamesSubmitted').textContent = 'Database Error';
+            document.getElementById('totalFavoritesAdded').textContent = 'Database Error';
+            return;
+        }
+
+        // Total games played by user - fix the logic
+        let totalPlayed = 0;
+        if (userProfile?.gamesPlayed) {
+            if (typeof userProfile.gamesPlayed === 'object') {
+                // If it's an object of game IDs -> play counts
+                totalPlayed = Object.keys(userProfile.gamesPlayed).length;
+            } else if (typeof userProfile.gamesPlayed === 'number') {
+                // If it's just a simple counter
+                totalPlayed = userProfile.gamesPlayed;
+            }
+        }
+        document.getElementById('totalGamesPlayed').textContent = totalPlayed;
+        console.log('✅ Games played loaded:', totalPlayed);
+
+        // Games submitted by user - use correct Firebase API
+        try {
+            const userGamesQuery = window.firebaseQuery(
+                window.firebaseCollection, 
+                window.firebaseWhere('submittedBy', '==', userId)
+            );
+            const userGamesSnapshot = await window.firebaseGetDocs(userGamesQuery);
+            const totalSubmitted = userGamesSnapshot.size;
+            document.getElementById('totalGamesSubmitted').textContent = totalSubmitted;
+            console.log('✅ Submitted games loaded:', totalSubmitted);
+        } catch (error) {
+            console.error('❌ Error fetching submitted games:', error);
+            document.getElementById('totalGamesSubmitted').textContent = '0';
+        }
+        
+        // Favorites added
+        let totalFavorites = 0;
+        if (userProfile?.favorites && Array.isArray(userProfile.favorites)) {
+            totalFavorites = userProfile.favorites.length;
+        }
+        document.getElementById('totalFavoritesAdded').textContent = totalFavorites;
+        console.log('✅ Favorites loaded:', totalFavorites);
+
+    } catch (error) {
+        console.error('❌ Error loading personal stats:', error);
+        document.getElementById('totalGamesPlayed').textContent = 'Error';
+        document.getElementById('totalGamesSubmitted').textContent = 'Error';
+        document.getElementById('totalFavoritesAdded').textContent = 'Error';
+    }
+}
+
+async function loadGamesPerformance() {
+    console.log('🎮 Loading games performance...');
+    
+    const userId = window.firebaseAuth?.currentUser?.uid;
+    const performanceGrid = document.getElementById('gamesPerformanceGrid');
+    
+    if (!performanceGrid) {
+        console.log('❌ Performance grid element not found');
+        return;
+    }
+    
+    if (!userId) {
+        console.log('❌ No user ID for games performance');
+        performanceGrid.innerHTML = '<div class="no-data-message">Login required to view game performance</div>';
+        return;
+    }
+    
+    try {
+        // Get games submitted by user
+        const userGamesQuery = window.firebaseQuery(
+            window.firebaseCollection, 
+            window.firebaseWhere('submittedBy', '==', userId)
+        );
+        console.log('🔍 Querying games for user:', userId);
+        const userGamesSnapshot = await window.firebaseGetDocs(userGamesQuery);
+        
+        console.log('📊 Found', userGamesSnapshot.size, 'games for user');
+        
+        if (userGamesSnapshot.empty) {
+            performanceGrid.innerHTML = '<div class="no-data-message">No games submitted yet. Submit your first game to see analytics!</div>';
+            return;
+        }
+        
+        let gamesData = [];
+        userGamesSnapshot.forEach(doc => {
+            const game = doc.data();
+            gamesData.push({
+                id: doc.id,
+                title: game.title,
+                playCount: game.playCount || 0,
+                createdAt: game.createdAt || new Date()
+            });
+        });
+        
+        // Sort by play count (descending)
+        gamesData.sort((a, b) => b.playCount - a.playCount);
+        
+        // Handle large datasets with pagination
+        const GAMES_PER_PAGE = 10;
+        const totalGames = gamesData.length;
+        let currentPage = 1;
+        const maxPages = Math.ceil(totalGames / GAMES_PER_PAGE);
+        
+        function renderGamesPage(page = 1) {
+            const startIndex = (page - 1) * GAMES_PER_PAGE;
+            const endIndex = Math.min(startIndex + GAMES_PER_PAGE, totalGames);
+            const pageGames = gamesData.slice(startIndex, endIndex);
+            
+            let html = '';
+            
+            // Add summary header for large collections
+            if (totalGames > GAMES_PER_PAGE) {
+                html += `
+                    <div class="games-performance-header">
+                        <div class="performance-summary">
+                            📊 Showing ${startIndex + 1}-${endIndex} of ${totalGames} games
+                        </div>
+                        <div class="performance-stats">
+                            Total Plays: ${gamesData.reduce((sum, game) => sum + game.playCount, 0)}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Render current page games
+            pageGames.forEach((game, index) => {
+                const rank = startIndex + index + 1;
+                const isTopPerformer = game.playCount > 0 && rank <= 3;
+                
+                html += `
+                    <div class="performance-game-item ${isTopPerformer ? 'top-performer' : ''}">
+                        <div class="game-rank">#${rank}</div>
+                        <div class="game-details">
+                            <span class="game-name" title="${game.title}">${game.title}</span>
+                            <span class="game-plays">${game.playCount} plays</span>
+                        </div>
+                        ${isTopPerformer ? '<div class="top-badge">🔥</div>' : ''}
+                    </div>
+                `;
+            });
+            
+            // Add pagination controls for large collections
+            if (maxPages > 1) {
+                html += `
+                    <div class="games-pagination">
+                        <button class="pagination-btn" onclick="changeGamesPage(${page - 1})" 
+                                ${page <= 1 ? 'disabled' : ''}>
+                            ‹ Previous
+                        </button>
+                        <span class="pagination-info">Page ${page} of ${maxPages}</span>
+                        <button class="pagination-btn" onclick="changeGamesPage(${page + 1})" 
+                                ${page >= maxPages ? 'disabled' : ''}>
+                            Next ›
+                        </button>
+                    </div>
+                `;
+            }
+            
+            performanceGrid.innerHTML = html;
+        }
+        
+        // Store data globally for pagination
+        window.analyticsGameData = { gamesData, renderGamesPage, currentPage, maxPages };
+        
+        // Render first page
+        renderGamesPage(1);
+        
+    } catch (error) {
+        console.error('Error loading games performance:', error);
+        performanceGrid.innerHTML = '<div class="no-data-message">Error loading performance data</div>';
+    }
+}
+
+// Pagination handler for games performance
+function changeGamesPage(newPage) {
+    const data = window.analyticsGameData;
+    if (!data || newPage < 1 || newPage > data.maxPages) return;
+    
+    data.currentPage = newPage;
+    data.renderGamesPage(newPage);
+}
+
+async function loadPlatformAnalytics() {
+    try {
+        // Total platform games
+        const allGamesSnapshot = await window.firebaseGetDocs(window.firebaseCollection);
+        const totalPlatformGames = allGamesSnapshot.size;
+        document.getElementById('platformTotalGames').textContent = totalPlatformGames;
+        
+        // User contribution percentage
+        const userId = window.firebaseAuth?.currentUser?.uid;
+        const userGamesQuery = window.firebaseQuery(
+            window.firebaseCollection, 
+            window.firebaseWhere('submittedBy', '==', userId)
+        );
+        const userGamesSnapshot = await window.firebaseGetDocs(userGamesQuery);
+        const userContribution = totalPlatformGames > 0 ? 
+            ((userGamesSnapshot.size / totalPlatformGames) * 100).toFixed(1) + '%' : '0%';
+        document.getElementById('yourContributionPercent').textContent = userContribution;
+        
+        // Most played game overall
+        let mostPlayedGame = 'None';
+        let maxPlays = 0;
+        
+        allGamesSnapshot.forEach(doc => {
+            const game = doc.data();
+            const playCount = game.playCount || 0;
+            if (playCount > maxPlays) {
+                maxPlays = playCount;
+                mostPlayedGame = game.title;
+            }
+        });
+        
+        document.getElementById('mostPlayedGame').textContent = 
+            maxPlays > 0 ? `${mostPlayedGame} (${maxPlays})` : 'None';
+            
+    } catch (error) {
+        console.error('Error loading platform analytics:', error);
+        document.getElementById('platformTotalGames').textContent = '-';
+        document.getElementById('yourContributionPercent').textContent = '-';
+        document.getElementById('mostPlayedGame').textContent = '-';
+    }
+}
+
+function showAnalyticsError() {
+    const analyticsCards = document.querySelectorAll('.analytics-card .analytics-content, .analytics-stats');
+    analyticsCards.forEach(card => {
+        card.innerHTML = '<div class="no-data-message">Error loading analytics data</div>';
+    });
+}
+
+function refreshAnalytics() {
+    console.log('🔄 Refreshing analytics data...');
+    loadAnalyticsData();
+}
+
+// Add global access
+window.refreshAnalytics = refreshAnalytics;
+window.showAnalyticsTab = showAnalyticsTab;
+window.loadAnalyticsData = loadAnalyticsData;
+window.loadPersonalStats = loadPersonalStats;
+window.loadGamesPerformance = loadGamesPerformance;
+window.loadPlatformAnalytics = loadPlatformAnalytics;
+
+// Debug function to test analytics manually
+window.debugAnalytics = function() {
+    console.group('%c🔧 ANALYTICS DEBUG', 'color: #00ffff; font-weight: bold; font-size: 14px;');
+    console.log('User signed in:', !!window.firebaseAuth?.currentUser);
+    console.log('User profile manager:', !!window.userProfileManager);
+    console.log('User profile:', window.userProfileManager?.userProfile);
+    console.log('Firestore available:', !!window.firebaseFirestore);
+    console.log('Analytics elements found:', {
+        totalGamesPlayed: !!document.getElementById('totalGamesPlayed'),
+        totalGamesSubmitted: !!document.getElementById('totalGamesSubmitted'),
+        totalFavoritesAdded: !!document.getElementById('totalFavoritesAdded'),
+        gamesPerformanceGrid: !!document.getElementById('gamesPerformanceGrid'),
+        platformTotalGames: !!document.getElementById('platformTotalGames')
+    });
+    console.groupEnd();
+    
+    // Try to load analytics
+    if (window.loadAnalyticsData) {
+        console.log('🔄 Attempting to load analytics data...');
+        window.loadAnalyticsData();
+    } else {
+        console.log('❌ loadAnalyticsData function not available');
+    }
+};
+
+// Enhanced analytics tab management
+function ensureAnalyticsTabForDevUsers() {
+    const checkAndShow = () => {
+        const analyticsTab = document.querySelector('[data-tab="analytics"]');
+        const userProfile = window.userProfileManager?.userProfile;
+        const tierInfo = window.tierManager?.getTierInfo();
+        
+        console.log('🔍 Checking analytics tab visibility...');
+        console.log('Analytics tab exists:', !!analyticsTab);
+        console.log('User profile:', !!userProfile);
+        console.log('User tier from profile:', userProfile?.tier, userProfile?.tierName);
+        console.log('Tier from manager:', tierInfo?.name);
+        
+        // Check multiple ways to determine if user is DEV
+        const isDevUser = userProfile?.tier === 'DEV' || 
+                         userProfile?.tierName === 'DEV' || 
+                         tierInfo?.name === 'DEV' ||
+                         document.querySelector('.tier-card')?.textContent?.includes('Game Dev');
+        
+        if (analyticsTab && isDevUser) {
+            analyticsTab.style.display = 'flex';
+            analyticsTab.classList.add('show');
+            console.log('✅ Analytics tab enabled for DEV user');
+            return true;
+        } else if (analyticsTab && !isDevUser) {
+            analyticsTab.style.display = 'none';
+            analyticsTab.classList.remove('show');
+            console.log(`ℹ️ Analytics tab hidden for non-DEV user`);
+            return false;
+        } else {
+            console.log('❌ Analytics tab element not found');
+            return false;
+        }
+    };
+    
+    // Try immediately
+    if (checkAndShow()) return;
+    
+    // Try again after a short delay
+    setTimeout(checkAndShow, 500);
+    
+    // Try again after a longer delay if needed
+    setTimeout(checkAndShow, 1500);
+}
+
+// Auto-run when profile modal opens
+document.addEventListener('DOMContentLoaded', () => {
+    // Override the profile modal show function
+    const originalShowProfile = window.userProfileManager?.showProfile;
+    if (originalShowProfile) {
+        window.userProfileManager.showProfile = function() {
+            originalShowProfile.call(this);
+            setTimeout(() => ensureAnalyticsTabForDevUsers(), 100);
+        };
+    }
+    
+    // Also run whenever the modal is opened via mutation observer
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'attributes' && 
+                mutation.attributeName === 'style' && 
+                mutation.target.id === 'userProfileModal') {
+                const modal = mutation.target;
+                if (modal.style.display === 'block') {
+                    setTimeout(() => ensureAnalyticsTabForDevUsers(), 200);
+                }
+            }
+        });
+    });
+    
+    const modal = document.getElementById('userProfileModal');
+    if (modal) {
+        observer.observe(modal, { attributes: true });
+    }
+});
+
+// Global function for manual testing
+window.ensureAnalyticsTabForDevUsers = ensureAnalyticsTabForDevUsers;
 
 // Avatar management functions
 function removeAvatar() {
@@ -11053,6 +12306,74 @@ function removeAvatar() {
     window.dumbassGame?.updateAvatarButton();
     
     console.log('✅ Avatar removed');
+}
+
+// Force avatar display fix
+function fixAvatarDisplay() {
+    console.log('🔧 Fixing avatar display...');
+    
+    const userProfile = window.userProfileManager?.userProfile;
+    const userAvatarImg = document.getElementById('userAvatarImg');
+    const userAvatarBtn = document.getElementById('userAvatarBtn');
+    const authBtn = document.getElementById('authBtn');
+    
+    // Profile modal avatar elements
+    const avatarPreview = document.getElementById('currentAvatarPreview');
+    const avatarPlaceholder = document.getElementById('avatarPlaceholder');
+    const avatarStatus = document.getElementById('avatarStatus');
+    
+    console.log('👤 User profile avatar:', userProfile?.avatar ? 'Present (' + userProfile.avatar.length + ' chars)' : 'None');
+    console.log('🖼️ Header avatar img element:', userAvatarImg ? 'Found' : 'Missing');
+    console.log('🖼️ Profile modal avatar preview:', avatarPreview ? 'Found' : 'Missing');
+    console.log('🔘 Avatar button:', userAvatarBtn ? 'Found' : 'Missing');
+    console.log('🔐 Auth button:', authBtn ? 'Found' : 'Missing');
+    
+    if (!userProfile || !userProfile.avatar) {
+        console.log('❌ No avatar data found in profile');
+        return;
+    }
+
+    // Fix header avatar
+    if (userAvatarImg) {
+        userAvatarImg.src = userProfile.avatar;
+        userAvatarImg.style.display = 'block';
+        userAvatarImg.style.opacity = '1';
+        console.log('✅ Header avatar image updated');
+    }
+    
+    // Fix profile modal avatar
+    if (avatarPreview) {
+        avatarPreview.src = userProfile.avatar;
+        avatarPreview.classList.add('loaded');
+        avatarPreview.style.display = 'block';
+        console.log('✅ Profile modal avatar preview updated');
+    }
+    
+    // Update status text
+    if (avatarStatus) {
+        avatarStatus.textContent = 'Avatar set';
+        console.log('✅ Avatar status text updated');
+    }
+    
+    // Hide placeholder if it exists
+    if (avatarPlaceholder) {
+        avatarPlaceholder.style.display = 'none';
+        console.log('✅ Avatar placeholder hidden');
+    }
+    
+    // Show the avatar button and hide auth button if user is logged in
+    if (window.firebaseAuth?.currentUser && userAvatarBtn && authBtn) {
+        userAvatarBtn.style.display = 'flex';
+        authBtn.style.display = 'none';
+        console.log('✅ Avatar button shown, auth button hidden');
+    }
+    
+    // Force call the existing update functions
+    window.dumbassGame?.updateAvatarButton();
+    window.dumbassGame?.updateAvatarPreview(userProfile.avatar);
+    
+    console.log('✅ Complete avatar display fixed - both header and profile modal updated');
+    return userProfile.avatar;
 }
 
 // Debug profile persistence
@@ -11175,3 +12496,25 @@ window.fixProgressBar = function() {
     console.log('🔧 Manually fixing progress bar...');
     setupGlobalProgressBarEvents();
 };
+
+// Admin dashboard opener function
+function openAdminDashboard() {
+    // Check if admin system is ready
+    if (!window.dumbassGameAdmin) {
+        console.log('⏳ Admin system not ready yet, initializing...');
+        
+        // Try to initialize now
+        if (window.dumbassGame) {
+            window.dumbassGameAdmin = new DumbassGameAdmin(window.dumbassGame);
+            console.log('✅ Admin system initialized!');
+        } else {
+            console.warn('⚠️ Main game system not ready, please try again in a few seconds');
+            alert('Admin system loading... Please try again in a moment!');
+            return;
+        }
+    }
+    
+    // Open the dashboard
+    window.open('admin-dashboard.html', '_blank');
+    console.log('👑 Admin dashboard opened!');
+}

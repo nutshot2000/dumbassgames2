@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐦 Twitter Integration Test</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff00;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 2px solid #00ff00;
+            border-radius: 10px;
+            padding: 20px;
+            background: rgba(0, 20, 0, 0.8);
+        }
+        h1 {
+            text-align: center;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+        }
+        .test-btn {
+            background: linear-gradient(45deg, #001100, #003300);
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            padding: 12px 20px;
+            margin: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        .test-btn:hover {
+            background: linear-gradient(45deg, #002200, #004400);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+        .output {
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #333;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid;
+        }
+        .status.success { background: rgba(0, 255, 0, 0.1); border-color: #00ff00; }
+        .status.error { background: rgba(255, 0, 0, 0.1); border-color: #ff6666; }
+        .status.warning { background: rgba(255, 255, 0, 0.1); border-color: #ffff00; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🐦 Twitter Integration Test</h1>
+        
+        <div id="status" class="status warning">
+            ⏳ Loading Twitter integration...
+        </div>
+        
+        <div>
+            <button class="test-btn" onclick="testConnection()">🧪 Test Connection</button>
+            <button class="test-btn" onclick="checkConfig()">🔑 Check API Keys</button>
+            <button class="test-btn" onclick="sendTestTweet()">📤 Send Test Tweet</button>
+            <button class="test-btn" onclick="clearOutput()">🧹 Clear Output</button>
+        </div>
+        
+        <div class="output" id="output">
+🎮 DUMBASSGAMES Twitter Integration Test
+=========================================
+
+Waiting for Twitter integration to load...
+        </div>
+    </div>
+
+    <script src="twitter-integration.js"></script>
+    <script>
+        let output = document.getElementById('output');
+        let status = document.getElementById('status');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const colors = {
+                info: '#00ff00',
+                error: '#ff6666',
+                warning: '#ffff00',
+                success: '#00ffff'
+            };
+            
+            output.innerHTML += `\n[${timestamp}] `;
+            output.innerHTML += `<span style="color: ${colors[type]}">${message}</span>`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function updateStatus(message, type) {
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+
+        function clearOutput() {
+            output.innerHTML = `🎮 DUMBASSGAMES Twitter Integration Test\n=========================================\n\nOutput cleared.\n`;
+        }
+
+        function checkConfig() {
+            log('🔍 Checking Twitter API configuration...', 'info');
+            
+            if (!window.TwitterAPI) {
+                log('❌ TwitterAPI not found!', 'error');
+                updateStatus('❌ Twitter integration not loaded', 'error');
+                return;
+            }
+            
+            if (window.TwitterAPI.isConfigured) {
+                log('✅ Twitter API keys are configured', 'success');
+                log(`🔑 API Key: ${window.TwitterAPI.config.apiKey.substring(0, 10)}...`, 'info');
+                log(`🔑 Access Token: ${window.TwitterAPI.config.accessToken.substring(0, 15)}...`, 'info');
+                updateStatus('✅ API Keys configured', 'success');
+            } else {
+                log('❌ Twitter API keys not configured', 'error');
+                log('💡 Add your keys to twitter-integration.js', 'warning');
+                updateStatus('❌ API Keys missing', 'error');
+            }
+        }
+
+        async function testConnection() {
+            log('🧪 Testing Twitter connection...', 'info');
+            
+            if (!window.TwitterAPI) {
+                log('❌ TwitterAPI not available', 'error');
+                return;
+            }
+            
+            if (!window.TwitterAPI.isConfigured) {
+                log('❌ Twitter API not configured', 'error');
+                return;
+            }
+            
+            try {
+                log('📡 Attempting connection test...', 'info');
+                const success = await window.TwitterAPI.testConnection();
+                
+                if (success) {
+                    log('✅ Twitter connection test passed!', 'success');
+                    updateStatus('✅ Twitter connection working', 'success');
+                } else {
+                    log('❌ Twitter connection test failed', 'error');
+                    updateStatus('❌ Connection test failed', 'error');
+                }
+            } catch (error) {
+                log(`❌ Connection test error: ${error.message}`, 'error');
+                updateStatus('❌ Connection error', 'error');
+            }
+        }
+
+        function sendTestTweet() {
+            log('📤 Opening Twitter for test tweet...', 'info');
+            
+            const testMessage = `🎮 Testing DUMBASSGAMES automation! dumbassgames.xyz #RetroGaming #TestTweet ${Date.now()}`;
+            
+            try {
+                log(`📝 Tweet content: "${testMessage}"`, 'info');
+                
+                // Create Twitter Web Intent URL
+                const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(testMessage)}`;
+                
+                // Open Twitter in new tab
+                window.open(twitterUrl, '_blank');
+                
+                log('✅ Twitter opened with test message!', 'success');
+                log('🔗 Complete the tweet on Twitter.com', 'info');
+                updateStatus('✅ Twitter opened successfully', 'success');
+                
+            } catch (error) {
+                log(`❌ Error opening Twitter: ${error.message}`, 'error');
+                updateStatus('❌ Error opening Twitter', 'error');
+            }
+        }
+
+        // Initialize when page loads
+        setTimeout(() => {
+            if (window.TwitterAPI) {
+                log('✅ Twitter integration loaded successfully', 'success');
+                if (window.TwitterAPI.isConfigured) {
+                    updateStatus('✅ Twitter integration ready', 'success');
+                } else {
+                    updateStatus('⚠️ Twitter integration loaded, API keys needed', 'warning');
+                }
+                checkConfig();
+            } else {
+                log('❌ Failed to load Twitter integration', 'error');
+                updateStatus('❌ Twitter integration failed to load', 'error');
+            }
+        }, 1000);
+    </script>
+</body>
+</html> 

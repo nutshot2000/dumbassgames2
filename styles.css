@@ -4208,3 +4208,244 @@ html {
     box-shadow: 0 0 15px rgba(255, 165, 0, 0.5);
     transform: translateY(-2px);
 }
+
+/* =============================
+   DEV ANALYTICS DASHBOARD
+   ============================= */
+
+.dev-only {
+    display: none !important;
+}
+
+.profile-tabs .dev-only.show {
+    display: block !important;
+}
+
+.analytics-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(0, 255, 0, 0.2);
+}
+
+.analytics-header h4 {
+    color: var(--primary-color);
+    font-family: 'Press Start 2P', cursive;
+    font-size: 14px;
+    margin: 0;
+    text-shadow: 0 0 10px var(--primary-color);
+}
+
+.dev-exclusive-badge {
+    background: linear-gradient(45deg, #ff6b35, #f7931e);
+    color: #000;
+    padding: 6px 12px;
+    border-radius: 15px;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 8px;
+    font-weight: bold;
+    text-transform: uppercase;
+    animation: dev-pulse 2s ease-in-out infinite;
+    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.4);
+}
+
+.analytics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.analytics-card {
+    background: linear-gradient(135deg, rgba(0, 255, 0, 0.05), rgba(0, 255, 255, 0.02));
+    border: 1px solid rgba(0, 255, 0, 0.2);
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.analytics-card:hover {
+    border-color: rgba(0, 255, 0, 0.4);
+    box-shadow: 0 0 25px rgba(0, 255, 0, 0.2);
+    transform: translateY(-2px);
+}
+
+.analytics-card.full-width {
+    grid-column: 1 / -1;
+}
+
+.analytics-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(0, 255, 0, 0.1);
+}
+
+.analytics-card-header h5 {
+    color: var(--primary-color);
+    font-family: 'Press Start 2P', cursive;
+    font-size: 10px;
+    margin: 0;
+    text-shadow: 0 0 5px var(--primary-color);
+}
+
+.analytics-icon {
+    font-size: 18px;
+    text-shadow: 0 0 10px currentColor;
+    animation: tier-glow 2s ease-in-out infinite alternate;
+}
+
+.analytics-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(0, 255, 0, 0.1);
+}
+
+.stat-item:last-child {
+    border-bottom: none;
+}
+
+.stat-label {
+    color: #cccccc;
+    font-size: 11px;
+    flex-grow: 1;
+}
+
+.stat-value {
+    color: var(--accent-color);
+    font-family: 'Press Start 2P', cursive;
+    font-size: 10px;
+    font-weight: bold;
+    text-shadow: 0 0 5px var(--accent-color);
+    min-width: 60px;
+    text-align: right;
+}
+
+.analytics-content {
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.games-performance-grid {
+    width: 100%;
+}
+
+.performance-game-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    margin: 5px 0;
+    background: rgba(0, 255, 0, 0.05);
+    border: 1px solid rgba(0, 255, 0, 0.1);
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+.performance-game-item:hover {
+    background: rgba(0, 255, 0, 0.1);
+    border-color: rgba(0, 255, 0, 0.3);
+}
+
+.game-name {
+    color: var(--primary-color);
+    font-size: 10px;
+    font-weight: bold;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.game-plays {
+    color: var(--accent-color);
+    font-family: 'Press Start 2P', cursive;
+    font-size: 9px;
+    text-shadow: 0 0 5px var(--accent-color);
+}
+
+.analytics-footer {
+    text-align: center;
+    padding-top: 20px;
+    border-top: 1px solid rgba(0, 255, 0, 0.2);
+}
+
+.analytics-footer .btn-secondary {
+    margin-bottom: 15px;
+}
+
+.analytics-note {
+    color: #888;
+    font-size: 10px;
+    margin: 0;
+    font-style: italic;
+}
+
+.no-data-message {
+    text-align: center;
+    color: #888;
+    font-size: 11px;
+    padding: 20px;
+    font-style: italic;
+}
+
+/* Responsive Design for Analytics */
+@media (max-width: 768px) {
+    .analytics-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .analytics-header {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+    
+    .analytics-card {
+        padding: 15px;
+    }
+    
+    .analytics-card-header h5 {
+        font-size: 9px;
+    }
+    
+    .stat-label {
+        font-size: 10px;
+    }
+    
+    .stat-value {
+        font-size: 9px;
+        min-width: 50px;
+    }
+}
+
+@keyframes dev-pulse {
+    0% {
+        box-shadow: 0 2px 8px rgba(255, 107, 53, 0.4);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 4px 16px rgba(255, 107, 53, 0.8);
+        transform: scale(1.05);
+    }
+    100% {
+        box-shadow: 0 2px 8px rgba(255, 107, 53, 0.4);
+        transform: scale(1);
+    }
+}

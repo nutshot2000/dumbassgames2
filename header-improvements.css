@@ -443,11 +443,11 @@ body.user-logged-in #userAvatarBtn {
     .user-avatar-button {
         max-width: 150px;
         font-size: 7px;
-    }
-    
+}
+
     .user-display-name {
         max-width: 100px;
-    }
+}
 }
 
 @media (max-width: 480px) {
@@ -455,8 +455,8 @@ body.user-logged-in #userAvatarBtn {
         max-width: 120px;
         font-size: 6px;
         padding: 3px 8px;
-    }
-    
+}
+
     .user-display-name {
         max-width: 70px;
     }
