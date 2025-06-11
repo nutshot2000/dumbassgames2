@@ -2,7 +2,18 @@
 // 🛠️ TIER SYSTEM COMPREHENSIVE FIX
 // =====================================
 
-console.log('🔧 TIER SYSTEM FIX - Loading comprehensive fixes...');
+// Use same development mode as main script (no const to avoid redeclaration)
+const DEV_MODE = window.DEVELOPMENT_MODE || false;
+// Use existing devLog from window or create fallback (avoid redeclaration)
+const tierDevLog = window.devLog || {
+    log: (...args) => DEV_MODE && console.log(...args),
+    warn: (...args) => DEV_MODE && console.warn(...args),
+    error: (...args) => console.error(...args),
+    group: (...args) => DEV_MODE && console.group(...args),
+    groupEnd: () => DEV_MODE && console.groupEnd()
+};
+
+tierDevLog.log('🔧 TIER SYSTEM FIX - Loading comprehensive fixes...');
 
 // Add Firebase Connection Recovery System
 class FirebaseConnectionManager {
@@ -580,12 +591,12 @@ window.tierSystemFix = {
     }
 };
 
-// Auto-run diagnostics
+// Auto-run diagnostics (only in development mode)
 document.addEventListener('DOMContentLoaded', function() {
     // Wait for all systems to load, then run diagnostics
     setTimeout(async () => {
-        if (window.userProfileManager) {
-            console.log('🔧 Auto-running tier system diagnostics...');
+        if (window.userProfileManager && DEV_MODE) {
+            tierDevLog.log('🔧 Auto-running tier system diagnostics...');
             await window.tierSystemFix.diagnoseTierSystem();
         }
     }, 3000);
@@ -599,13 +610,13 @@ window.upgradeToPro = () => window.tierSystemFix.forceUpgradeUser('PRO');
 window.upgradeToDev = () => window.tierSystemFix.forceUpgradeUser('DEV');
 window.resetToFree = () => window.tierSystemFix.resetUserToFree();
 
-console.log('✅ TIER SYSTEM FIX LOADED - Use these console commands:');
-console.log('  fixTiers() - Run comprehensive fix');
-console.log('  diagnoseTiers() - Check system health');
-console.log('  testTierLimits() - Test limit checking');
-console.log('  upgradeToPro() - Force upgrade to PRO');
-console.log('  upgradeToDev() - Force upgrade to DEV');
-console.log('  resetToFree() - Reset to FREE tier');
+tierDevLog.log('✅ TIER SYSTEM FIX LOADED - Use these console commands:');
+tierDevLog.log('  fixTiers() - Run comprehensive fix');
+tierDevLog.log('  diagnoseTiers() - Check system health');
+tierDevLog.log('  testTierLimits() - Test limit checking');
+tierDevLog.log('  upgradeToPro() - Force upgrade to PRO');
+tierDevLog.log('  upgradeToDev() - Force upgrade to DEV');
+tierDevLog.log('  resetToFree() - Reset to FREE tier');
 
 // Enhanced submission count synchronization and limit enforcement
 async function fixSubmissionCountSync() {

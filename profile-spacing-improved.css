@@ -1,0 +1,441 @@
+/* ========================================
+   DUMBASSGAMES - USER PROFILE MODAL IMPROVEMENTS
+   Enhanced spacing, readability, and mobile layout
+   ======================================== */
+
+/* Desktop Profile Tab Improvements */
+.profile-tabs {
+    gap: 8px; /* Add spacing between tabs */
+    margin-bottom: 35px; /* More breathing room below tabs */
+    padding: 8px; /* Inner padding for container */
+    border-radius: 12px; /* Slightly more rounded */
+}
+
+.profile-tab {
+    padding: 20px 25px; /* Much more generous padding */
+    font-size: 11px; /* Increase from 9px to 11px */
+    min-height: 60px; /* Consistent tab height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border-radius: 8px; /* Individual tab rounding */
+    margin: 0; /* Reset any margin */
+    letter-spacing: 0.5px; /* Better letter spacing */
+    line-height: 1.4; /* Better line height for multi-line text */
+}
+
+/* Enhanced hover and active states */
+.profile-tab:hover {
+    transform: translateY(-2px); /* Subtle lift on hover */
+    box-shadow: 
+        inset 0 0 20px var(--primary-alpha-3),
+        0 4px 15px var(--primary-alpha-2); /* Add shadow depth */
+}
+
+.profile-tab.active {
+    transform: translateY(-2px); /* Keep lifted when active */
+    box-shadow: 
+        inset 0 0 25px var(--primary-alpha-5),
+        0 6px 20px var(--primary-color),
+        0 0 30px var(--primary-alpha-3); /* Enhanced glow */
+}
+
+/* Improved Modal Content Spacing */
+.modal-content.large {
+    padding: 30px; /* More generous internal padding */
+    max-height: 90vh; /* Allow more vertical space */
+}
+
+.profile-content {
+    min-height: 450px; /* More space for content */
+    padding: 20px; /* Add internal padding */
+    background: rgba(0, 0, 0, 0.1); /* Subtle background */
+    border-radius: 12px;
+    border: 1px solid var(--primary-alpha-2);
+}
+
+/* Enhanced Profile Stats Grid */
+.profile-stats {
+    gap: 25px; /* Increase gap between stat cards */
+    margin-bottom: 35px; /* More space below stats */
+}
+
+.stat-card {
+    padding: 25px; /* More generous padding */
+    min-height: 120px; /* Consistent card height */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.stat-card .stat-number {
+    font-size: 28px; /* Larger numbers */
+    margin-bottom: 12px; /* More space between number and label */
+}
+
+.stat-card .stat-label {
+    font-size: 11px; /* Slightly larger labels */
+}
+
+/* Better Profile Info Section */
+.profile-info {
+    padding: 30px; /* More generous padding */
+    margin-bottom: 30px; /* Better spacing */
+    gap: 30px; /* Space between avatar and details */
+}
+
+.user-avatar {
+    width: 90px; /* Slightly larger avatar */
+    height: 90px;
+    font-size: 52px; /* Larger emoji */
+}
+
+.user-details h4 {
+    font-size: 16px; /* Larger user name */
+    margin-bottom: 15px; /* More space below name */
+}
+
+.user-details p {
+    font-size: 12px; /* Larger bio text */
+    line-height: 1.8; /* Better line spacing */
+}
+
+/* Enhanced Headers */
+.favorites-header,
+.submissions-header,
+.analytics-header {
+    margin-bottom: 25px; /* More space below headers */
+    padding-bottom: 20px; /* More padding */
+}
+
+.favorites-header h4,
+.submissions-header h4,
+.analytics-header h4 {
+    font-size: 16px; /* Larger header text */
+}
+
+/* Better Grid Spacing */
+.favorites-grid,
+.submissions-grid {
+    gap: 30px; /* Larger gaps between items */
+    padding: 25px; /* More generous padding */
+    max-height: 450px; /* More vertical space */
+}
+
+/* Form Improvements */
+.form-group {
+    margin-bottom: 25px; /* More space between form fields */
+}
+
+.form-group label {
+    font-size: 12px; /* Larger labels */
+    margin-bottom: 10px; /* More space below labels */
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    padding: 15px; /* More generous input padding */
+    font-size: 12px; /* Larger input text */
+    min-height: 45px; /* Consistent input height */
+}
+
+/* Settings Section Improvements */
+.settings-section {
+    margin-bottom: 30px; /* More space between sections */
+    padding: 25px; /* More generous padding */
+}
+
+.settings-section h4 {
+    font-size: 16px; /* Larger section headers */
+    margin-bottom: 20px; /* More space below headers */
+}
+
+/* ========================================
+   TABLET RESPONSIVE IMPROVEMENTS
+   Better layout for medium screens
+   ======================================== */
+
+@media (max-width: 1024px) {
+    .profile-tabs {
+        gap: 6px;
+        padding: 6px;
+    }
+    
+    .profile-tab {
+        padding: 18px 20px;
+        font-size: 10px;
+        min-height: 55px;
+    }
+    
+    .modal-content.large {
+        padding: 25px;
+        width: 95%;
+    }
+    
+    .profile-stats {
+        gap: 20px;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    }
+}
+
+/* ========================================
+   MOBILE RESPONSIVE IMPROVEMENTS
+   Much better mobile experience
+   ======================================== */
+
+@media (max-width: 768px) {
+    /* Enhanced Mobile Modal */
+    .modal-content.large {
+        width: 98%;
+        height: 95vh;
+        margin: 2.5% auto;
+        padding: 20px;
+    }
+    
+    /* Revolutionary Mobile Tab Layout */
+    .profile-tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-gap: 10px;
+        margin-bottom: 25px;
+        padding: 10px;
+        background: rgba(0, 0, 0, 0.6);
+    }
+    
+    .profile-tab {
+        padding: 18px 12px;
+        font-size: 9px;
+        min-height: 65px;
+        border-radius: 8px;
+        line-height: 1.3;
+        letter-spacing: 0.3px;
+        word-break: break-word; /* Handle long text better */
+    }
+    
+    /* Stack the Analytics tab in its own row for DEV users */
+    .profile-tab[data-tab="analytics"] {
+        grid-column: 1 / -1; /* Full width */
+        background: linear-gradient(45deg, 
+            var(--primary-alpha-2), 
+            var(--secondary-color)); /* Special DEV styling */
+    }
+    
+    /* Enhanced Mobile Content */
+    .profile-content {
+        padding: 15px;
+        min-height: 400px;
+    }
+    
+    /* Better Mobile Stats */
+    .profile-stats {
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+    
+    .stat-card {
+        padding: 20px 15px;
+        min-height: 100px;
+    }
+    
+    .stat-card .stat-number {
+        font-size: 24px;
+        margin-bottom: 8px;
+    }
+    
+    .stat-card .stat-label {
+        font-size: 10px;
+    }
+    
+    /* Mobile Profile Info */
+    .profile-info {
+        flex-direction: column;
+        text-align: center;
+        padding: 25px 20px;
+        gap: 20px;
+    }
+    
+    .user-avatar {
+        margin: 0 auto 15px auto;
+        width: 85px;
+        height: 85px;
+        font-size: 48px;
+    }
+    
+    .user-details h4 {
+        font-size: 15px;
+        margin-bottom: 12px;
+    }
+    
+    .user-details p {
+        font-size: 11px;
+        max-width: 100%;
+    }
+    
+    /* Mobile Grids */
+    .favorites-grid,
+    .submissions-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+        padding: 20px;
+        max-height: 350px;
+    }
+    
+    /* Mobile Form Elements */
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+        padding: 12px;
+        font-size: 11px;
+        min-height: 40px;
+    }
+    
+    /* Mobile Settings */
+    .settings-section {
+        padding: 20px 15px;
+        margin-bottom: 25px;
+    }
+    
+    .settings-section h4 {
+        font-size: 15px;
+        margin-bottom: 15px;
+    }
+}
+
+/* ========================================
+   SMALL MOBILE IMPROVEMENTS
+   Extra small screens
+   ======================================== */
+
+@media (max-width: 480px) {
+    .modal-content.large {
+        width: 100%;
+        height: 100vh;
+        margin: 0;
+        border-radius: 0;
+    }
+    
+    .profile-tabs {
+        grid-gap: 8px;
+        padding: 8px;
+    }
+    
+    .profile-tab {
+        padding: 15px 10px;
+        font-size: 8px;
+        min-height: 60px;
+    }
+    
+    .profile-stats {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .stat-card {
+        padding: 18px 12px;
+        min-height: 90px;
+    }
+    
+    .stat-card .stat-number {
+        font-size: 22px;
+    }
+    
+    .stat-card .stat-label {
+        font-size: 9px;
+    }
+    
+    .user-avatar {
+        width: 75px;
+        height: 75px;
+        font-size: 42px;
+    }
+    
+    .user-details h4 {
+        font-size: 14px;
+    }
+    
+    .user-details p {
+        font-size: 10px;
+    }
+}
+
+/* ========================================
+   ENHANCED VISUAL EFFECTS
+   Better animations and transitions
+   ======================================== */
+
+.profile-tab {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.profile-tab:hover,
+.profile-tab.active {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stat-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.profile-content {
+    transition: all 0.3s ease;
+}
+
+/* Add subtle animations to tab content switching */
+.profile-tab-content {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+}
+
+.profile-tab-content.active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ========================================
+   ACCESSIBILITY IMPROVEMENTS
+   Better focus states and contrast
+   ======================================== */
+
+.profile-tab:focus {
+    outline: 2px solid var(--secondary-color);
+    outline-offset: 2px;
+    box-shadow: 
+        inset 0 0 20px var(--primary-alpha-3),
+        0 0 0 4px var(--secondary-color);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .profile-tab {
+        border: 2px solid var(--primary-color);
+    }
+    
+    .profile-tab.active {
+        border-color: var(--secondary-color);
+        background: var(--secondary-color);
+        color: var(--dark-bg);
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .profile-tab,
+    .stat-card,
+    .profile-content,
+    .profile-tab-content {
+        transition: none;
+    }
+    
+    .profile-tab:hover,
+    .profile-tab.active {
+        transform: none;
+    }
+} 

@@ -934,7 +934,7 @@
                         });
                         return; // Exit early for async commands
                     } else {
-                        result = window.dumbassGameAdmin[commandName]();
+                    result = window.dumbassGameAdmin[commandName]();
                     }
                 } else {
                     result = `❌ Command "${commandName}" not found in admin system`;
@@ -1102,37 +1102,37 @@
                             result = `Unknown command: ${command}`;
                     }
                 } else {
-                    // Check if we can access the main site's admin system
-                    const mainWindow = window.opener || window.parent;
-                    
-                    if (mainWindow && mainWindow.dumbassGameAdmin) {
-                        // Use main site's admin system
-                        switch(command) {
-                            case 'systemCheck':
-                                result = mainWindow.dumbassGameAdmin.systemCheck();
-                                break;
-                            case 'getAutomationStatus':
-                                result = mainWindow.dumbassGameAdmin.getAutomationStatus();
-                                break;
-                            case 'generateDailyTweet':
-                                result = mainWindow.dumbassGameAdmin.generateDailyTweet();
-                                break;
-                            case 'enableTwitter':
-                                result = mainWindow.dumbassGameAdmin.enableTwitterIntegration();
-                                break;
-                            case 'disableTwitter':
-                                result = mainWindow.dumbassGameAdmin.disableTwitterIntegration();
-                                break;
-                            case 'testTwitter':
-                                result = mainWindow.dumbassGameAdmin.testTwitter ? 
-                                        mainWindow.dumbassGameAdmin.testTwitter() : 
-                                        'Test function not available';
-                                break;
-                            default:
-                                result = `Unknown command: ${command}`;
-                        }
-                    } else {
-                        // Provide instructions if main site isn't accessible
+                // Check if we can access the main site's admin system
+                const mainWindow = window.opener || window.parent;
+                
+                if (mainWindow && mainWindow.dumbassGameAdmin) {
+                    // Use main site's admin system
+                    switch(command) {
+                        case 'systemCheck':
+                            result = mainWindow.dumbassGameAdmin.systemCheck();
+                            break;
+                        case 'getAutomationStatus':
+                            result = mainWindow.dumbassGameAdmin.getAutomationStatus();
+                            break;
+                        case 'generateDailyTweet':
+                            result = mainWindow.dumbassGameAdmin.generateDailyTweet();
+                            break;
+                        case 'enableTwitter':
+                            result = mainWindow.dumbassGameAdmin.enableTwitterIntegration();
+                            break;
+                        case 'disableTwitter':
+                            result = mainWindow.dumbassGameAdmin.disableTwitterIntegration();
+                            break;
+                        case 'testTwitter':
+                            result = mainWindow.dumbassGameAdmin.testTwitter ? 
+                                    mainWindow.dumbassGameAdmin.testTwitter() : 
+                                    'Test function not available';
+                            break;
+                        default:
+                            result = `Unknown command: ${command}`;
+                    }
+                } else {
+                    // Provide instructions if main site isn't accessible
                         result = `🔗 Twitter integration loading... Please wait or open from main site (localhost:8000)`;
                     }
                 }
@@ -1186,8 +1186,8 @@
                 output.innerHTML += `<div style="color: #00ffff;">🔗 Complete the tweet on Twitter.com</div>`;
                 
                 // Clear input after success
-                input.value = '';
-                updateCharCount();
+                    input.value = '';
+                    updateCharCount();
                 
             } catch (error) {
                 output.innerHTML += `<div style="color: #ff4444;">❌ Error: ${error.message}</div>`;
@@ -1825,56 +1825,56 @@
                     
                 } else {
                     // Fallback to main window check
-                    const mainWindow = window.opener || window.parent;
-                    
-                    if (mainWindow && mainWindow.dumbassGameAdmin && mainWindow.siteMonitoring) {
-                        // Update Twitter Status
-                        const twitterStatus = document.getElementById('twitterStatus');
-                        if (mainWindow.siteMonitoring) {
-                            twitterStatus.textContent = '✅ CONNECTED';
-                            twitterStatus.style.color = '#00ff00';
-                        } else {
-                            twitterStatus.textContent = '❌ DISCONNECTED';
-                            twitterStatus.style.color = '#ff4444';
-                        }
-                        
-                        // Update API Keys Status
-                        const twitterKeys = document.getElementById('twitterKeys');
-                        if (mainWindow.TwitterAPI && mainWindow.TwitterAPI.isConfigured) {
-                            twitterKeys.textContent = '✅ CONFIGURED';
-                            twitterKeys.style.color = '#00ff00';
-                        } else {
-                            twitterKeys.textContent = '❌ MISSING';
-                            twitterKeys.style.color = '#ff4444';
-                        }
-                        
-                        // Update Automation Status
-                        const automationStatus = document.getElementById('automationStatus');
-                        const status = mainWindow.siteMonitoring.getAutomationStatus();
-                        if (status && status.twitter) {
-                            automationStatus.textContent = '✅ ENABLED';
-                            automationStatus.style.color = '#00ff00';
-                        } else {
-                            automationStatus.textContent = '❌ DISABLED';
-                            automationStatus.style.color = '#ff4444';
-                        }
-                        
-                        // Update Last Tweet
-                        const lastTweet = document.getElementById('lastTweet');
-                        lastTweet.textContent = 'Simulation Mode';
-                        lastTweet.style.color = '#ffff00';
-                        
+                const mainWindow = window.opener || window.parent;
+                
+                if (mainWindow && mainWindow.dumbassGameAdmin && mainWindow.siteMonitoring) {
+                    // Update Twitter Status
+                    const twitterStatus = document.getElementById('twitterStatus');
+                    if (mainWindow.siteMonitoring) {
+                        twitterStatus.textContent = '✅ CONNECTED';
+                        twitterStatus.style.color = '#00ff00';
                     } else {
+                        twitterStatus.textContent = '❌ DISCONNECTED';
+                        twitterStatus.style.color = '#ff4444';
+                    }
+                    
+                    // Update API Keys Status
+                    const twitterKeys = document.getElementById('twitterKeys');
+                    if (mainWindow.TwitterAPI && mainWindow.TwitterAPI.isConfigured) {
+                        twitterKeys.textContent = '✅ CONFIGURED';
+                        twitterKeys.style.color = '#00ff00';
+                    } else {
+                        twitterKeys.textContent = '❌ MISSING';
+                        twitterKeys.style.color = '#ff4444';
+                    }
+                    
+                    // Update Automation Status
+                    const automationStatus = document.getElementById('automationStatus');
+                    const status = mainWindow.siteMonitoring.getAutomationStatus();
+                    if (status && status.twitter) {
+                        automationStatus.textContent = '✅ ENABLED';
+                        automationStatus.style.color = '#00ff00';
+                    } else {
+                        automationStatus.textContent = '❌ DISABLED';
+                        automationStatus.style.color = '#ff4444';
+                    }
+                    
+                    // Update Last Tweet
+                    const lastTweet = document.getElementById('lastTweet');
+                    lastTweet.textContent = 'Simulation Mode';
+                    lastTweet.style.color = '#ffff00';
+                    
+                } else {
                         // Not connected to main site and no local Twitter
-                        ['twitterStatus', 'twitterKeys', 'automationStatus'].forEach(id => {
-                            const element = document.getElementById(id);
+                    ['twitterStatus', 'twitterKeys', 'automationStatus'].forEach(id => {
+                        const element = document.getElementById(id);
                             element.textContent = '⏳ LOADING...';
-                            element.style.color = '#ffff00';
-                        });
-                        
-                        const lastTweet = document.getElementById('lastTweet');
+                        element.style.color = '#ffff00';
+                    });
+                    
+                    const lastTweet = document.getElementById('lastTweet');
                         lastTweet.textContent = 'Loading...';
-                        lastTweet.style.color = '#888';
+                    lastTweet.style.color = '#888';
                     }
                 }
             } catch (error) {

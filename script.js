@@ -6997,8 +6997,8 @@ class PaymentManager {
     }
 
     async initializePayPal() {
-        // Initialize PayPal - you'll need to replace with your actual client ID
-        this.paypalClientId = 'AVTp0aGYOSe6gBiJh5RA1EFEX7UDKBLwXAGb1bwNCz48o4K9DvMNcq5UO8ODYQJssO0VR1o1FP-AAuQU'; // PayPal Sandbox Client ID
+        // Initialize PayPal - LIVE Production Client ID
+        this.paypalClientId = 'BAAvzARQAIFfScIJzmycPhDg5AcXSgs2oQfCTxyq5HHvJRfbtIAms5FpQf5oVePsvC_zICrER7rRKYeFCU'; // PayPal LIVE Client ID
         this.paypalSDKLoaded = false;
         console.log('💰 PayPal payment manager initialized');
         
