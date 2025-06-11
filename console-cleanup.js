@@ -71,42 +71,7 @@
         }
     };
     
-    // Enhanced console override with better detection
-    const originalError = console.error;
-    console.error = function(...args) {
-        const errorString = args.join(' ').toLowerCase();
-        
-        // More comprehensive PayPal pattern detection
-        const isPayPalAnalytics = [
-            'paypal.com/xoplatform/logger',
-            'paypal.com/graphql',
-            'logger?disablesetcookie',
-            'xoplatform/logger/api',
-            'err_blocked_by_client',
-            'net::err_blocked_by_client'
-        ].some(pattern => errorString.includes(pattern));
-        
-        const isGeolocationWarning = errorString.includes('potential permissions policy violation: geolocation');
-        
-        if (isPayPalAnalytics) {
-            PayPalConsoleHelper.logSuppressionActivity('logger', errorString);
-            if (window.DEVELOPMENT_MODE) {
-                originalError.apply(console, ['🔇 [PAYPAL ANALYTICS BLOCKED]', ...args]);
-            }
-            return;
-        }
-        
-        if (isGeolocationWarning) {
-            PayPalConsoleHelper.logSuppressionActivity('geolocation', errorString);
-            if (window.DEVELOPMENT_MODE) {
-                originalError.apply(console, ['🔇 [GEOLOCATION WARNING]', ...args]);
-            }
-            return;
-        }
-        
-        // Let all other errors through normally
-        originalError.apply(console, args);
-    };
+    // Note: Console override is handled in script.js to avoid conflicts
     
     // Show initial explanation when PayPal loads
     window.addEventListener('load', () => {
