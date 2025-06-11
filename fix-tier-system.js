@@ -21,10 +21,10 @@ class FirebaseConnectionManager {
         console.log('🔥 Testing Firebase connection...');
         
         try {
-            // Test Firebase v9 SDK - check for the modular components
+            // Test Firebase v11 SDK - check for the modular components
             if (window.firebaseAuth && window.firebaseDb && window.onAuthStateChanged) {
                 this.connectionStatus.firebase = true;
-                console.log('✅ Firebase v9 SDK loaded');
+                console.log('✅ Firebase v11 SDK loaded');
                 
                 // Test Auth connection
                 const authTest = await this.testAuthConnection();
@@ -35,7 +35,7 @@ class FirebaseConnectionManager {
                 this.connectionStatus.firestore = firestoreTest;
                 
             } else {
-                console.log('❌ Firebase v9 SDK not loaded properly');
+                console.log('❌ Firebase v11 SDK not loaded properly');
                 console.log('Debug - Available:', {
                     firebaseAuth: !!window.firebaseAuth,
                     firebaseDb: !!window.firebaseDb,
@@ -60,7 +60,7 @@ class FirebaseConnectionManager {
     async testAuthConnection() {
         return new Promise((resolve) => {
             try {
-                // Use the v9 SDK auth reference
+                // Use the v11 SDK auth reference
                 if (!window.firebaseAuth || !window.onAuthStateChanged) {
                     console.log('🔐 Firebase Auth SDK not available');
                     resolve(false);
@@ -100,7 +100,7 @@ class FirebaseConnectionManager {
                 return false;
             }
             
-            // Try to perform a simple read operation using v9 SDK
+            // Try to perform a simple read operation using v11 SDK
             const testCollection = window.firebaseCollection;
             const testDoc = await window.firebaseGetDocs(testCollection);
             console.log('📄 Firestore connection test: Success');
@@ -627,7 +627,7 @@ async function fixSubmissionCountSync() {
 
         console.log(`🔍 Checking submissions for user: ${userEmail} (${userId})`);
 
-        // 1. Get actual games from Firebase submitted by this user (using v9 SDK)
+        // 1. Get actual games from Firebase submitted by this user (using v11 SDK)
         const gamesQuery = window.firebaseQuery(
             window.firebaseCollection,
             window.firebaseWhere('submittedBy', '==', userId)

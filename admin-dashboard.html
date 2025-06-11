@@ -883,9 +883,10 @@
                 }
                 
                 // Update total games from Firebase using same method as main site
-                if (window.dumbassGameAdmin?.isReady && window.firebaseCollection) {
+                if (window.dumbassGameAdmin?.isReady && window.firebaseCollection && window.firebaseDb) {
                     try {
-                        const gamesSnapshot = await window.firebaseGetDocs(window.firebaseCollection);
+                        const gamesCollection = window.firebaseCollection(window.firebaseDb, 'games');
+                        const gamesSnapshot = await window.firebaseGetDocs(gamesCollection);
                         document.getElementById('totalGames').textContent = gamesSnapshot.size;
                     } catch (error) {
                         console.error('Error getting games count:', error);
@@ -1055,7 +1056,8 @@
                 const output = document.getElementById('consoleOutput');
                 output.innerHTML += `<div style="color: #ffff00;">📊 Fetching real data from Firebase...</div>`;
                 
-                const gamesSnapshot = await window.firebaseGetDocs(window.firebaseCollection);
+                const gamesCollection = window.firebaseCollection(window.firebaseDb, 'games');
+                const gamesSnapshot = await window.firebaseGetDocs(gamesCollection);
                 const games = gamesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
                 // Calculate real stats

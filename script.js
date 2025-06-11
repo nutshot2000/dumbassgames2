@@ -6218,19 +6218,8 @@ class FirebaseAuthManager {
             
             // Update admin button visibility
             setTimeout(() => {
-                if (typeof updateAdminButton === 'function') {
-                    updateAdminButton();
-                }
-                // Force update if still not visible but user is admin
-                setTimeout(() => {
-                    if (isUserAdmin()) {
-                        const adminBtn = document.getElementById('adminBtn');
-                        if (adminBtn && adminBtn.style.display === 'none') {
-                            adminBtn.style.display = 'block';
-                            console.log('🔧 Admin button auto-corrected for admin user');
-                        }
-                    }
-                }, 1000);
+                // Admin button removed - no longer needed
+                // Admin button removed - no longer needed
             }, 500);
         } else {
             // User is signed out - update dynamic auth button
@@ -6247,11 +6236,7 @@ class FirebaseAuthManager {
                 document.querySelector('.auth-tabs').style.display = 'flex';
             }
             
-            // Hide admin button when signed out
-            const adminBtn = document.getElementById('adminBtn');
-            if (adminBtn) {
-                adminBtn.style.display = 'none';
-            }
+            // Admin button removed - no longer needed
         }
 
         // Notify user profile manager of auth state change
@@ -12570,18 +12555,7 @@ function isUserAdmin() {
     return isAdmin;
 }
 
-// Show/hide admin button based on user status
-function updateAdminButton() {
-    const adminBtn = document.getElementById('adminBtn');
-    if (adminBtn) {
-        if (isUserAdmin()) {
-            adminBtn.style.display = 'block';
-            console.log('👑 Admin button enabled for authorized user');
-        } else {
-            adminBtn.style.display = 'none';
-        }
-    }
-}
+// Admin button removed - no longer needed
 
 // Manual functions to help debug admin access
 window.debugAdminAccess = function() {
@@ -12593,39 +12567,13 @@ window.debugAdminAccess = function() {
         console.log('🆔 UID:', currentUser.uid);
         console.log('👑 Is Admin:', isUserAdmin());
         
-        // Force show admin button for debugging
-        const adminBtn = document.getElementById('adminBtn');
-        if (adminBtn) {
-            adminBtn.style.display = 'block';
-            console.log('🔧 Admin button forced visible');
-        }
+        // Admin button removed - no longer needed
     } else {
         console.log('❌ No user signed in');
     }
     console.groupEnd();
 };
 
-window.forceShowAdminButton = function() {
-    const adminBtn = document.getElementById('adminBtn');
-    if (adminBtn) {
-        adminBtn.style.display = 'block';
-        console.log('🔧 Admin button forced visible');
-    } else {
-        console.log('❌ Admin button not found');
-    }
-};
+// Admin button removed - no longer needed
 
-// Check admin status on page load
-window.addEventListener('load', () => {
-    // Wait for Firebase to initialize
-    setTimeout(() => {
-        const currentUser = window.firebaseAuth?.currentUser;
-        if (currentUser && isUserAdmin()) {
-            const adminBtn = document.getElementById('adminBtn');
-            if (adminBtn) {
-                adminBtn.style.display = 'block';
-                console.log('👑 Admin button shown on page load');
-            }
-        }
-    }, 2000);
-});
+// Admin button removed - no longer needed
