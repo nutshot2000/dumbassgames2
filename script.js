@@ -1,15 +1,116 @@
-// 🎮 DUMBASSGAMES - Production Console Management
+// 🎮 DUMBASSGAMES - Production Console Management & PayPal Error Suppression
 // ===== DEVELOPMENT MODE CONFIGURATION =====
 window.DEVELOPMENT_MODE = false; // Set to true for debug output
 
 const originalConsole = { ...console };
+
+// PayPal Analytics Error Suppression System
+const PayPalErrorSuppressor = {
+    originalConsoleError: console.error,
+    
+    init() {
+        // Override console.error to filter PayPal analytics/logging errors
+        console.error = (...args) => {
+            const errorMessage = args.join(' ').toLowerCase();
+            
+            // Skip PayPal analytics and logging errors that don't affect functionality
+            const paypalAnalyticsPatterns = [
+                'paypal.com/xoplatform/logger',
+                'paypal.com/graphql', 
+                'err_blocked_by_client',
+                'net::err_blocked_by_client',
+                'logger?disablesetcookie',
+                'xoplatform/logger/api',
+                'potential permissions policy violation: geolocation',
+                'paypal.*logger.*blocked',
+                'paypal.*analytics.*blocked'
+            ];
+            
+            const shouldSuppress = paypalAnalyticsPatterns.some(pattern => 
+                errorMessage.includes(pattern)
+            );
+            
+            if (!shouldSuppress) {
+                this.originalConsoleError.apply(console, args);
+            } else if (window.DEVELOPMENT_MODE) {
+                // In dev mode, show suppressed errors with a prefix
+                this.originalConsoleError.apply(console, ['[🔇 SUPPRESSED PayPal Analytics]', ...args]);
+            }
+        };
+        
+        console.status('🔇 PayPal analytics error suppression enabled');
+        
+        // Add a subtle status indicator for users
+        this.addStatusIndicator();
+    },
+    
+    addStatusIndicator() {
+        // Add a small, unobtrusive indicator that PayPal error suppression is active
+        const indicator = document.createElement('div');
+        indicator.id = 'paypal-suppression-indicator';
+        indicator.innerHTML = '🔇';
+        indicator.title = 'PayPal analytics errors are being filtered for cleaner console output. Payment functionality is normal.';
+        indicator.style.cssText = `
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ff00;
+            padding: 5px;
+            border-radius: 50%;
+            font-size: 12px;
+            z-index: 1000;
+            cursor: help;
+            opacity: 0.3;
+            transition: opacity 0.3s ease;
+        `;
+        
+        indicator.addEventListener('mouseenter', () => {
+            indicator.style.opacity = '1';
+        });
+        
+        indicator.addEventListener('mouseleave', () => {
+            indicator.style.opacity = '0.3';
+        });
+        
+        // Only show in development mode or if there are suppressed errors
+        if (window.DEVELOPMENT_MODE) {
+            document.body.appendChild(indicator);
+        }
+    }
+};
+
+// Initialize PayPal error suppression immediately
+PayPalErrorSuppressor.init();
+
+// Also suppress network error events that don't affect functionality
+window.addEventListener('error', (event) => {
+    const errorMessage = (event.message || '').toLowerCase();
+    const sourceUrl = (event.filename || '').toLowerCase();
+    
+    const shouldSuppressNetworkError = [
+        'paypal.com/xoplatform/logger',
+        'logger?disablesetcookie',
+        'xoplatform/logger/api',
+        'net::err_blocked_by_client'
+    ].some(pattern => errorMessage.includes(pattern) || sourceUrl.includes(pattern));
+    
+    if (shouldSuppressNetworkError) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (window.DEVELOPMENT_MODE) {
+            console.log('[🔇 SUPPRESSED Network Error]', event.message, event.filename);
+        }
+    }
+}, true);
+
 if (!window.DEVELOPMENT_MODE) {
-    // Override console methods in production
+    // Override console methods in production (but keep our enhanced error handler)
     console.log = () => {};
     console.debug = () => {};
     console.info = originalConsole.info; // Keep info
     console.warn = originalConsole.warn; // Keep warnings
-    console.error = originalConsole.error; // Keep errors
+    // console.error is already overridden by PayPalErrorSuppressor
     
     // Add production-safe logging
     console.prod = () => {};
@@ -20,6 +121,9 @@ if (!window.DEVELOPMENT_MODE) {
     console.status = originalConsole.log;
     console.critical = originalConsole.log;
 }
+
+// Make PayPal error suppressor available globally for debugging
+window.PayPalErrorSuppressor = PayPalErrorSuppressor;
 
 // Theme Customizer System
 class ThemeCustomizer {
@@ -7019,10 +7123,11 @@ class PaymentManager {
     }
 
     async initializePayPal() {
-        // Initialize PayPal - LIVE Production Client ID
-        this.paypalClientId = 'BAAvzARQAIFfScIJzmycPhDg5AcXSgs2oQfCTxyq5HHvJRfbtIAms5FpQf5oVePsvC_zICrER7rRKYeFCU'; // PayPal LIVE Client ID
+        // Initialize PayPal - LIVE PRODUCTION MODE
+        this.paypalClientId = 'BAAvzARQAIFfScIJzmycPhDg5AcXSgs2oQfCTxyq5HHvJRfbtIAms5FpQf5oVePsvC_zICrER7rRKYeFCU'; // PayPal LIVE Production Client ID
+        this.paypalEnvironment = 'production'; // LIVE PRODUCTION MODE
         this.paypalSDKLoaded = false;
-        console.log('💰 PayPal payment manager initialized');
+        console.log('💰 PayPal payment manager initialized (LIVE PRODUCTION MODE)');
         
         // Load PayPal SDK if not already loaded
         if (!window.paypal && !document.querySelector('script[src*="paypal"]') && !this.paypalSDKLoaded) {
@@ -7035,10 +7140,11 @@ class PaymentManager {
         
         return new Promise((resolve, reject) => {
             const script = document.createElement('script');
-            // Simplified PayPal SDK loading for better compatibility
-            script.src = `https://www.paypal.com/sdk/js?client-id=${this.paypalClientId}&currency=USD&intent=capture&commit=true&disable-funding=paylater`;
+            // PayPal SDK with environment support
+            const environment = this.paypalEnvironment === 'sandbox' ? '&debug=true' : '';
+            script.src = `https://www.paypal.com/sdk/js?client-id=${this.paypalClientId}&currency=USD&intent=capture&commit=true&disable-funding=paylater${environment}`;
             script.onload = () => {
-                console.log('💰 PayPal SDK loaded');
+                console.log(`💰 PayPal SDK loaded (${this.paypalEnvironment.toUpperCase()})`);
                 this.paypalSDKLoaded = true;
                 resolve();
             };
@@ -7096,6 +7202,7 @@ class PaymentManager {
                     </div>
                     <div class="payment-section">
                         <h5>Complete Payment:</h5>
+                        ${this.paypalEnvironment === 'sandbox' ? '<div class="sandbox-notice">⚠️ DEMO MODE: Using PayPal Sandbox (test payments only)</div>' : ''}
                         <div class="payment-options">
                             <div class="paypal-container-centered">
                                 <div id="paypal-button-container-${tier.toLowerCase()}" class="paypal-button-fixed"></div>
@@ -7192,8 +7299,13 @@ class PaymentManager {
                 
                 onError: (err) => {
                     console.error('❌ PayPal payment error:', err);
-                    // Don't show error for blocked analytics calls
-                    if (!err.toString().includes('logger')) {
+                    
+                    // Handle different types of PayPal errors
+                    if (err.toString().includes('NOT_AUTHORIZED') || err.toString().includes('403')) {
+                        console.error('🚫 PayPal Authorization Error - Client ID may need permissions review');
+                        window.notificationManager?.showError('Payment service temporarily unavailable. Please use manual payment option.');
+                    } else if (!err.toString().includes('logger')) {
+                        // Don't show error for blocked analytics calls
                         window.notificationManager?.showError('Payment failed. Please try again or use manual payment.');
                     }
                 },
