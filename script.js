@@ -1,3 +1,26 @@
+// 🎮 DUMBASSGAMES - Production Console Management
+// ===== DEVELOPMENT MODE CONFIGURATION =====
+window.DEVELOPMENT_MODE = false; // Set to true for debug output
+
+const originalConsole = { ...console };
+if (!window.DEVELOPMENT_MODE) {
+    // Override console methods in production
+    console.log = () => {};
+    console.debug = () => {};
+    console.info = originalConsole.info; // Keep info
+    console.warn = originalConsole.warn; // Keep warnings
+    console.error = originalConsole.error; // Keep errors
+    
+    // Add production-safe logging
+    console.prod = () => {};
+    console.status = (msg, ...args) => originalConsole.log(`%c${msg}`, 'color: #00ff00; font-weight: bold;', ...args);
+    console.critical = (msg, ...args) => originalConsole.log(`%c${msg}`, 'color: #ff6600; font-weight: bold;', ...args);
+} else {
+    console.prod = originalConsole.log;
+    console.status = originalConsole.log;
+    console.critical = originalConsole.log;
+}
+
 // Theme Customizer System
 class ThemeCustomizer {
     constructor() {
@@ -12,7 +35,7 @@ class ThemeCustomizer {
         try {
             // Wait for persistence manager if it's not ready
             if (!window.persistenceManager) {
-                console.log('🎨 Waiting for persistence manager...');
+                console.status('🎨 Waiting for persistence manager...');
                 await new Promise(resolve => {
                     const checkManager = () => {
                         if (window.persistenceManager) {
@@ -206,7 +229,7 @@ class DumbassGameEnhanced {
         setTimeout(() => {
             if (window.firebaseAuth) {
                 window.firebaseAuth.onAuthStateChanged((user) => {
-                    console.log('🔥 Firebase auth state changed:', user ? user.email : 'No user');
+                    console.status('🔥 Firebase auth state changed:', user ? user.email : 'No user');
                     setTimeout(() => this.updateAuthButton(), 100);
                 });
             }
@@ -1622,9 +1645,12 @@ class DumbassGameEnhanced {
     }
 
     logWelcomeMessage() {
-        console.log('%c🎮 DUMBASSGAMES ENHANCED v2.0', 'background: linear-gradient(90deg, #00ff00, #00ffff); color: #000; padding: 10px; font-size: 16px; font-weight: bold; border-radius: 5px;');
-        console.log('%cWelcome to the most retro gaming experience on the web!', 'color: #00ff00; font-size: 14px;');
-        console.log('%cType dumbassGameAdmin.help() for advanced commands', 'color: #00ffff; font-style: italic;');
+        console.critical('🎮 DUMBASSGAMES v2.1 - Production Ready');
+        if (window.DEVELOPMENT_MODE) {
+            console.log('%c🎮 DUMBASSGAMES ENHANCED v2.0', 'background: linear-gradient(90deg, #00ff00, #00ffff); color: #000; padding: 10px; font-size: 16px; font-weight: bold; border-radius: 5px;');
+            console.log('%cWelcome to the most retro gaming experience on the web!', 'color: #00ff00; font-size: 14px;');
+            console.log('%cType dumbassGameAdmin.help() for advanced commands', 'color: #00ffff; font-style: italic;');
+        }
     }
 
     showAddGameForm() {

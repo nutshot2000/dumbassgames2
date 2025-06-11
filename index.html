@@ -1558,7 +1558,9 @@
         window.effectsEnabled = true;
         
         // Professional loading message
-        console.log('%c🎮 DUMBASSGAMES v2.1', 'background: linear-gradient(45deg, #00ff00, #00ffff); color: #000; padding: 10px; font-size: 16px; font-weight: bold; border-radius: 5px;');
+                    if (window.DEVELOPMENT_MODE) {
+                console.log('%c🎮 DUMBASSGAMES v2.1', 'background: linear-gradient(45deg, #00ff00, #00ffff); color: #000; padding: 10px; font-size: 16px; font-weight: bold; border-radius: 5px;');
+            }
         
         // Enhanced keyboard shortcuts
         document.addEventListener('keydown', function(e) {
